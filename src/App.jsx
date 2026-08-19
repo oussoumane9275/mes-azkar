@@ -72,6 +72,14 @@ const ACCENT_LABELS_BY_LANG = {
 function accentLabels() {
   return ACCENT_LABELS_BY_LANG[currentLanguage] || ACCENT_LABELS_BY_LANG.fr;
 }
+// Like trField(item, "label"), but also supports a genuine Arabic override
+// (item.label_ar) for UI-chrome labels — unlike scripture/azkar content,
+// category names like "Sommeil" or "Mariage" should read in Arabic too when
+// the app is in Arabic mode, not fall back to French.
+function localLabel(item) {
+  if (currentLanguage === "ar" && item.label_ar) return item.label_ar;
+  return trField(item, "label");
+}
 
 // A mutable, shared object — components read `COLORS.xxx` at render time, so
 // swapping its contents (instead of reassigning the binding) is enough to
@@ -902,6 +910,7 @@ const INVOCATION_TOPICS = {
   sommeil: {
     label: "Sommeil",
     label_en: "Sleep",
+    label_ar: "النوم",
     emoji: "🌙",
     items: [
       {
@@ -925,6 +934,7 @@ const INVOCATION_TOPICS = {
   ablutions: {
     label: "Ablutions",
     label_en: "Ablutions",
+    label_ar: "الوضوء",
     emoji: "💧",
     items: [
       { title: "Avant les ablutions", title_en: "Before ablutions", arabic: "بِسْمِ اللَّهِ", translation: "Au nom d'Allah.", translation_en: "In the name of Allah." },
@@ -943,6 +953,7 @@ const INVOCATION_TOPICS = {
   maison: {
     label: "Maison",
     label_en: "Home",
+    label_ar: "المنزل",
     emoji: "🏠",
     items: [
       {
@@ -964,6 +975,7 @@ const INVOCATION_TOPICS = {
   habits: {
     label: "Habits",
     label_en: "Clothing",
+    label_ar: "الملابس",
     emoji: "👕",
     items: [
       {
@@ -990,6 +1002,7 @@ const INVOCATION_TOPICS = {
   toilettes: {
     label: "Toilettes",
     label_en: "Restroom",
+    label_ar: "الخلاء",
     emoji: "🚪",
     items: [
       {
@@ -1005,6 +1018,7 @@ const INVOCATION_TOPICS = {
   nourriture: {
     label: "Nourriture",
     label_en: "Food",
+    label_ar: "الطعام",
     emoji: "🍽️",
     items: [
       { title: "Avant de manger", title_en: "Before eating", arabic: "بِسْمِ اللَّهِ", translation: "Au nom d'Allah.", translation_en: "In the name of Allah." },
@@ -1020,6 +1034,7 @@ const INVOCATION_TOPICS = {
   mosquee: {
     label: "Mosquée",
     label_en: "Mosque",
+    label_ar: "المسجد",
     emoji: "🕌",
     items: [
       {
@@ -1041,6 +1056,7 @@ const INVOCATION_TOPICS = {
   priere: {
     label: "Avant la prière",
     label_en: "Before prayer",
+    label_ar: "قبل الصلاة",
     emoji: "🤲",
     items: [
       {
@@ -1069,6 +1085,7 @@ const INVOCATION_TOPICS = {
   istikhara: {
     label: "Prière de consultation (Istikhâra)",
     label_en: "Prayer of guidance (Istikhara)",
+    label_ar: "صلاة الاستخارة",
     emoji: "🧭",
     items: [
       {
@@ -1086,6 +1103,7 @@ const INVOCATION_TOPICS = {
   hajj: {
     label: "Hajj / Omra",
     label_en: "Hajj / Umrah",
+    label_ar: "الحج والعمرة",
     emoji: "🕋",
     items: [
       {
@@ -1113,6 +1131,7 @@ const INVOCATION_TOPICS = {
   ramadan: {
     label: "Ramadan",
     label_en: "Ramadan",
+    label_ar: "رمضان",
     emoji: "🌙",
     items: [
       {
@@ -1138,6 +1157,7 @@ const INVOCATION_TOPICS = {
   louange: {
     label: "Louange",
     label_en: "Praise",
+    label_ar: "الحمد",
     emoji: "🙌",
     items: [
       {
@@ -1161,6 +1181,7 @@ const INVOCATION_TOPICS = {
   repentir: {
     label: "Repentir",
     label_en: "Repentance",
+    label_ar: "التوبة",
     emoji: "🕊️",
     items: [
       {
@@ -1186,12 +1207,14 @@ const INVOCATION_TOPICS = {
   rabbana: {
     label: "Invocations du Coran",
     label_en: "Quranic supplications",
+    label_ar: "أدعية قرآنية",
     emoji: "📖",
     dynamic: true,
   },
   tristesse: {
     label: "Tristesse",
     label_en: "Sadness",
+    label_ar: "الحزن",
     emoji: "😔",
     items: [
       {
@@ -1218,6 +1241,7 @@ const INVOCATION_TOPICS = {
   joie: {
     label: "Joie",
     label_en: "Joy",
+    label_ar: "الفرح",
     emoji: "😊",
     items: [
       {
@@ -1232,6 +1256,7 @@ const INVOCATION_TOPICS = {
   doute: {
     label: "Doute",
     label_en: "Doubt",
+    label_ar: "الشك",
     emoji: "🤔",
     items: [
       {
@@ -1246,6 +1271,7 @@ const INVOCATION_TOPICS = {
   colere: {
     label: "Colère",
     label_en: "Anger",
+    label_ar: "الغضب",
     emoji: "😠",
     items: [
       {
@@ -1260,6 +1286,7 @@ const INVOCATION_TOPICS = {
   tentation: {
     label: "Tentation",
     label_en: "Temptation",
+    label_ar: "الفتنة",
     emoji: "🛡️",
     items: [
       {
@@ -1285,6 +1312,7 @@ const INVOCATION_TOPICS = {
   protection: {
     label: "Protection",
     label_en: "Protection",
+    label_ar: "الحماية",
     emoji: "🔰",
     items: [
       {
@@ -1299,6 +1327,7 @@ const INVOCATION_TOPICS = {
   mariage: {
     label: "Mariage",
     label_en: "Marriage",
+    label_ar: "الزواج",
     emoji: "💍",
     items: [
       {
@@ -1325,6 +1354,7 @@ const INVOCATION_TOPICS = {
   enfants: {
     label: "Enfants",
     label_en: "Children",
+    label_ar: "الأطفال",
     emoji: "👶",
     items: [
       {
@@ -1344,6 +1374,7 @@ const INVOCATION_TOPICS = {
   parents: {
     label: "Parents",
     label_en: "Parents",
+    label_ar: "الوالدان",
     emoji: "👨‍👩‍👧",
     items: [
       {
@@ -1367,6 +1398,7 @@ const INVOCATION_TOPICS = {
   maladie: {
     label: "Maladie",
     label_en: "Illness",
+    label_ar: "المرض",
     emoji: "🤒",
     items: [
       {
@@ -1392,6 +1424,7 @@ const INVOCATION_TOPICS = {
   deces: {
     label: "Décès",
     label_en: "Death",
+    label_ar: "الوفاة",
     emoji: "🤍",
     items: [
       {
@@ -1417,6 +1450,7 @@ const INVOCATION_TOPICS = {
   societe: {
     label: "Société",
     label_en: "Society",
+    label_ar: "المجتمع",
     emoji: "🤝",
     items: [
       {
@@ -1440,6 +1474,7 @@ const INVOCATION_TOPICS = {
   voyage: {
     label: "Voyage",
     label_en: "Travel",
+    label_ar: "السفر",
     emoji: "✈️",
     items: [
       {
@@ -1467,6 +1502,7 @@ const INVOCATION_TOPICS = {
   pluie: {
     label: "Pluie",
     label_en: "Rain",
+    label_ar: "المطر",
     emoji: "🌧️",
     items: [
       {
@@ -1490,6 +1526,7 @@ const INVOCATION_TOPICS = {
   animaux: {
     label: "Animaux",
     label_en: "Animals",
+    label_ar: "الحيوانات",
     emoji: "🐑",
     items: [
       {
@@ -1504,6 +1541,7 @@ const INVOCATION_TOPICS = {
   richesse: {
     label: "Richesse",
     label_en: "Wealth",
+    label_ar: "الرزق",
     emoji: "💰",
     items: [
       {
@@ -1520,6 +1558,7 @@ const INVOCATION_TOPICS = {
   savoir: {
     label: "Savoir",
     label_en: "Knowledge",
+    label_ar: "العلم",
     emoji: "📚",
     items: [
       {
@@ -1543,6 +1582,7 @@ const INVOCATION_TOPICS = {
   bienfaits: {
     label: "Bienfaits",
     label_en: "Blessings",
+    label_ar: "النعم",
     emoji: "🎁",
     items: [
       {
@@ -1563,12 +1603,12 @@ const INVOCATION_TOPICS = {
 
 // Intelligent grouping — thematic, not a flat grid
 const INVOCATION_GROUPS = [
-  { id: "quotidien", label: "Moments du quotidien", label_en: "Daily moments", topics: ["sommeil", "ablutions", "maison", "habits", "toilettes", "nourriture"] },
-  { id: "culte", label: "Actes d'adoration", label_en: "Acts of worship", topics: ["mosquee", "priere", "istikhara", "hajj", "ramadan", "louange", "repentir", "rabbana"] },
-  { id: "coeur", label: "États du cœur", label_en: "States of the heart", topics: ["tristesse", "joie", "doute", "colere", "tentation", "protection"] },
-  { id: "relations", label: "Étapes et relations", label_en: "Life stages and relationships", topics: ["mariage", "enfants", "parents", "maladie", "deces", "societe"] },
-  { id: "monde", label: "Dans le monde", label_en: "Out in the world", topics: ["voyage", "pluie", "animaux", "richesse", "savoir"] },
-  { id: "perso", label: "Personnel", label_en: "Personal", topics: ["bienfaits"] },
+  { id: "quotidien", label: "Moments du quotidien", label_en: "Daily moments", label_ar: "لحظات يومية", topics: ["sommeil", "ablutions", "maison", "habits", "toilettes", "nourriture"] },
+  { id: "culte", label: "Actes d'adoration", label_en: "Acts of worship", label_ar: "أعمال العبادة", topics: ["mosquee", "priere", "istikhara", "hajj", "ramadan", "louange", "repentir", "rabbana"] },
+  { id: "coeur", label: "États du cœur", label_en: "States of the heart", label_ar: "أحوال القلب", topics: ["tristesse", "joie", "doute", "colere", "tentation", "protection"] },
+  { id: "relations", label: "Étapes et relations", label_en: "Life stages and relationships", label_ar: "المراحل والعلاقات", topics: ["mariage", "enfants", "parents", "maladie", "deces", "societe"] },
+  { id: "monde", label: "Dans le monde", label_en: "Out in the world", label_ar: "في الحياة", topics: ["voyage", "pluie", "animaux", "richesse", "savoir"] },
+  { id: "perso", label: "Personnel", label_en: "Personal", label_ar: "شخصي", topics: ["bienfaits"] },
 ];
 
 const PERSONAL_INVOCATIONS_KEY = "azkar-personal-invocations-v1";
@@ -1578,126 +1618,127 @@ const PERSONAL_INVOCATIONS_KEY = "azkar-personal-invocations-v1";
 /* French meaning, verse count). Verse text itself is fetched live.    */
 /* ------------------------------------------------------------------ */
 const QURAN_SURAHS_RAW = [
-  [1, "الفاتحة", "Al-Fatiha", "L'Ouverture", 7],
-  [2, "البقرة", "Al-Baqara", "La Vache", 286],
-  [3, "آل عمران", "Aali Imran", "La Famille d'Imran", 200],
-  [4, "النساء", "An-Nisa", "Les Femmes", 176],
-  [5, "المائدة", "Al-Ma'ida", "La Table servie", 120],
-  [6, "الأنعام", "Al-An'am", "Les Bestiaux", 165],
-  [7, "الأعراف", "Al-A'raf", "Les Murailles", 206],
-  [8, "الأنفال", "Al-Anfal", "Le Butin", 75],
-  [9, "التوبة", "At-Tawba", "Le Repentir", 129],
-  [10, "يونس", "Yunus", "Jonas", 109],
-  [11, "هود", "Hud", "Hud", 123],
-  [12, "يوسف", "Yusuf", "Joseph", 111],
-  [13, "الرعد", "Ar-Ra'd", "Le Tonnerre", 43],
-  [14, "ابراهيم", "Ibrahim", "Abraham", 52],
-  [15, "الحجر", "Al-Hijr", "Al-Hijr", 99],
-  [16, "النحل", "An-Nahl", "Les Abeilles", 128],
-  [17, "الإسراء", "Al-Isra", "Le Voyage nocturne", 111],
-  [18, "الكهف", "Al-Kahf", "La Caverne", 110],
-  [19, "مريم", "Maryam", "Marie", 98],
-  [20, "طه", "Ta-Ha", "Ta-Ha", 135],
-  [21, "الأنبياء", "Al-Anbiya", "Les Prophètes", 112],
-  [22, "الحج", "Al-Hajj", "Le Pèlerinage", 78],
-  [23, "المؤمنون", "Al-Mu'minun", "Les Croyants", 118],
-  [24, "النور", "An-Nur", "La Lumière", 64],
-  [25, "الفرقان", "Al-Furqan", "Le Discernement", 77],
-  [26, "الشعراء", "Ash-Shu'ara", "Les Poètes", 227],
-  [27, "النمل", "An-Naml", "Les Fourmis", 93],
-  [28, "القصص", "Al-Qasas", "Le Récit", 88],
-  [29, "العنكبوت", "Al-Ankabut", "L'Araignée", 69],
-  [30, "الروم", "Ar-Rum", "Les Romains", 60],
-  [31, "لقمان", "Luqman", "Luqman", 34],
-  [32, "السجدة", "As-Sajda", "La Prosternation", 30],
-  [33, "الأحزاب", "Al-Ahzab", "Les Coalisés", 73],
-  [34, "سبأ", "Saba", "Saba", 54],
-  [35, "فاطر", "Fatir", "Le Créateur", 45],
-  [36, "يس", "Ya-Sin", "Ya-Sin", 83],
-  [37, "الصافات", "As-Saffat", "Les Rangés", 182],
-  [38, "ص", "Sad", "Sad", 88],
-  [39, "الزمر", "Az-Zumar", "Les Groupes", 75],
-  [40, "غافر", "Ghafir", "Le Pardonneur", 85],
-  [41, "فصلت", "Fussilat", "Les Versets détaillés", 54],
-  [42, "الشورى", "Ash-Shura", "La Concertation", 53],
-  [43, "الزخرف", "Az-Zukhruf", "L'Ornement", 89],
-  [44, "الدخان", "Ad-Dukhan", "La Fumée", 59],
-  [45, "الجاثية", "Al-Jathiya", "L'Agenouillée", 37],
-  [46, "الأحقاف", "Al-Ahqaf", "Al-Ahqaf", 35],
-  [47, "محمد", "Muhammad", "Muhammad", 38],
-  [48, "الفتح", "Al-Fath", "La Victoire éclatante", 29],
-  [49, "الحجرات", "Al-Hujurat", "Les Appartements", 18],
-  [50, "ق", "Qaf", "Qaf", 45],
-  [51, "الذاريات", "Adh-Dhariyat", "Qui éparpillent", 60],
-  [52, "الطور", "At-Tur", "Le Mont", 49],
-  [53, "النجم", "An-Najm", "L'Étoile", 62],
-  [54, "القمر", "Al-Qamar", "La Lune", 55],
-  [55, "الرحمن", "Ar-Rahman", "Le Tout Miséricordieux", 78],
-  [56, "الواقعة", "Al-Waqi'a", "L'Événement", 96],
-  [57, "الحديد", "Al-Hadid", "Le Fer", 29],
-  [58, "المجادلة", "Al-Mujadila", "La Discussion", 22],
-  [59, "الحشر", "Al-Hashr", "L'Exode", 24],
-  [60, "الممتحنة", "Al-Mumtahina", "L'Éprouvée", 13],
-  [61, "الصف", "As-Saff", "Le Rang", 14],
-  [62, "الجمعة", "Al-Jumu'a", "Le Vendredi", 11],
-  [63, "المنافقون", "Al-Munafiqun", "Les Hypocrites", 11],
-  [64, "التغابن", "At-Taghabun", "La Grande Perte", 18],
-  [65, "الطلاق", "At-Talaq", "Le Divorce", 12],
-  [66, "التحريم", "At-Tahrim", "L'Interdiction", 12],
-  [67, "الملك", "Al-Mulk", "La Royauté", 30],
-  [68, "القلم", "Al-Qalam", "La Plume", 52],
-  [69, "الحاقة", "Al-Haqqa", "Celle qui montre la vérité", 52],
-  [70, "المعارج", "Al-Ma'arij", "Les Voies d'ascension", 44],
-  [71, "نوح", "Nuh", "Noé", 28],
-  [72, "الجن", "Al-Jinn", "Les Djinns", 28],
-  [73, "المزمل", "Al-Muzzammil", "L'Enveloppé", 20],
-  [74, "المدثر", "Al-Muddathir", "Le Revêtu d'un manteau", 56],
-  [75, "القيامة", "Al-Qiyama", "La Résurrection", 40],
-  [76, "الانسان", "Al-Insan", "L'Homme", 31],
-  [77, "المرسلات", "Al-Mursalat", "Les Envoyés", 50],
-  [78, "النبأ", "An-Naba", "La Nouvelle", 40],
-  [79, "النازعات", "An-Nazi'at", "Les Anges qui arrachent", 46],
-  [80, "عبس", "Abasa", "Il s'est renfrogné", 42],
-  [81, "التكوير", "At-Takwir", "L'Obscurcissement", 29],
-  [82, "الإنفطار", "Al-Infitar", "La Rupture", 19],
-  [83, "المطففين", "Al-Mutaffifin", "Les Fraudeurs", 36],
-  [84, "الإنشقاق", "Al-Inshiqaq", "La Déchirure", 25],
-  [85, "البروج", "Al-Buruj", "Les Constellations", 22],
-  [86, "الطارق", "At-Tariq", "L'Astre nocturne", 17],
-  [87, "الأعلى", "Al-A'la", "Le Très-Haut", 19],
-  [88, "الغاشية", "Al-Ghashiya", "L'Enveloppante", 26],
-  [89, "الفجر", "Al-Fajr", "L'Aube", 30],
-  [90, "البلد", "Al-Balad", "La Cité", 20],
-  [91, "الشمس", "Ash-Shams", "Le Soleil", 15],
-  [92, "الليل", "Al-Layl", "La Nuit", 21],
-  [93, "الضحى", "Ad-Duha", "Le Jour montant", 11],
-  [94, "الشرح", "Ash-Sharh", "L'Ouverture", 8],
-  [95, "التين", "At-Tin", "Le Figuier", 8],
-  [96, "العلق", "Al-Alaq", "L'Adhérence", 19],
-  [97, "القدر", "Al-Qadr", "La Destinée", 5],
-  [98, "البينة", "Al-Bayyina", "La Preuve", 8],
-  [99, "الزلزلة", "Az-Zalzala", "La Secousse", 8],
-  [100, "العاديات", "Al-Adiyat", "Les Coursiers", 11],
-  [101, "القارعة", "Al-Qari'a", "Le Fracas", 11],
-  [102, "التكاثر", "At-Takathur", "La Course aux richesses", 8],
-  [103, "العصر", "Al-Asr", "Le Temps", 3],
-  [104, "الهمزة", "Al-Humaza", "Les Calomniateurs", 9],
-  [105, "الفيل", "Al-Fil", "L'Éléphant", 5],
-  [106, "قريش", "Quraysh", "Quraysh", 4],
-  [107, "الماعون", "Al-Ma'un", "L'Ustensile", 7],
-  [108, "الكوثر", "Al-Kawthar", "L'Abondance", 3],
-  [109, "الكافرون", "Al-Kafirun", "Les Infidèles", 6],
-  [110, "النصر", "An-Nasr", "Le Secours", 3],
-  [111, "المسد", "Al-Masad", "Les Fibres", 5],
-  [112, "الإخلاص", "Al-Ikhlas", "Le Monothéisme pur", 4],
-  [113, "الفلق", "Al-Falaq", "L'Aube naissante", 5],
-  [114, "الناس", "An-Nas", "Les Hommes", 6],
+  [1, "الفاتحة", "Al-Fatiha", "L'Ouverture", 7, "The Opening"],
+  [2, "البقرة", "Al-Baqara", "La Vache", 286, "The Cow"],
+  [3, "آل عمران", "Aali Imran", "La Famille d'Imran", 200, "The Family of Imran"],
+  [4, "النساء", "An-Nisa", "Les Femmes", 176, "The Women"],
+  [5, "المائدة", "Al-Ma'ida", "La Table servie", 120, "The Table Spread"],
+  [6, "الأنعام", "Al-An'am", "Les Bestiaux", 165, "The Cattle"],
+  [7, "الأعراف", "Al-A'raf", "Les Murailles", 206, "The Heights"],
+  [8, "الأنفال", "Al-Anfal", "Le Butin", 75, "The Spoils of War"],
+  [9, "التوبة", "At-Tawba", "Le Repentir", 129, "The Repentance"],
+  [10, "يونس", "Yunus", "Jonas", 109, "Jonah"],
+  [11, "هود", "Hud", "Hud", 123, "Hud"],
+  [12, "يوسف", "Yusuf", "Joseph", 111, "Joseph"],
+  [13, "الرعد", "Ar-Ra'd", "Le Tonnerre", 43, "The Thunder"],
+  [14, "ابراهيم", "Ibrahim", "Abraham", 52, "Abraham"],
+  [15, "الحجر", "Al-Hijr", "Al-Hijr", 99, "The Rocky Tract"],
+  [16, "النحل", "An-Nahl", "Les Abeilles", 128, "The Bee"],
+  [17, "الإسراء", "Al-Isra", "Le Voyage nocturne", 111, "The Night Journey"],
+  [18, "الكهف", "Al-Kahf", "La Caverne", 110, "The Cave"],
+  [19, "مريم", "Maryam", "Marie", 98, "Mary"],
+  [20, "طه", "Ta-Ha", "Ta-Ha", 135, "Ta-Ha"],
+  [21, "الأنبياء", "Al-Anbiya", "Les Prophètes", 112, "The Prophets"],
+  [22, "الحج", "Al-Hajj", "Le Pèlerinage", 78, "The Pilgrimage"],
+  [23, "المؤمنون", "Al-Mu'minun", "Les Croyants", 118, "The Believers"],
+  [24, "النور", "An-Nur", "La Lumière", 64, "The Light"],
+  [25, "الفرقان", "Al-Furqan", "Le Discernement", 77, "The Criterion"],
+  [26, "الشعراء", "Ash-Shu'ara", "Les Poètes", 227, "The Poets"],
+  [27, "النمل", "An-Naml", "Les Fourmis", 93, "The Ant"],
+  [28, "القصص", "Al-Qasas", "Le Récit", 88, "The Story"],
+  [29, "العنكبوت", "Al-Ankabut", "L'Araignée", 69, "The Spider"],
+  [30, "الروم", "Ar-Rum", "Les Romains", 60, "The Romans"],
+  [31, "لقمان", "Luqman", "Luqman", 34, "Luqman"],
+  [32, "السجدة", "As-Sajda", "La Prosternation", 30, "The Prostration"],
+  [33, "الأحزاب", "Al-Ahzab", "Les Coalisés", 73, "The Combined Forces"],
+  [34, "سبأ", "Saba", "Saba", 54, "Sheba"],
+  [35, "فاطر", "Fatir", "Le Créateur", 45, "Originator"],
+  [36, "يس", "Ya-Sin", "Ya-Sin", 83, "Ya-Sin"],
+  [37, "الصافات", "As-Saffat", "Les Rangés", 182, "Those Who Set the Ranks"],
+  [38, "ص", "Sad", "Sad", 88, "The Letter Saad"],
+  [39, "الزمر", "Az-Zumar", "Les Groupes", 75, "The Troops"],
+  [40, "غافر", "Ghafir", "Le Pardonneur", 85, "The Forgiver"],
+  [41, "فصلت", "Fussilat", "Les Versets détaillés", 54, "Explained in Detail"],
+  [42, "الشورى", "Ash-Shura", "La Concertation", 53, "The Consultation"],
+  [43, "الزخرف", "Az-Zukhruf", "L'Ornement", 89, "The Ornaments of Gold"],
+  [44, "الدخان", "Ad-Dukhan", "La Fumée", 59, "The Smoke"],
+  [45, "الجاثية", "Al-Jathiya", "L'Agenouillée", 37, "The Crouching"],
+  [46, "الأحقاف", "Al-Ahqaf", "Al-Ahqaf", 35, "The Wind-Curved Sandhills"],
+  [47, "محمد", "Muhammad", "Muhammad", 38, "Muhammad"],
+  [48, "الفتح", "Al-Fath", "La Victoire éclatante", 29, "The Victory"],
+  [49, "الحجرات", "Al-Hujurat", "Les Appartements", 18, "The Rooms"],
+  [50, "ق", "Qaf", "Qaf", 45, "The Letter Qaf"],
+  [51, "الذاريات", "Adh-Dhariyat", "Qui éparpillent", 60, "The Winnowing Winds"],
+  [52, "الطور", "At-Tur", "Le Mont", 49, "The Mount"],
+  [53, "النجم", "An-Najm", "L'Étoile", 62, "The Star"],
+  [54, "القمر", "Al-Qamar", "La Lune", 55, "The Moon"],
+  [55, "الرحمن", "Ar-Rahman", "Le Tout Miséricordieux", 78, "The Most Merciful"],
+  [56, "الواقعة", "Al-Waqi'a", "L'Événement", 96, "The Inevitable"],
+  [57, "الحديد", "Al-Hadid", "Le Fer", 29, "The Iron"],
+  [58, "المجادلة", "Al-Mujadila", "La Discussion", 22, "The Pleading Woman"],
+  [59, "الحشر", "Al-Hashr", "L'Exode", 24, "The Exile"],
+  [60, "الممتحنة", "Al-Mumtahina", "L'Éprouvée", 13, "She That Is To Be Examined"],
+  [61, "الصف", "As-Saff", "Le Rang", 14, "The Ranks"],
+  [62, "الجمعة", "Al-Jumu'a", "Le Vendredi", 11, "Friday"],
+  [63, "المنافقون", "Al-Munafiqun", "Les Hypocrites", 11, "The Hypocrites"],
+  [64, "التغابن", "At-Taghabun", "La Grande Perte", 18, "Mutual Disillusion"],
+  [65, "الطلاق", "At-Talaq", "Le Divorce", 12, "The Divorce"],
+  [66, "التحريم", "At-Tahrim", "L'Interdiction", 12, "The Prohibition"],
+  [67, "الملك", "Al-Mulk", "La Royauté", 30, "The Sovereignty"],
+  [68, "القلم", "Al-Qalam", "La Plume", 52, "The Pen"],
+  [69, "الحاقة", "Al-Haqqa", "Celle qui montre la vérité", 52, "The Reality"],
+  [70, "المعارج", "Al-Ma'arij", "Les Voies d'ascension", 44, "The Ascending Stairways"],
+  [71, "نوح", "Nuh", "Noé", 28, "Noah"],
+  [72, "الجن", "Al-Jinn", "Les Djinns", 28, "The Jinn"],
+  [73, "المزمل", "Al-Muzzammil", "L'Enveloppé", 20, "The Enshrouded One"],
+  [74, "المدثر", "Al-Muddathir", "Le Revêtu d'un manteau", 56, "The Cloaked One"],
+  [75, "القيامة", "Al-Qiyama", "La Résurrection", 40, "The Resurrection"],
+  [76, "الانسان", "Al-Insan", "L'Homme", 31, "Man"],
+  [77, "المرسلات", "Al-Mursalat", "Les Envoyés", 50, "Those Sent Forth"],
+  [78, "النبأ", "An-Naba", "La Nouvelle", 40, "The Tidings"],
+  [79, "النازعات", "An-Nazi'at", "Les Anges qui arrachent", 46, "Those Who Drag Forth"],
+  [80, "عبس", "Abasa", "Il s'est renfrogné", 42, "He Frowned"],
+  [81, "التكوير", "At-Takwir", "L'Obscurcissement", 29, "The Overthrowing"],
+  [82, "الإنفطار", "Al-Infitar", "La Rupture", 19, "The Cleaving"],
+  [83, "المطففين", "Al-Mutaffifin", "Les Fraudeurs", 36, "Defrauding"],
+  [84, "الإنشقاق", "Al-Inshiqaq", "La Déchirure", 25, "The Splitting Open"],
+  [85, "البروج", "Al-Buruj", "Les Constellations", 22, "The Mansions of the Stars"],
+  [86, "الطارق", "At-Tariq", "L'Astre nocturne", 17, "The Morning Star"],
+  [87, "الأعلى", "Al-A'la", "Le Très-Haut", 19, "The Most High"],
+  [88, "الغاشية", "Al-Ghashiya", "L'Enveloppante", 26, "The Overwhelming"],
+  [89, "الفجر", "Al-Fajr", "L'Aube", 30, "The Dawn"],
+  [90, "البلد", "Al-Balad", "La Cité", 20, "The City"],
+  [91, "الشمس", "Ash-Shams", "Le Soleil", 15, "The Sun"],
+  [92, "الليل", "Al-Layl", "La Nuit", 21, "The Night"],
+  [93, "الضحى", "Ad-Duha", "Le Jour montant", 11, "The Morning Hours"],
+  [94, "الشرح", "Ash-Sharh", "L'Ouverture", 8, "The Relief"],
+  [95, "التين", "At-Tin", "Le Figuier", 8, "The Fig"],
+  [96, "العلق", "Al-Alaq", "L'Adhérence", 19, "The Clot"],
+  [97, "القدر", "Al-Qadr", "La Destinée", 5, "The Power"],
+  [98, "البينة", "Al-Bayyina", "La Preuve", 8, "The Clear Proof"],
+  [99, "الزلزلة", "Az-Zalzala", "La Secousse", 8, "The Earthquake"],
+  [100, "العاديات", "Al-Adiyat", "Les Coursiers", 11, "The Courser"],
+  [101, "القارعة", "Al-Qari'a", "Le Fracas", 11, "The Calamity"],
+  [102, "التكاثر", "At-Takathur", "La Course aux richesses", 8, "The Rivalry in World Increase"],
+  [103, "العصر", "Al-Asr", "Le Temps", 3, "The Declining Day"],
+  [104, "الهمزة", "Al-Humaza", "Les Calomniateurs", 9, "The Traducer"],
+  [105, "الفيل", "Al-Fil", "L'Éléphant", 5, "The Elephant"],
+  [106, "قريش", "Quraysh", "Quraysh", 4, "Quraysh"],
+  [107, "الماعون", "Al-Ma'un", "L'Ustensile", 7, "The Small Kindnesses"],
+  [108, "الكوثر", "Al-Kawthar", "L'Abondance", 3, "The Abundance"],
+  [109, "الكافرون", "Al-Kafirun", "Les Infidèles", 6, "The Disbelievers"],
+  [110, "النصر", "An-Nasr", "Le Secours", 3, "The Divine Support"],
+  [111, "المسد", "Al-Masad", "Les Fibres", 5, "The Palm Fiber"],
+  [112, "الإخلاص", "Al-Ikhlas", "Le Monothéisme pur", 4, "The Sincerity"],
+  [113, "الفلق", "Al-Falaq", "L'Aube naissante", 5, "The Daybreak"],
+  [114, "الناس", "An-Nas", "Les Hommes", 6, "Mankind"],
 ];
-const QURAN_SURAHS = QURAN_SURAHS_RAW.map(([number, arabic, translit, meaning, ayahCount]) => ({
+const QURAN_SURAHS = QURAN_SURAHS_RAW.map(([number, arabic, translit, meaning, ayahCount, meaningEn]) => ({
   number,
   arabic,
   translit,
   meaning,
+  meaning_en: meaningEn,
   ayahCount,
 }));
 const QURAN_TOTAL_AYAHS = QURAN_SURAHS.reduce((sum, s) => sum + s.ayahCount, 0);
@@ -6873,7 +6914,7 @@ function InvocationsLibraryScreen({ onSelectTopic, onOpenPersonal }) {
             className="font-ui font-semibold mb-2.5"
             style={{ color: COLORS.goldLight, fontSize: 11.5, letterSpacing: 0.5, textTransform: "uppercase" }}
           >
-            {trField(group, "label")}
+            {localLabel(group)}
           </p>
           <div className="grid grid-cols-3 gap-2.5">
             {group.topics.map((topicId) => {
@@ -6896,7 +6937,7 @@ function InvocationsLibraryScreen({ onSelectTopic, onOpenPersonal }) {
                     className="font-ui font-medium text-center"
                     style={{ color: COLORS.ink, fontSize: 11.5, lineHeight: 1.2 }}
                   >
-                    {trField(topic, "label")}
+                    {localLabel(topic)}
                   </span>
                 </button>
               );
@@ -7156,7 +7197,7 @@ function InvocationTopicScreen({ topicId, arabicSize, onBack }) {
         <div className="flex items-center gap-2">
           <span style={{ fontSize: 18 }}>{topic.emoji}</span>
           <p className="font-display" style={{ color: COLORS.ink, fontSize: 15 }}>
-            {trField(topic, "label")}
+            {localLabel(topic)}
           </p>
         </div>
         <div className="w-9" />
@@ -7597,6 +7638,7 @@ function SurahListScreen({ onSelectSurah, onBack }) {
         (s) =>
           s.translit.toLowerCase().includes(q) ||
           s.meaning.toLowerCase().includes(q) ||
+          (s.meaning_en && s.meaning_en.toLowerCase().includes(q)) ||
           s.arabic.includes(query.trim()) ||
           String(s.number) === q
       )
@@ -7653,7 +7695,7 @@ function SurahListScreen({ onSelectSurah, onBack }) {
                     {s.translit}
                   </p>
                   <p className="font-ui" style={{ color: COLORS.inkSoft, fontSize: 11, marginTop: 1 }}>
-                    {s.meaning} · {s.ayahCount} {t("verses_label")}
+                    {trField(s, "meaning")} · {s.ayahCount} {t("verses_label")}
                   </p>
                 </div>
               </div>
@@ -7875,7 +7917,7 @@ function ReciterSpaceScreen({ reciterId, onBack, onSelectSurah }) {
                   {s.translit}
                 </p>
                 <p className="font-ui" style={{ color: COLORS.inkSoft, fontSize: 11, marginTop: 1 }}>
-                  {s.meaning} · {s.ayahCount} {t("verses_label")}
+                  {trField(s, "meaning")} · {s.ayahCount} {t("verses_label")}
                 </p>
               </div>
             </div>
@@ -8292,6 +8334,7 @@ function MushafJumpOverlay({ onSelectSurah, onSelectJuz, onSelectBookmark, onDel
         (s) =>
           s.translit.toLowerCase().includes(q) ||
           s.meaning.toLowerCase().includes(q) ||
+          (s.meaning_en && s.meaning_en.toLowerCase().includes(q)) ||
           s.arabic.includes(query.trim()) ||
           String(s.number) === q
       )
@@ -8369,7 +8412,7 @@ function MushafJumpOverlay({ onSelectSurah, onSelectJuz, onSelectBookmark, onDel
                       {s.translit}
                     </p>
                     <p className="font-ui" style={{ color: COLORS.inkSoft, fontSize: 11, marginTop: 1 }}>
-                      {s.meaning} · {s.ayahCount} {t("verses_label")}
+                      {trField(s, "meaning")} · {s.ayahCount} {t("verses_label")}
                     </p>
                   </div>
                 </div>
