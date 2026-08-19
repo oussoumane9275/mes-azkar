@@ -160,6 +160,12 @@ const FONT_STYLE = `
 .bead-pulse { animation: beadPulse 0.28s ease; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 .fade-in { animation: fadeIn 0.35s ease; }
+@keyframes tourIconPop { 0% { opacity: 0; transform: scale(0.6) rotate(-8deg); } 60% { transform: scale(1.08) rotate(2deg); } 100% { opacity: 1; transform: scale(1) rotate(0deg); } }
+.tour-icon-pop { animation: tourIconPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes tourSlideIn { from { opacity: 0; transform: translateX(18px); } to { opacity: 1; transform: translateX(0); } }
+.tour-slide-in { animation: tourSlideIn 0.35s ease; }
+@keyframes tourGlow { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+.tour-glow { animation: tourGlow 2.4s ease-in-out infinite; }
 `;
 
 /* ------------------------------------------------------------------ */
@@ -2239,6 +2245,7 @@ function AzkarApp() {
 
   const dismissOnboarding = useCallback(() => {
     setShowOnboarding(false);
+    setScreen("home");
     window.storage.set(ONBOARDING_KEY, "1", false).catch(() => {});
   }, []);
 
@@ -3108,6 +3115,7 @@ function AzkarApp() {
 
       {showOnboarding && (
         <OnboardingOverlay
+          onNavigate={setScreen}
           onEnableNotifications={async () => {
             await handleToggleNotifications(true);
             dismissOnboarding();
@@ -3119,83 +3127,168 @@ function AzkarApp() {
   );
 }
 
-// A short guided tour, one slide per major area of the app — replaces a
-// single wall of bullet points so a first-time user actually understands
-// where each feature lives, not just that it exists.
+// A live guided tour — each step actually navigates to the real screen it's
+// describing (behind a light scrim) instead of a static wall of bullet
+// points on one modal, so a first-time user sees exactly where every
+// feature lives, not just reads that it exists.
 const TOUR_SLIDES = [
   {
+    screen: "home",
+    accent: "gold",
     icon: "🕌",
     title: "Bienvenue dans Mes Azkar",
-    body: "Un compagnon simple pour tes azkar, ton tasbih, ta lecture du Coran et tes invocations quotidiennes.",
+    body: "Un compagnon complet pour tes azkar, ton tasbih, ta lecture du Coran et tes invocations — visite rapide de ce qui t'attend.",
   },
   {
-    icon: "🏠",
-    title: "Accueil",
-    body: "Horaires de prière, azkar du matin, du soir, après la prière et avant de dormir, la Qibla, le calendrier hégirien et un verset du jour — tout en un coup d'œil.",
+    screen: "home",
+    accent: "gold",
+    icon: "🕐",
+    title: "Horaires calés sur ta mosquée",
+    body: "Ajuste chaque prière minute par minute pour coller aux horaires réels, règle l'iqama et la voix du muezzin, et active un rappel prière par prière d'un tap sur la cloche. Ajoute même un widget sur ton écran d'accueil.",
   },
   {
+    screen: "quran-list",
+    accent: "indigo",
     icon: "📖",
-    title: "Coran",
-    body: "Lis sourate par sourate avec traduction, ou page par page en Mushaf. Choisis parmi une vingtaine de récitateurs pour écouter en suivant le texte.",
+    title: "Le Coran, deux espaces distincts",
+    body: "Récitation pour écouter en suivant le texte avec le récitateur de ton choix, et Mushaf pour la lecture page par page fidèle à l'imprimé.",
   },
   {
+    screen: "quran-mushaf",
+    accent: "indigo",
+    icon: "🔖",
+    title: "Le Mushaf, en détail",
+    body: "Saute directement à un juz ou une sourate, pose des signets, et télécharge tout le Coran pour le lire hors connexion.",
+  },
+  {
+    screen: "tasbih",
+    accent: "violet",
     icon: "📿",
     title: "Tasbih",
-    body: "Un compteur de dhikr libre et sans limite, avec un chapelet de perles animé et un léger retour haptique à chaque tap.",
+    body: "Un compteur de dhikr libre et sans limite. Le mieux reste de compter sur les phalanges, comme l'a enseigné le Prophète ﷺ — l'appli le rappelle à l'ouverture.",
   },
   {
+    screen: "invocations",
+    accent: "clay",
     icon: "🤲",
     title: "Invocations",
-    body: "Une invocation authentique pour chaque moment de la vie, classée par thème — plus un espace pour garder tes propres invocations.",
+    body: "Une invocation authentique pour chaque moment de la vie, classée par thème, plus un espace pour garder les tiennes.",
   },
   {
+    screen: "dashboard",
+    accent: "gold",
     icon: "📊",
     title: "Bilan",
-    body: "Un résumé de ta journée : azkar complétés, dhikr récités, versets lus, et ta série de jours d'affilée.",
+    body: "Le résumé de ta journée — et tu peux remonter jour par jour dans l'historique pour voir ce qui a été fait la veille.",
+  },
+  {
+    screen: "settings",
+    accent: "indigo",
+    icon: "⚙️",
+    title: "Réglages",
+    body: "Thèmes de couleur, méthode de calcul, iqama, muezzin, sauvegarde de tes données — tout se personnalise ici.",
   },
 ];
 
-function OnboardingOverlay({ onEnableNotifications, onDismiss }) {
+function OnboardingOverlay({ onNavigate, onEnableNotifications, onDismiss }) {
   const [step, setStep] = useState(0);
   const isLast = step === TOUR_SLIDES.length - 1;
   const slide = TOUR_SLIDES[step];
+  const accent = COLORS[slide.accent] || COLORS.goldLight;
+  const accentLight = COLORS[`${slide.accent}Light`] || COLORS.goldLight;
+  const touchStartXRef = useRef(null);
+
+  useEffect(() => {
+    onNavigate(slide.screen);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
+
+  const goNext = () => setStep((s) => Math.min(TOUR_SLIDES.length - 1, s + 1));
+  const goPrev = () => setStep((s) => Math.max(0, s - 1));
+
+  const handleTouchStart = (e) => {
+    touchStartXRef.current = e.touches[0].clientX;
+  };
+  const handleTouchEnd = (e) => {
+    if (touchStartXRef.current === null) return;
+    const deltaX = e.changedTouches[0].clientX - touchStartXRef.current;
+    touchStartXRef.current = null;
+    if (Math.abs(deltaX) < 50) return;
+    if (deltaX < 0 && !isLast) goNext();
+    else if (deltaX > 0 && step > 0) goPrev();
+  };
 
   return (
     <div
-      className="fixed inset-0 flex items-end justify-center fade-in"
-      style={{ background: "rgba(0,0,0,0.5)", zIndex: 50 }}
+      className="fixed inset-0 flex flex-col items-center justify-end fade-in"
+      style={{ background: "rgba(10,14,12,0.45)", backdropFilter: "blur(1px)", zIndex: 50 }}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
     >
+      {/* Story-style segmented progress bar, tappable to jump to any step */}
+      <div
+        className="flex items-center gap-1.5 w-full"
+        style={{ padding: "calc(14px + env(safe-area-inset-top, 0px)) 16px 0" }}
+      >
+        {TOUR_SLIDES.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => setStep(i)}
+            aria-label={`Aller à l'étape ${i + 1}`}
+            style={{ flex: 1, height: 4, borderRadius: 99, background: "rgba(255,255,255,0.28)", overflow: "hidden" }}
+          >
+            <div
+              style={{
+                height: "100%",
+                width: i <= step ? "100%" : "0%",
+                borderRadius: 99,
+                background: accentLight,
+                transition: "width 0.3s ease, background 0.3s ease",
+              }}
+            />
+          </button>
+        ))}
+      </div>
+
+      <div className="w-full flex justify-end" style={{ padding: "10px 16px 0" }}>
+        <button onClick={onDismiss} className="active:opacity-70" style={{ padding: "6px 10px" }}>
+          <span className="font-ui font-semibold" style={{ color: "rgba(255,255,255,0.85)", fontSize: 12.5 }}>
+            Passer ✕
+          </span>
+        </button>
+      </div>
+
+      <div style={{ flex: 1 }} />
+
       <div
         className="w-full px-6 pt-7"
         style={{
           background: COLORS.bg,
-          borderTopLeftRadius: 24,
-          borderTopRightRadius: 24,
+          borderTopLeftRadius: 28,
+          borderTopRightRadius: 28,
           paddingBottom: "calc(28px + env(safe-area-inset-bottom, 0px))",
           maxWidth: 480,
+          boxShadow: "0 -12px 40px rgba(0,0,0,0.25)",
         }}
       >
-        <div className="flex items-center justify-center gap-1.5 mb-6">
-          {TOUR_SLIDES.map((_, i) => (
-            <div
-              key={i}
-              style={{
-                width: i === step ? 18 : 6,
-                height: 6,
-                borderRadius: 99,
-                background: i === step ? COLORS.goldLight : inkA(0.2),
-                transition: "all 0.2s ease",
-              }}
-            />
-          ))}
-        </div>
-
-        <div className="text-center" style={{ minHeight: 180 }}>
-          <span style={{ fontSize: 38 }}>{slide.icon}</span>
-          <h2 className="font-display" style={{ color: COLORS.ink, fontSize: 19, marginTop: 12 }}>
+        <div key={step} className="text-center tour-slide-in" style={{ minHeight: 200 }}>
+          <div
+            key={`icon-${step}`}
+            className="tour-icon-pop flex items-center justify-center mx-auto"
+            style={{
+              width: 76,
+              height: 76,
+              borderRadius: 24,
+              background: `radial-gradient(circle at 30% 25%, ${accentLight}, ${accent})`,
+              boxShadow: `0 10px 26px ${accent}55`,
+            }}
+          >
+            <span style={{ fontSize: 34 }}>{slide.icon}</span>
+          </div>
+          <h2 className="font-display font-semibold" style={{ color: COLORS.ink, fontSize: 19, marginTop: 16 }}>
             {slide.title}
           </h2>
-          <p className="font-ui mt-2.5" style={{ color: COLORS.inkSoft, fontSize: 13, lineHeight: 1.6 }}>
+          <p className="font-ui mt-2.5" style={{ color: COLORS.inkSoft, fontSize: 13, lineHeight: 1.65, padding: "0 4px" }}>
             {slide.body}
           </p>
         </div>
@@ -3206,10 +3299,10 @@ function OnboardingOverlay({ onEnableNotifications, onDismiss }) {
               onClick={onEnableNotifications}
               className="mt-6 w-full active:scale-[0.98] transition"
               style={{
-                background: COLORS.goldLight,
+                background: `linear-gradient(135deg, ${accentLight}, ${accent})`,
                 color: COLORS.bg,
                 padding: "13px 20px",
-                borderRadius: 14,
+                borderRadius: 16,
                 fontWeight: 700,
                 fontSize: 14,
               }}
@@ -3223,16 +3316,28 @@ function OnboardingOverlay({ onEnableNotifications, onDismiss }) {
             </button>
           </>
         ) : (
-          <div className="flex items-center justify-between mt-6">
-            <button onClick={onDismiss} className="active:opacity-70" style={{ padding: "11px 8px" }}>
-              <span className="font-ui" style={{ color: COLORS.inkSoft, fontSize: 12.5 }}>
-                Passer
-              </span>
-            </button>
+          <div className="flex items-center gap-2 mt-6">
+            {step > 0 && (
+              <button
+                onClick={goPrev}
+                className="flex items-center justify-center active:opacity-70"
+                style={{ width: 44, height: 44, borderRadius: 99, background: inkA(0.06), flexShrink: 0 }}
+                aria-label="Étape précédente"
+              >
+                <ChevronIcon dir="left" color={COLORS.ink} size={16} />
+              </button>
+            )}
             <button
-              onClick={() => setStep((s) => s + 1)}
-              className="active:scale-95 transition"
-              style={{ background: COLORS.goldLight, color: COLORS.bg, padding: "11px 28px", borderRadius: 99, fontWeight: 700, fontSize: 13.5 }}
+              onClick={goNext}
+              className="flex-1 active:scale-[0.98] transition"
+              style={{
+                background: `linear-gradient(135deg, ${accentLight}, ${accent})`,
+                color: COLORS.bg,
+                padding: "13px 20px",
+                borderRadius: 16,
+                fontWeight: 700,
+                fontSize: 14,
+              }}
             >
               Suivant
             </button>
