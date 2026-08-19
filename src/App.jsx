@@ -64,7 +64,14 @@ const ACCENT_PALETTES = {
   sapphire: { light: { gold: "#2E5FA3", goldLight: "#4A7FC4" }, dark: { gold: "#4A7FC4", goldLight: "#79A6DE" } },
   ruby: { light: { gold: "#9B3A47", goldLight: "#BF5563" }, dark: { gold: "#BF5563", goldLight: "#DE8290" } },
 };
-const ACCENT_LABELS = { gold: "Doré", emerald: "Émeraude", sapphire: "Saphir", ruby: "Rubis" };
+const ACCENT_LABELS_BY_LANG = {
+  fr: { gold: "Doré", emerald: "Émeraude", sapphire: "Saphir", ruby: "Rubis" },
+  en: { gold: "Gold", emerald: "Emerald", sapphire: "Sapphire", ruby: "Ruby" },
+  ar: { gold: "ذهبي", emerald: "زمردي", sapphire: "ياقوتي أزرق", ruby: "ياقوتي أحمر" },
+};
+function accentLabels() {
+  return ACCENT_LABELS_BY_LANG[currentLanguage] || ACCENT_LABELS_BY_LANG.fr;
+}
 
 // A mutable, shared object — components read `COLORS.xxx` at render time, so
 // swapping its contents (instead of reassigning the binding) is enough to
@@ -179,17 +186,18 @@ const DEFAULT_LOCATION = { label: "Boulogne-Billancourt", lat: 48.8375, lng: 2.2
 const CALC_METHODS = {
   gmp: {
     label: "Grande Mosquée de Paris",
+    label_en: "Grand Mosque of Paris",
     fajrAngle: 16,
     ishaAngle: 15,
     // Small safety margins the Grande Mosquée de Paris applies on top of the raw astronomical times
     offsetMin: { fajr: 0, sunrise: 0, dhuhr: 5, asr: 1, maghrib: 4, isha: 0 },
   },
-  mwl: { label: "Ligue Islamique Mondiale", fajrAngle: 18, ishaAngle: 17, offsetMin: {} },
-  isna: { label: "ISNA (Amérique du Nord)", fajrAngle: 15, ishaAngle: 15, offsetMin: {} },
-  egyptian: { label: "Autorité égyptienne", fajrAngle: 19.5, ishaAngle: 17.5, offsetMin: {} },
-  karachi: { label: "Université de Karachi", fajrAngle: 18, ishaAngle: 18, offsetMin: {} },
-  ummalqura: { label: "Umm al-Qura (La Mecque)", fajrAngle: 18.5, ishaMinutesAfterMaghrib: 90, offsetMin: {} },
-  custom: { label: "Personnalisée", fajrAngle: null, ishaAngle: null, offsetMin: {} },
+  mwl: { label: "Ligue Islamique Mondiale", label_en: "Muslim World League", fajrAngle: 18, ishaAngle: 17, offsetMin: {} },
+  isna: { label: "ISNA (Amérique du Nord)", label_en: "ISNA (North America)", fajrAngle: 15, ishaAngle: 15, offsetMin: {} },
+  egyptian: { label: "Autorité égyptienne", label_en: "Egyptian Authority", fajrAngle: 19.5, ishaAngle: 17.5, offsetMin: {} },
+  karachi: { label: "Université de Karachi", label_en: "University of Karachi", fajrAngle: 18, ishaAngle: 18, offsetMin: {} },
+  ummalqura: { label: "Umm al-Qura (La Mecque)", label_en: "Umm al-Qura (Mecca)", fajrAngle: 18.5, ishaMinutesAfterMaghrib: 90, offsetMin: {} },
+  custom: { label: "Personnalisée", label_en: "Custom", fajrAngle: null, ishaAngle: null, offsetMin: {} },
 };
 const DEFAULT_PRAYER_METHOD = "gmp";
 const CUSTOM_ANGLE_DEFAULTS = { fajrAngle: 16, ishaAngle: 15 };
@@ -316,12 +324,17 @@ const _fmtHour = (t) => {
 
 const PRAYER_LABELS = [
   { key: "fajr", label: "Fajr" },
-  { key: "sunrise", label: "Chourouk" },
+  { key: "sunrise", label: "Chourouk", label_en: "Sunrise", label_ar: "الشروق" },
   { key: "dhuhr", label: "Dohr" },
   { key: "asr", label: "Asr" },
   { key: "maghrib", label: "Maghrib" },
   { key: "isha", label: "Isha" },
 ];
+function prayerLabel(p) {
+  if (currentLanguage === "ar" && p.label_ar) return p.label_ar;
+  if (currentLanguage === "en" && p.label_en) return p.label_en;
+  return p.label;
+}
 
 // Today's prayer times as formatted strings, plus which one is next
 function usePrayerTimes(location, prayerSettings) {
@@ -352,7 +365,7 @@ function usePrayerTimes(location, prayerSettings) {
   }
   const minutesRemaining = Math.max(0, Math.round((nextDecimal - nowDecimal) * 60));
 
-  const times = PRAYER_LABELS.map((p) => ({ ...p, time: _fmtHour(decimals[p.key]) }));
+  const times = PRAYER_LABELS.map((p) => ({ ...p, label: prayerLabel(p), time: _fmtHour(decimals[p.key]) }));
   return { times, nextKey, minutesRemaining };
 }
 
@@ -1955,7 +1968,7 @@ function AudioPlayButton({ src, color, size = 30 }) {
       onClick={toggle}
       className="flex items-center justify-center active:opacity-60 flex-shrink-0"
       style={{ width: size, height: size, borderRadius: 99, background: "rgba(0,0,0,0.05)" }}
-      aria-label={playing ? "Mettre en pause la récitation" : "Écouter la récitation"}
+      aria-label={playing ? t("pause_recitation") : t("play_recitation")}
     >
       {loading ? (
         <span
@@ -2366,7 +2379,14 @@ const LANGUAGE_KEY = "azkar-language-v1";
 const APP_VERSION = "1.0.0";
 const CONTACT_EMAIL = "oussoumanedoucoure12@gmail.com";
 const ARABIC_SIZES = { sm: 19, md: 24, lg: 29, xl: 35 };
-const ARABIC_SIZE_LABELS = { sm: "Petit", md: "Moyen", lg: "Grand", xl: "Très grand" };
+const ARABIC_SIZE_LABELS_BY_LANG = {
+  fr: { sm: "Petit", md: "Moyen", lg: "Grand", xl: "Très grand" },
+  en: { sm: "Small", md: "Medium", lg: "Large", xl: "Very large" },
+  ar: { sm: "صغير", md: "متوسط", lg: "كبير", xl: "كبير جدًا" },
+};
+function arabicSizeLabels() {
+  return ARABIC_SIZE_LABELS_BY_LANG[currentLanguage] || ARABIC_SIZE_LABELS_BY_LANG.fr;
+}
 const DEFAULT_ARABIC_SIZE = "md";
 const emptyCat = () => ({ index: 0, counts: {} });
 const emptyApresProgress = () => Object.fromEntries(APRES_PRAYERS.map((p) => [p.id, emptyCat()]));
@@ -3469,56 +3489,72 @@ const TOUR_SLIDES = [
     accent: "gold",
     icon: "🕌",
     title: "Bienvenue dans Mes Azkar",
+    title_en: "Welcome to Mes Azkar",
     body: "Un compagnon complet pour tes azkar, ton tasbih, ta lecture du Coran et tes invocations — visite rapide de ce qui t'attend.",
+    body_en: "A complete companion for your azkar, your tasbih, your Quran reading and your invocations — a quick tour of what's ahead.",
   },
   {
     screen: "home",
     accent: "gold",
     icon: "🕐",
     title: "Horaires calés sur ta mosquée",
+    title_en: "Prayer times matched to your mosque",
     body: "Ajuste chaque prière minute par minute pour coller aux horaires réels, règle l'iqama et la voix du muezzin, et active un rappel prière par prière d'un tap sur la cloche. Ajoute même un widget sur ton écran d'accueil.",
+    body_en: "Adjust each prayer minute by minute to match the real times, set the iqama and the muezzin's voice, and turn on a reminder prayer by prayer with a tap on the bell. You can even add a widget to your home screen.",
   },
   {
     screen: "quran-list",
     accent: "indigo",
     icon: "📖",
     title: "Le Coran, deux espaces distincts",
+    title_en: "The Quran, two distinct spaces",
     body: "Récitation pour écouter en suivant le texte avec le récitateur de ton choix, et Mushaf pour la lecture page par page fidèle à l'imprimé.",
+    body_en: "Recitation to listen while following the text with the reciter of your choice, and Mushaf for page-by-page reading true to the printed copy.",
   },
   {
     screen: "quran-mushaf",
     accent: "indigo",
     icon: "🔖",
     title: "Le Mushaf, en détail",
+    title_en: "The Mushaf, in detail",
     body: "Saute directement à un juz ou une sourate, pose des signets, et télécharge tout le Coran pour le lire hors connexion.",
+    body_en: "Jump straight to a juz or a surah, place bookmarks, and download the whole Quran to read it offline.",
   },
   {
     screen: "tasbih",
     accent: "violet",
     icon: "📿",
     title: "Tasbih",
+    title_en: "Tasbih",
     body: "Un compteur de dhikr libre et sans limite. Le mieux reste de compter sur les phalanges, comme l'a enseigné le Prophète ﷺ — l'appli le rappelle à l'ouverture.",
+    body_en: "A free, unlimited dhikr counter. It's still best to count on your finger joints, as the Prophet ﷺ taught — the app reminds you of this when you open it.",
   },
   {
     screen: "invocations",
     accent: "clay",
     icon: "🤲",
     title: "Invocations",
+    title_en: "Invocations",
     body: "Une invocation authentique pour chaque moment de la vie, classée par thème, plus un espace pour garder les tiennes.",
+    body_en: "An authentic invocation for every moment of life, organized by topic, plus a space to keep your own.",
   },
   {
     screen: "dashboard",
     accent: "gold",
     icon: "📊",
     title: "Bilan",
+    title_en: "Summary",
     body: "Le résumé de ta journée — et tu peux remonter jour par jour dans l'historique pour voir ce qui a été fait la veille.",
+    body_en: "Your day's summary — and you can go back day by day through the history to see what was done the day before.",
   },
   {
     screen: "settings",
     accent: "indigo",
     icon: "⚙️",
     title: "Réglages",
+    title_en: "Settings",
     body: "Thèmes de couleur, méthode de calcul, iqama, muezzin, sauvegarde de tes données — tout se personnalise ici.",
+    body_en: "Color themes, calculation method, iqama, muezzin, backing up your data — everything is customized here.",
   },
 ];
 
@@ -3566,7 +3602,7 @@ function OnboardingOverlay({ onNavigate, onEnableNotifications, onDismiss }) {
           <button
             key={i}
             onClick={() => setStep(i)}
-            aria-label={`Aller à l'étape ${i + 1}`}
+            aria-label={`${t("go_to_step")} ${i + 1}`}
             style={{ flex: 1, height: 4, borderRadius: 99, background: "rgba(255,255,255,0.28)", overflow: "hidden" }}
           >
             <div
@@ -3618,10 +3654,10 @@ function OnboardingOverlay({ onNavigate, onEnableNotifications, onDismiss }) {
             <span style={{ fontSize: 34 }}>{slide.icon}</span>
           </div>
           <h2 className="font-display font-semibold" style={{ color: COLORS.ink, fontSize: 19, marginTop: 16 }}>
-            {slide.title}
+            {trField(slide, "title")}
           </h2>
           <p className="font-ui mt-2.5" style={{ color: COLORS.inkSoft, fontSize: 13, lineHeight: 1.65, padding: "0 4px" }}>
-            {slide.body}
+            {trField(slide, "body")}
           </p>
         </div>
 
@@ -3654,7 +3690,7 @@ function OnboardingOverlay({ onNavigate, onEnableNotifications, onDismiss }) {
                 onClick={goPrev}
                 className="flex items-center justify-center active:opacity-70"
                 style={{ width: 44, height: 44, borderRadius: 99, background: inkA(0.06), flexShrink: 0 }}
-                aria-label="Étape précédente"
+                aria-label={t("nav_previous")}
               >
                 <ChevronIcon dir="left" color={COLORS.ink} size={16} />
               </button>
@@ -3942,10 +3978,10 @@ function ContinueReadingHomeCard({ onOpen }) {
       </div>
       <div className="flex-1 min-w-0">
         <p className="font-ui font-semibold" style={{ color: COLORS.goldLight, fontSize: 9.5, letterSpacing: 0.4, textTransform: "uppercase" }}>
-          Reprendre la lecture
+          {t("resume_reading")}
         </p>
         <p className="font-display font-semibold truncate" style={{ color: COLORS.ink, fontSize: 14 }}>
-          Sourate {meta.translit} — verset {progress.lastAyah}
+          {t("surah_label")} {meta.translit} — {t("verse_label")} {progress.lastAyah}
         </p>
       </div>
       <ChevronIcon dir="right" color={COLORS.inkSoft} />
@@ -4236,7 +4272,7 @@ function QiblaScreen({ location, onBack }) {
   return (
     <div className="min-h-screen flex flex-col px-5 pt-6 pb-28 fade-in">
       <div className="flex items-center justify-between mb-6">
-        <button onClick={onBack} className="p-2.5 -ml-2 active:opacity-60" aria-label="Retour">
+        <button onClick={onBack} className="p-2.5 -ml-2 active:opacity-60" aria-label={t("back")}>
           <BackIcon color={COLORS.ink} />
         </button>
         <p className="font-display" style={{ color: COLORS.ink, fontSize: 15 }}>
@@ -4246,9 +4282,7 @@ function QiblaScreen({ location, onBack }) {
       </div>
 
       <p className="font-ui text-center mb-8" style={{ color: COLORS.inkSoft, fontSize: 12.5, lineHeight: 1.5 }}>
-        {heading != null
-          ? "Oriente ton téléphone à plat — la flèche pointe vers la Kaaba"
-          : "Direction de la Kaaba depuis " + location.label}
+        {heading != null ? t("qibla_flat_hint") : `${t("qibla_direction_from")} ${location.label}`}
       </p>
 
       <div className="flex-1 flex flex-col items-center justify-center">
@@ -4257,7 +4291,7 @@ function QiblaScreen({ location, onBack }) {
             className="absolute inset-0 rounded-full"
             style={{ background: COLORS.parchment, border: `1px solid ${COLORS.parchmentDark}` }}
           />
-          {["Qibla", "E", "S", "O"].map((label, i) => (
+          {["Qibla", ...(currentLanguage === "ar" ? ["ش", "ج", "غ"] : currentLanguage === "en" ? ["E", "S", "W"] : ["E", "S", "O"])].map((label, i) => (
             <span
               key={label}
               className="font-ui font-semibold absolute"
@@ -4323,10 +4357,18 @@ function QiblaScreen({ location, onBack }) {
         </div>
 
         <p className="font-ui font-semibold mt-8" style={{ color: COLORS.ink, fontSize: 14 }}>
-          {Math.round(bearing)}° depuis le Nord
+          {currentLanguage === "en"
+            ? `${Math.round(bearing)}° from North`
+            : currentLanguage === "ar"
+            ? `${Math.round(bearing)}° من الشمال`
+            : `${Math.round(bearing)}° depuis le Nord`}
         </p>
         <p className="font-ui mt-1" style={{ color: COLORS.inkSoft, fontSize: 12.5 }}>
-          {distanceKm.toLocaleString("fr-FR")} km de la Kaaba
+          {currentLanguage === "en"
+            ? `${distanceKm.toLocaleString("en-US")} km from the Kaaba`
+            : currentLanguage === "ar"
+            ? `${distanceKm.toLocaleString("ar-EG")} كم من الكعبة`
+            : `${distanceKm.toLocaleString("fr-FR")} km de la Kaaba`}
         </p>
 
         {permission === "idle" && (
@@ -4343,19 +4385,17 @@ function QiblaScreen({ location, onBack }) {
               border: `1px solid ${COLORS.parchmentDark}`,
             }}
           >
-            Activer la boussole
+            {t("enable_compass")}
           </button>
         )}
         {permission === "denied" && (
           <p className="font-ui text-center mt-6" style={{ color: COLORS.clay, fontSize: 11.5, lineHeight: 1.5 }}>
-            Accès au capteur d'orientation refusé — la direction ci-dessus reste correcte,
-            {"\n"}oriente-toi avec une boussole classique.
+            {t("compass_denied")}
           </p>
         )}
         {permission === "granted" && heading == null && (
           <p className="font-ui text-center mt-6" style={{ color: COLORS.inkSoft, fontSize: 11.5, lineHeight: 1.5 }}>
-            Capteur de boussole indisponible sur cet appareil — utilise le relèvement ci-dessus
-            {"\n"}avec une boussole classique.
+            {t("compass_unavailable")}
           </p>
         )}
       </div>
@@ -4403,17 +4443,17 @@ function ApresPickerScreen({ prayerCompletion, onBack, onSelectPrayer }) {
   return (
     <div className="min-h-screen flex flex-col px-5 pt-6 pb-8 fade-in">
       <div className="flex items-center justify-between mb-2">
-        <button onClick={onBack} className="p-2.5 -ml-2 active:opacity-60" aria-label="Retour">
+        <button onClick={onBack} className="p-2.5 -ml-2 active:opacity-60" aria-label={t("back")}>
           <BackIcon color={COLORS.ink} />
         </button>
         <p className="font-display" style={{ color: COLORS.ink, fontSize: 15 }}>
-          Après la prière
+          {t("after_prayer_title")}
         </p>
         <div className="w-9" />
       </div>
 
       <p className="font-ui text-center mb-7" style={{ color: COLORS.inkSoft, fontSize: 12.5, lineHeight: 1.5 }}>
-        Choisis la prière que tu viens d'accomplir
+        {t("choose_prayer_done")}
       </p>
 
       <div className="flex flex-col gap-3">
@@ -4447,7 +4487,7 @@ function ApresPickerScreen({ prayerCompletion, onBack, onSelectPrayer }) {
                     </p>
                     {p.enhanced && (
                       <p className="font-ui" style={{ color: COLORS.inkSoft, fontSize: 11, marginTop: 1 }}>
-                        Sourates ×3 · tahlīl ×10
+                        {t("surahs_enhanced")}
                       </p>
                     )}
                   </div>
@@ -4642,7 +4682,7 @@ function DoneScreen({ category, prayerLabel, onHome }) {
           : `${trField(category, "label")} ${t("label_done")}`}
       </p>
       <p className="font-ui" style={{ color: COLORS.inkSoft, fontSize: 13, marginTop: 8, lineHeight: 1.6 }}>
-        Qu'Allah accepte ton dhikr et t'accorde Sa protection.
+        {t("completion_message")}
       </p>
       <button
         onClick={onHome}
@@ -4656,7 +4696,7 @@ function DoneScreen({ category, prayerLabel, onHome }) {
           fontSize: 14,
         }}
       >
-        {prayerLabel ? "Retour aux prières" : "Retour à l'accueil"}
+        {prayerLabel ? t("back_to_prayers") : t("back_to_home")}
       </button>
     </div>
   );
@@ -4665,7 +4705,14 @@ function DoneScreen({ category, prayerLabel, onHome }) {
 /* ------------------------------------------------------------------ */
 /* History screen                                                       */
 /* ------------------------------------------------------------------ */
-const WEEKDAY_LABELS = ["L", "M", "M", "J", "V", "S", "D"];
+const WEEKDAY_LABELS_BY_LANG = {
+  fr: ["L", "M", "M", "J", "V", "S", "D"],
+  en: ["M", "T", "W", "T", "F", "S", "S"],
+  ar: ["ن", "ث", "ر", "خ", "ج", "س", "ح"],
+};
+function weekdayLabels() {
+  return WEEKDAY_LABELS_BY_LANG[currentLanguage] || WEEKDAY_LABELS_BY_LANG.fr;
+}
 
 function HistoryScreen({ history, streak, onBack }) {
   const days = lastDaysLevels(history, 28);
@@ -4682,7 +4729,7 @@ function HistoryScreen({ history, streak, onBack }) {
   return (
     <div className="min-h-screen flex flex-col px-5 pt-6 pb-10 fade-in">
       <div className="flex items-center justify-between mb-6">
-        <button onClick={onBack} className="p-2.5 -ml-2 active:opacity-60" aria-label="Retour">
+        <button onClick={onBack} className="p-2.5 -ml-2 active:opacity-60" aria-label={t("back")}>
           <BackIcon color={COLORS.ink} />
         </button>
         <p className="font-display" style={{ color: COLORS.ink, fontSize: 15 }}>
@@ -4697,7 +4744,7 @@ function HistoryScreen({ history, streak, onBack }) {
           {streak}
         </p>
         <p className="font-ui" style={{ color: COLORS.inkSoft, fontSize: 12, marginTop: 2 }}>
-          {streak > 1 ? "jours d'affilée" : "jour d'affilée"}
+          {streak > 1 ? t("streak_days") : t("streak_day")}
         </p>
       </div>
 
@@ -4710,11 +4757,11 @@ function HistoryScreen({ history, streak, onBack }) {
         }}
       >
         <p className="font-ui font-semibold text-center mb-4" style={{ color: COLORS.inkSoft, fontSize: 12, letterSpacing: 0.4, textTransform: "uppercase" }}>
-          4 dernières semaines
+          {t("last_4_weeks")}
         </p>
 
         <div className="grid grid-cols-7 gap-2 mb-2">
-          {WEEKDAY_LABELS.map((w, i) => (
+          {weekdayLabels().map((w, i) => (
             <p key={i} className="font-ui text-center" style={{ color: COLORS.inkSoft, fontSize: 10, opacity: 0.6 }}>
               {w}
             </p>
@@ -4742,19 +4789,23 @@ function HistoryScreen({ history, streak, onBack }) {
 
         <div className="flex items-center justify-center gap-2 mt-5">
           <span className="font-ui" style={{ color: COLORS.inkSoft, fontSize: 10 }}>
-            Moins
+            {t("less_label")}
           </span>
           {Array.from({ length: CATEGORIES.length + 1 }, (_, lvl) => (
             <div key={lvl} style={{ width: 12, height: 12, borderRadius: 4, ...levelStyle(lvl) }} />
           ))}
           <span className="font-ui" style={{ color: COLORS.inkSoft, fontSize: 10 }}>
-            Plus
+            {t("more_label")}
           </span>
         </div>
       </div>
 
       <p className="font-ui text-center mt-6" style={{ color: COLORS.inkSoft, fontSize: 11, lineHeight: 1.6 }}>
-        Une case pleine = les {CATEGORIES.length} azkar de la journée complétés ce jour-là.
+        {currentLanguage === "en"
+          ? `A full cell = all ${CATEGORIES.length} azkar categories completed that day.`
+          : currentLanguage === "ar"
+          ? `المربع الممتلئ = اكتملت جميع أذكار اليوم (${CATEGORIES.length}) في ذلك اليوم.`
+          : `Une case pleine = les ${CATEGORIES.length} azkar de la journée complétés ce jour-là.`}
       </p>
     </div>
   );
@@ -4802,19 +4853,19 @@ function DashboardScreen({ history, streak }) {
 
   const message = !isToday
     ? activityCount === 0
-      ? "Rien d'enregistré ce jour-là."
+      ? t("msg_nothing_that_day")
       : activityCount >= maxActivity
-      ? "Journée parfaite, qu'Allah ait accepté tes efforts !"
-      : "Voici ce qui a été accompli ce jour-là."
+      ? t("msg_perfect_day_past")
+      : t("msg_summary_that_day")
     : activityCount === 0
-    ? "La journée n'est pas encore commencée — un seul dhikr suffit pour te lancer."
+    ? t("msg_not_started")
     : activityCount >= maxActivity
-    ? "Journée parfaite, qu'Allah accepte tes efforts !"
+    ? t("msg_perfect_day")
     : activityCount >= maxActivity - 1
-    ? "Excellente journée, il ne manque presque plus rien."
+    ? t("msg_excellent_day")
     : activityCount >= CATEGORIES.length / 2
-    ? "Belle progression aujourd'hui, continue sur cette lancée."
-    : "Un bon début — encore un petit effort aujourd'hui.";
+    ? t("msg_good_progress")
+    : t("msg_good_start");
 
   if (!loaded) {
     return (
@@ -4838,18 +4889,18 @@ function DashboardScreen({ history, streak }) {
           </span>
         </div>
         <div className="flex items-center justify-center gap-3 mt-1.5">
-          <button onClick={() => setDayOffset((o) => o - 1)} className="p-1.5 active:opacity-60" aria-label="Jour précédent">
+          <button onClick={() => setDayOffset((o) => o - 1)} className="p-1.5 active:opacity-60" aria-label={t("nav_previous")}>
             <ChevronIcon dir="left" color={COLORS.inkSoft} size={16} />
           </button>
           <p className="font-ui" style={{ color: COLORS.inkSoft, fontSize: 11.5, minWidth: 150, textAlign: "center" }}>
-            {isToday ? "Aujourd'hui" : getGregorianLabel(viewedDate)}
+            {isToday ? t("today") : getGregorianLabel(viewedDate)}
           </p>
           <button
             onClick={() => setDayOffset((o) => Math.min(0, o + 1))}
             disabled={isToday}
             className="p-1.5 active:opacity-60"
             style={{ opacity: isToday ? 0.25 : 1 }}
-            aria-label="Jour suivant"
+            aria-label={t("nav_next")}
           >
             <ChevronIcon dir="right" color={COLORS.inkSoft} size={16} />
           </button>
@@ -4906,10 +4957,18 @@ function DashboardScreen({ history, streak }) {
           </div>
           <div>
             <p className="font-display font-semibold" style={{ color: COLORS.ink, fontSize: 14 }}>
-              {tasbihToday} dhikr récité{tasbihToday > 1 ? "s" : ""}
+              {currentLanguage === "en"
+                ? `${tasbihToday} dhikr recited`
+                : currentLanguage === "ar"
+                ? `${tasbihToday} ذكر تم ترديده`
+                : `${tasbihToday} dhikr récité${tasbihToday > 1 ? "s" : ""}`}
             </p>
             <p className="font-ui" style={{ color: COLORS.inkSoft, fontSize: 11 }}>
-              Toutes formules confondues{isToday ? ", aujourd'hui" : ""}
+              {currentLanguage === "en"
+                ? `All phrases combined${isToday ? ", today" : ""}`
+                : currentLanguage === "ar"
+                ? `جميع الصيغ${isToday ? "، اليوم" : ""}`
+                : `Toutes formules confondues${isToday ? ", aujourd'hui" : ""}`}
             </p>
           </div>
         </div>
@@ -4923,10 +4982,18 @@ function DashboardScreen({ history, streak }) {
           </div>
           <div>
             <p className="font-display font-semibold" style={{ color: COLORS.ink, fontSize: 14 }}>
-              {pagesToday} page{pagesToday > 1 ? "s" : ""} lue{pagesToday > 1 ? "s" : ""}
+              {currentLanguage === "en"
+                ? `${pagesToday} page${pagesToday > 1 ? "s" : ""} read`
+                : currentLanguage === "ar"
+                ? `${pagesToday} صفحة مقروءة`
+                : `${pagesToday} page${pagesToday > 1 ? "s" : ""} lue${pagesToday > 1 ? "s" : ""}`}
             </p>
             <p className="font-ui" style={{ color: COLORS.inkSoft, fontSize: 11 }}>
-              Progression dans le Coran{isToday ? ", aujourd'hui" : ""}
+              {currentLanguage === "en"
+                ? `Quran progress${isToday ? ", today" : ""}`
+                : currentLanguage === "ar"
+                ? `التقدم في القرآن${isToday ? "، اليوم" : ""}`
+                : `Progression dans le Coran${isToday ? ", aujourd'hui" : ""}`}
             </p>
           </div>
         </div>
@@ -4940,10 +5007,14 @@ function DashboardScreen({ history, streak }) {
           </div>
           <div>
             <p className="font-display font-semibold" style={{ color: COLORS.ink, fontSize: 14 }}>
-              {streak} jour{streak > 1 ? "s" : ""} d'affilée
+              {currentLanguage === "en"
+                ? `${streak} day${streak > 1 ? "s" : ""} in a row`
+                : currentLanguage === "ar"
+                ? `${streak} يوم متتالٍ`
+                : `${streak} jour${streak > 1 ? "s" : ""} d'affilée`}
             </p>
             <p className="font-ui" style={{ color: COLORS.inkSoft, fontSize: 11 }}>
-              Azkar matin, soir, coucher et après-prière complétés
+              {t("streak_sublabel")}
             </p>
           </div>
         </div>
@@ -4977,19 +5048,19 @@ function HijriCalendarScreen({ onBack }) {
   return (
     <div className="min-h-screen flex flex-col px-5 pt-6 pb-10 fade-in">
       <div className="flex items-center justify-between mb-6">
-        <button onClick={onBack} className="p-2.5 -ml-2 active:opacity-60" aria-label="Retour">
+        <button onClick={onBack} className="p-2.5 -ml-2 active:opacity-60" aria-label={t("back")}>
           <BackIcon color={COLORS.ink} />
         </button>
         <p className="font-display" style={{ color: COLORS.ink, fontSize: 15 }}>
-          Calendrier
+          {t("title_calendar")}
         </p>
-        <button onClick={goToday} className="p-2.5 -mr-2 active:opacity-60" aria-label="Aujourd'hui">
+        <button onClick={goToday} className="p-2.5 -mr-2 active:opacity-60" aria-label={t("today")}>
           <CategoryIcon type="moon" color={COLORS.goldLight} size={18} />
         </button>
       </div>
 
       <div className="flex items-center justify-between mb-1 px-1">
-        <button onClick={() => goMonth(-1)} className="p-2 active:opacity-60" aria-label="Mois précédent">
+        <button onClick={() => goMonth(-1)} className="p-2 active:opacity-60" aria-label={t("nav_previous")}>
           <ChevronIcon dir="left" color={COLORS.ink} />
         </button>
         <div className="text-center">
@@ -5000,7 +5071,7 @@ function HijriCalendarScreen({ onBack }) {
             {getHijriMonthYearLabel(viewDate)}
           </p>
         </div>
-        <button onClick={() => goMonth(1)} className="p-2 active:opacity-60" aria-label="Mois suivant">
+        <button onClick={() => goMonth(1)} className="p-2 active:opacity-60" aria-label={t("nav_next")}>
           <ChevronIcon dir="right" color={COLORS.ink} />
         </button>
       </div>
@@ -5015,7 +5086,7 @@ function HijriCalendarScreen({ onBack }) {
         }}
       >
         <div className="grid grid-cols-7 gap-1 mb-2">
-          {WEEKDAY_LABELS.map((w, i) => (
+          {weekdayLabels().map((w, i) => (
             <p key={i} className="font-ui text-center" style={{ color: COLORS.inkSoft, fontSize: 10, opacity: 0.6 }}>
               {w}
             </p>
@@ -5219,10 +5290,10 @@ function FingerCountingTip({ onClose }) {
       >
         <span style={{ fontSize: 34 }}>🤲</span>
         <h2 className="font-display" style={{ color: COLORS.ink, fontSize: 18, marginTop: 10 }}>
-          Compter sur les phalanges
+          {t("finger_tip_title")}
         </h2>
         <p className="font-ui mt-2.5" style={{ color: COLORS.inkSoft, fontSize: 13, lineHeight: 1.7 }}>
-          Le mieux reste de compter le dhikr avec les doigts, sur les phalanges — c'est ce que le Prophète ﷺ a enseigné, plutôt qu'un simple compteur. Ce compteur reste un outil pratique, mais garde cette sunna à l'esprit.
+          {t("finger_tip_body")}
         </p>
         <div
           style={{ background: inkA(0.05), border: `1px solid ${inkA(0.12)}`, borderRadius: 14, padding: "12px 14px", marginTop: 14 }}
@@ -5231,10 +5302,10 @@ function FingerCountingTip({ onClose }) {
             اعْقِدْنَ بِالْأَنَامِلِ فَإِنَّهُنَّ مَسْئُولَاتٌ مُسْتَنْطَقَاتٌ
           </p>
           <p className="font-ui mt-2" style={{ color: COLORS.inkSoft, fontSize: 12, lineHeight: 1.6 }}>
-            « Comptez sur les phalanges des doigts, car elles seront interrogées et amenées à parler. »
+            {t("finger_tip_quote")}
           </p>
           <p className="font-ui mt-1.5" style={{ color: COLORS.inkSoft, fontSize: 10.5 }}>
-            Rapporté par Abû Dâwûd et at-Tirmidhî (hadith hasan), d'après Yusayra.
+            {t("finger_tip_source")}
           </p>
         </div>
         <button
@@ -5242,7 +5313,7 @@ function FingerCountingTip({ onClose }) {
           className="mt-5 w-full active:scale-[0.98] transition"
           style={{ background: COLORS.goldLight, color: COLORS.bg, padding: "13px 20px", borderRadius: 14, fontWeight: 700, fontSize: 14 }}
         >
-          J'ai compris
+          {t("done_button")}
         </button>
       </div>
     </div>
@@ -5373,10 +5444,10 @@ function TasbihScreen({ arabicSize }) {
       {showFingerTip && <FingerCountingTip onClose={() => setShowFingerTip(false)} />}
 
       <div className="flex items-center justify-between mb-3">
-        <button onClick={() => setShowFingerTip(true)} className="p-2.5 -ml-2 active:opacity-60" aria-label="Astuce : compter sur les phalanges">
+        <button onClick={() => setShowFingerTip(true)} className="p-2.5 -ml-2 active:opacity-60" aria-label={t("finger_tip")}>
           <InfoIcon color={COLORS.inkSoft} size={18} />
         </button>
-        <button onClick={handleReset} className="p-2.5 -mr-2 active:opacity-60" aria-label="Réinitialiser cette formule">
+        <button onClick={handleReset} className="p-2.5 -mr-2 active:opacity-60" aria-label={t("reset_formula")}>
           <ResetIcon color={COLORS.ink} />
         </button>
       </div>
@@ -5487,7 +5558,7 @@ function TasbihScreen({ arabicSize }) {
           disabled={index === 0}
           className="p-3 rounded-full active:opacity-60"
           style={{ opacity: index === 0 ? 0.25 : 1 }}
-          aria-label="Formule précédente"
+          aria-label={t("nav_previous")}
         >
           <ChevronIcon dir="left" color={COLORS.ink} />
         </button>
@@ -5499,7 +5570,7 @@ function TasbihScreen({ arabicSize }) {
           disabled={index === TASBIH_PHRASES.length - 1}
           className="p-3 rounded-full active:opacity-60"
           style={{ opacity: index === TASBIH_PHRASES.length - 1 ? 0.25 : 1 }}
-          aria-label="Formule suivante"
+          aria-label={t("nav_next")}
         >
           <ChevronIcon dir="right" color={COLORS.ink} />
         </button>
@@ -5645,20 +5716,20 @@ function OfflineQuranDownloadRow() {
     <div style={{ background: inkA(0.05), border: `1px solid ${inkA(0.14)}`, borderRadius: 12, padding: "12px 14px" }}>
       <div className="flex items-center justify-between">
         <span className="font-ui font-semibold" style={{ color: COLORS.ink, fontSize: 13 }}>
-          Coran hors-ligne
+          {t("quran_offline")}
         </span>
         {state === "done" && (
           <span className="font-ui" style={{ color: COLORS.goldLight, fontSize: 10.5 }}>
-            téléchargé ✓
+            {t("downloaded_check")}
           </span>
         )}
       </div>
       <p className="font-ui mt-1" style={{ color: COLORS.inkSoft, fontSize: 11, lineHeight: 1.5 }}>
         {state === "downloading"
-          ? `Téléchargement… ${progress} / ${QURAN_TOTAL_PAGES} pages`
+          ? `${t("downloading_progress")} ${progress} / ${QURAN_TOTAL_PAGES} ${t("pages_label")}`
           : state === "error"
-          ? "Certaines pages n'ont pas pu être téléchargées — réessaie avec une meilleure connexion."
-          : "Précharge les 604 pages du Coran pour les lire sans connexion internet."}
+          ? t("download_error")
+          : t("download_hint")}
       </p>
       {state === "downloading" && (
         <div style={{ height: 5, borderRadius: 99, background: inkA(0.1), marginTop: 8, overflow: "hidden" }}>
@@ -5682,7 +5753,7 @@ function OfflineQuranDownloadRow() {
         }}
       >
         <span className="font-ui font-semibold" style={{ color: state === "downloading" ? COLORS.clay : COLORS.goldLight, fontSize: 12 }}>
-          {state === "downloading" ? "Annuler" : state === "done" ? "Retélécharger" : "Télécharger"}
+          {state === "downloading" ? t("cancel") : state === "done" ? t("redownload") : t("download")}
         </span>
       </button>
     </div>
@@ -5745,7 +5816,7 @@ function DefaultReciterRow() {
         );
       })}
       <p className="font-ui text-center mt-1" style={{ color: COLORS.inkSoft, fontSize: 10.5, lineHeight: 1.5 }}>
-        S'applique à la lecture verset par verset et à l'espace du récitateur — tu peux aussi en choisir un autre directement dans Coran.
+        {t("reciter_applies_hint")}
       </p>
     </div>
   );
@@ -5814,9 +5885,9 @@ function SettingsScreen({
     try {
       const json = await exportBackup();
       downloadBackupFile(json);
-      setBackupStatus({ type: "success", message: "Sauvegarde téléchargée." });
+      setBackupStatus({ type: "success", message: t("backup_downloaded") });
     } catch (e) {
-      setBackupStatus({ type: "error", message: "Échec de l'export." });
+      setBackupStatus({ type: "error", message: t("export_failed") });
     }
   };
 
@@ -5827,10 +5898,10 @@ function SettingsScreen({
     try {
       const text = await file.text();
       await importBackup(text);
-      setBackupStatus({ type: "success", message: "Sauvegarde restaurée — l'app va se recharger." });
+      setBackupStatus({ type: "success", message: t("backup_restored") });
       setTimeout(() => window.location.reload(), 1200);
     } catch (err) {
-      setBackupStatus({ type: "error", message: err.message || "Fichier invalide." });
+      setBackupStatus({ type: "error", message: err.message || t("invalid_file") });
     }
   };
 
@@ -5888,7 +5959,7 @@ function SettingsScreen({
                 key={key}
                 onClick={() => {
                   onSetThemePreference(key);
-                  flashToast("Thème appliqué");
+                  flashToast("✓");
                 }}
                 className="flex-1 active:opacity-80"
                 style={{
@@ -5907,7 +5978,7 @@ function SettingsScreen({
         </div>
 
         <p className="font-ui font-semibold mt-4 mb-2" style={{ color: COLORS.inkSoft, fontSize: 11, letterSpacing: 0.3, textTransform: "uppercase" }}>
-          Couleur d'accent
+          {t("accent_color")}
         </p>
         <div className="flex gap-2">
           {Object.keys(ACCENT_PALETTES).map((key) => {
@@ -5918,7 +5989,7 @@ function SettingsScreen({
                 key={key}
                 onClick={() => {
                   onSetAccentTheme(key);
-                  flashToast("Couleur appliquée");
+                  flashToast("✓");
                 }}
                 className="flex-1 flex flex-col items-center gap-1.5 active:opacity-80"
                 style={{
@@ -5930,7 +6001,7 @@ function SettingsScreen({
               >
                 <div style={{ width: 20, height: 20, borderRadius: 99, background: swatch }} />
                 <span className="font-ui" style={{ color: active ? COLORS.ink : COLORS.inkSoft, fontSize: 10.5, fontWeight: active ? 700 : 500 }}>
-                  {ACCENT_LABELS[key]}
+                  {accentLabels()[key]}
                 </span>
               </button>
             );
@@ -5939,12 +6010,12 @@ function SettingsScreen({
 
         <div className="flex items-center justify-between mt-4" style={{ background: inkA(0.05), border: `1px solid ${inkA(0.14)}`, borderRadius: 12, padding: "11px 14px" }}>
           <span className="font-ui font-semibold" style={{ color: COLORS.ink, fontSize: 13 }}>
-            Vibrations (tasbih)
+            {t("haptics_label")}
           </span>
           <button
             onClick={() => {
               onToggleHaptics(!hapticsEnabled);
-              flashToast(!hapticsEnabled ? "Vibrations activées" : "Vibrations désactivées");
+              flashToast(!hapticsEnabled ? t("haptics_on") : t("haptics_off"));
             }}
             style={{
               width: 42,
@@ -5972,8 +6043,8 @@ function SettingsScreen({
         </div>
       </SettingsAccordionItem>
 
-      {/* Language — UI chrome only for now; azkar/invocation content stays
-          French until translated in a later pass. */}
+      {/* Language — covers UI chrome, azkar/invocation content, and dynamic
+          Quran translations. Arabic mode shows the original text only. */}
       <SettingsAccordionItem
         id="langue"
         icon={<GlobeIcon color={COLORS.gold} size={16} />}
@@ -6033,7 +6104,7 @@ function SettingsScreen({
           </p>
           <div style={{ height: 1, background: COLORS.parchmentDark, margin: "12px 0" }} />
           <p className="font-display" style={{ color: COLORS.inkSoft, fontSize: 13, fontStyle: "italic" }}>
-            Gloire et pureté à Allah, et louange à Lui.
+            {t("text_size_preview_translation")}
           </p>
         </div>
         <div className="flex flex-col gap-2">
@@ -6044,7 +6115,7 @@ function SettingsScreen({
                 key={key}
                 onClick={() => {
                   onSetArabicSize(key);
-                  flashToast("Taille appliquée");
+                  flashToast("✓");
                 }}
                 className="flex items-center justify-between active:opacity-80"
                 style={{
@@ -6055,7 +6126,7 @@ function SettingsScreen({
                 }}
               >
                 <span className="font-ui font-semibold" style={{ color: active ? COLORS.goldLight : COLORS.ink, fontSize: 13.5 }}>
-                  {ARABIC_SIZE_LABELS[key]}
+                  {arabicSizeLabels()[key]}
                 </span>
                 <span className="font-arabic" style={{ color: active ? COLORS.goldLight : inkA(0.7), fontSize: 15 }}>
                   أ
@@ -6065,7 +6136,7 @@ function SettingsScreen({
           })}
         </div>
         <p className="font-ui text-center mt-3" style={{ color: COLORS.inkSoft, fontSize: 10.5, lineHeight: 1.5 }}>
-          S'applique aux azkar du matin, du soir, après la prière, au coucher, et au tasbih libre.
+          {t("text_size_applies_to")}
         </p>
       </SettingsAccordionItem>
 
@@ -6093,12 +6164,10 @@ function SettingsScreen({
               className="font-ui font-semibold"
               style={{ color: prayerSettings.notificationsEnabled ? COLORS.goldLight : COLORS.ink, fontSize: 13.5 }}
             >
-              Rappels aux heures de prière
+              {t("prayer_reminders_label")}
             </p>
             <p className="font-ui" style={{ color: COLORS.inkSoft, fontSize: 11, marginTop: 2 }}>
-              {notificationStatus === "requesting"
-                ? "Demande d'autorisation…"
-                : "Une notification à Fajr, Dohr, Asr, Maghrib et Isha"}
+              {notificationStatus === "requesting" ? t("requesting_permission") : t("notification_per_prayer_hint")}
             </p>
           </div>
           <div
@@ -6128,7 +6197,7 @@ function SettingsScreen({
         </button>
         {notificationStatus === "denied" && (
           <p className="font-ui text-center mt-2.5" style={{ color: COLORS.clay, fontSize: 11 }}>
-            Autorisation refusée — active les notifications pour cette app dans les réglages du téléphone.
+            {t("notif_denied_hint")}
           </p>
         )}
       </SettingsAccordionItem>
@@ -6146,7 +6215,7 @@ function SettingsScreen({
             {location.label}
           </p>
           <p className="font-ui" style={{ color: COLORS.inkSoft, fontSize: 11, marginTop: 2 }}>
-            {location.source === "geo" ? "Position actuelle" : "Position par défaut"}
+            {location.source === "geo" ? t("current_position") : t("default_position")}
           </p>
         </div>
         <button
@@ -6162,18 +6231,18 @@ function SettingsScreen({
           }}
         >
           <span className="font-ui font-semibold" style={{ color: COLORS.goldLight, fontSize: 13 }}>
-            {locationStatus === "loading" ? "Localisation en cours…" : "Utiliser ma position actuelle"}
+            {locationStatus === "loading" ? t("locating_in_progress") : t("use_my_position")}
           </span>
         </button>
         {locationStatus === "error" && (
           <p className="font-ui text-center mt-2" style={{ color: COLORS.clay, fontSize: 11 }}>
-            Localisation indisponible — vérifie que l'accès à ta position est autorisé.
+            {t("location_unavailable")}
           </p>
         )}
         {prayerSettings.location && (
           <button onClick={onResetLocation} className="w-full mt-2 active:opacity-70">
             <span className="font-ui" style={{ color: COLORS.inkSoft, fontSize: 11.5, textDecoration: "underline" }}>
-              Revenir à {DEFAULT_LOCATION.label}
+              {t("back_to")} {DEFAULT_LOCATION.label}
             </span>
           </button>
         )}
@@ -6189,16 +6258,16 @@ function SettingsScreen({
       >
         <div style={{ background: "rgba(231,204,133,0.1)", border: `1px solid ${inkA(0.1)}`, borderRadius: 14, padding: "12px 14px", marginBottom: 12 }}>
           <p className="font-ui font-semibold mb-1.5" style={{ color: COLORS.ink, fontSize: 12.5 }}>
-            Pour caler l'appli sur ta mosquée :
+            {t("calibrate_mosque_title")}
           </p>
           <p className="font-ui" style={{ color: COLORS.inkSoft, fontSize: 11.5, lineHeight: 1.7 }}>
-            1. Choisis « Personnalisée » ci-dessous.
+            {t("calibrate_step1")}
             <br />
-            2. Compare chaque horaire affiché avec celui de ta mosquée.
+            {t("calibrate_step2")}
             <br />
-            3. Utilise + / − pour ajuster chaque prière jusqu'à ce que ça corresponde.
+            {t("calibrate_step3")}
             <br />
-            C'est tout — l'appli continue ensuite d'avancer automatiquement avec les saisons.
+            {t("calibrate_step4")}
           </p>
         </div>
 
@@ -6211,7 +6280,7 @@ function SettingsScreen({
                 key={key}
                 onClick={() => {
                   onSetPrayerMethod(key);
-                  flashToast("Méthode appliquée");
+                  flashToast("✓");
                 }}
                 className="flex items-center justify-between active:opacity-80"
                 style={{
@@ -6223,11 +6292,11 @@ function SettingsScreen({
                 }}
               >
                 <span className="font-ui font-semibold" style={{ color: active ? COLORS.goldLight : COLORS.ink, fontSize: 13 }}>
-                  {m.label}
+                  {trField(m, "label")}
                 </span>
                 <span className="font-ui" style={{ color: active ? COLORS.goldLight : COLORS.inkSoft, fontSize: 10.5 }}>
                   {key === "custom"
-                    ? "réglable"
+                    ? t("adjustable_label")
                     : m.ishaMinutesAfterMaghrib != null
                     ? `Fajr ${m.fajrAngle}°`
                     : `Fajr ${m.fajrAngle}° · Isha ${m.ishaAngle}°`}
@@ -6240,49 +6309,49 @@ function SettingsScreen({
         {isCustomMethod && (
           <div style={{ background: "rgba(0,0,0,0.03)", borderRadius: 14, padding: "14px 14px", marginTop: 10 }}>
             <AngleSlider
-              label="Angle Fajr"
+              label={t("angle_fajr")}
               value={prayerSettings.customFajrAngle}
               onChange={(v) => {
                 onSetCustomAngle("customFajrAngle", v);
-                flashToast("Angle appliqué");
+                flashToast("✓");
               }}
             />
             <div style={{ height: 14 }} />
             <AngleSlider
-              label="Angle Isha"
+              label={t("angle_isha")}
               value={prayerSettings.customIshaAngle}
               onChange={(v) => {
                 onSetCustomAngle("customIshaAngle", v);
-                flashToast("Angle appliqué");
+                flashToast("✓");
               }}
             />
 
             <div style={{ height: 1, background: COLORS.parchmentDark, margin: "16px 0 12px" }} />
 
             <p className="font-ui font-semibold mb-2.5" style={{ color: COLORS.ink, fontSize: 12.5 }}>
-              Ajustement par prière (minutes)
+              {t("per_prayer_adjustment")}
             </p>
             <div className="flex flex-col gap-2">
               {PRAYER_LABELS.map((p) => (
                 <OffsetStepper
                   key={p.key}
-                  label={p.label}
+                  label={prayerLabel(p)}
                   value={(prayerSettings.customOffsets && prayerSettings.customOffsets[p.key]) ?? 0}
                   onChange={(v) => {
                     onSetCustomOffset(p.key, v);
-                    flashToast("Réglage appliqué");
+                    flashToast("✓");
                   }}
                 />
               ))}
             </div>
             <p className="font-ui text-center mt-2.5" style={{ color: COLORS.inkSoft, fontSize: 10.5, lineHeight: 1.5 }}>
-              Compare avec les horaires de ta mosquée puis ajuste minute par minute — le réglage reste appliqué chaque jour, y compris quand les horaires avancent avec les saisons.
+              {t("calibrate_footnote")}
             </p>
           </div>
         )}
 
         <p className="font-ui text-center mt-3" style={{ color: COLORS.inkSoft, fontSize: 10.5, lineHeight: 1.5 }}>
-          L'angle définit à quelle profondeur le soleil doit être sous l'horizon pour marquer Fajr et Isha.
+          {t("angle_explainer")}
         </p>
       </SettingsAccordionItem>
 
@@ -6295,19 +6364,19 @@ function SettingsScreen({
         onToggle={() => toggleSection("iqama")}
       >
         <p className="font-ui mb-3" style={{ color: COLORS.inkSoft, fontSize: 11.5, lineHeight: 1.6 }}>
-          Le délai entre l'appel à la prière (adhan) et le début de la prière en groupe (iqama), affiché sous chaque horaire de l'accueil.
+          {t("iqama_description")}
         </p>
         <div className="flex flex-col gap-2">
           {PRAYER_LABELS.filter((p) => p.key !== "sunrise").map((p) => (
             <OffsetStepper
               key={p.key}
-              label={p.label}
+              label={prayerLabel(p)}
               min={IQAMA_OFFSET_MIN}
               max={IQAMA_OFFSET_MAX}
               value={(prayerSettings.iqamaOffsets && prayerSettings.iqamaOffsets[p.key]) ?? 0}
               onChange={(v) => {
                 onSetIqamaOffset(p.key, v);
-                flashToast("Iqama appliquée");
+                flashToast("✓");
               }}
             />
           ))}
@@ -6316,20 +6385,20 @@ function SettingsScreen({
         <div style={{ height: 1, background: COLORS.parchmentDark, margin: "16px 0 12px" }} />
 
         <p className="font-ui font-semibold mb-1" style={{ color: COLORS.ink, fontSize: 12.5 }}>
-          Voix du muezzin, par prière
+          {t("muezzin_per_prayer")}
         </p>
         <p className="font-ui mb-3" style={{ color: COLORS.inkSoft, fontSize: 11, lineHeight: 1.6 }}>
-          Joue à l'heure de la prière si les rappels sont activés pour cette prière (cloche sur l'accueil).
+          {t("muezzin_hint")}
         </p>
         <div className="flex flex-col gap-2">
           {PRAYER_LABELS.filter((p) => p.key !== "sunrise").map((p) => (
             <MuezzinPicker
               key={p.key}
-              label={p.label}
+              label={prayerLabel(p)}
               voiceId={(prayerSettings.muezzinByPrayer && prayerSettings.muezzinByPrayer[p.key]) || DEFAULT_MUEZZIN}
               onChange={(v) => {
                 onSetMuezzin(p.key, v);
-                flashToast("Voix appliquée");
+                flashToast("✓");
               }}
             />
           ))}
@@ -6365,7 +6434,7 @@ function SettingsScreen({
               {t("data_export")}
             </span>
             <span className="font-ui" style={{ color: COLORS.inkSoft, fontSize: 10.5 }}>
-              fichier .json
+              {t("json_file")}
             </span>
           </button>
           <button
@@ -6384,10 +6453,10 @@ function SettingsScreen({
             style={{ background: inkA(0.05), border: `1px solid ${inkA(0.14)}`, borderRadius: 12, padding: "12px 14px" }}
           >
             <span className="font-ui font-semibold" style={{ color: COLORS.ink, fontSize: 13 }}>
-              {resetDone ? "Azkar du jour réinitialisés ✓" : t("data_reset_today")}
+              {resetDone ? t("today_azkar_reset") : t("data_reset_today")}
             </span>
             <span className="font-ui" style={{ color: COLORS.inkSoft, fontSize: 10.5 }}>
-              si bloqués sur la veille
+              {t("if_stuck_yesterday")}
             </span>
           </button>
           <OfflineQuranDownloadRow />
@@ -6401,7 +6470,7 @@ function SettingsScreen({
           </p>
         )}
         <p className="font-ui text-center mt-2.5" style={{ color: COLORS.inkSoft, fontSize: 10.5, lineHeight: 1.5 }}>
-          Toutes tes données restent uniquement sur cet appareil — exporte une sauvegarde avant de changer de téléphone.
+          {t("data_stays_on_device")}
         </p>
 
         <div style={{ height: 1, background: COLORS.parchmentDark, margin: "16px 0 12px" }} />
@@ -6409,7 +6478,7 @@ function SettingsScreen({
         {confirmingFactoryReset ? (
           <div style={{ background: "rgba(181,101,74,0.1)", border: `1px solid ${COLORS.clay}`, borderRadius: 12, padding: "12px 14px" }}>
             <p className="font-ui font-semibold" style={{ color: COLORS.clay, fontSize: 12.5, lineHeight: 1.5 }}>
-              Tout sera définitivement supprimé : tasbih, invocations personnelles, progression du Coran, réglages. Cette action est irréversible.
+              {t("factory_reset_warning")}
             </p>
             <div className="flex gap-2 mt-3">
               <button
@@ -6418,7 +6487,7 @@ function SettingsScreen({
                 style={{ background: inkA(0.06), borderRadius: 10, padding: "9px 0" }}
               >
                 <span className="font-ui font-semibold" style={{ color: COLORS.ink, fontSize: 12.5 }}>
-                  Annuler
+                  {t("cancel")}
                 </span>
               </button>
               <button
@@ -6427,7 +6496,7 @@ function SettingsScreen({
                 style={{ background: COLORS.clay, borderRadius: 10, padding: "9px 0" }}
               >
                 <span className="font-ui font-semibold" style={{ color: "#fff", fontSize: 12.5 }}>
-                  Tout supprimer
+                  {t("delete_all")}
                 </span>
               </button>
             </div>
@@ -6457,18 +6526,34 @@ function SettingsScreen({
           Mes Azkar
         </p>
         <p className="font-ui" style={{ color: COLORS.inkSoft, fontSize: 12, marginTop: 2 }}>
-          Version {APP_VERSION}
+          {t("version_label")} {APP_VERSION}
         </p>
 
         <p className="font-ui font-semibold mt-4 mb-2" style={{ color: COLORS.inkSoft, fontSize: 11, letterSpacing: 0.3, textTransform: "uppercase" }}>
-          Sources
+          {t("sources_label")}
         </p>
         <div className="flex flex-col gap-1.5">
           {[
-            "Azkar et invocations : Hisn al-Muslim (Sa'id al-Qahtani)",
-            "Traduction du Coran : Muhammad Hamidullah",
-            "Texte et récitations du Coran : Quran.com / Quran Foundation",
-            "Horaires de prière : calcul astronomique effectué sur l'appareil",
+            currentLanguage === "en"
+              ? "Azkar and invocations: Hisn al-Muslim (Sa'id al-Qahtani)"
+              : currentLanguage === "ar"
+              ? "الأذكار والأدعية: حصن المسلم (سعيد بن علي بن وهف القحطاني)"
+              : "Azkar et invocations : Hisn al-Muslim (Sa'id al-Qahtani)",
+            currentLanguage === "en"
+              ? "Quran translation: Sahih International"
+              : currentLanguage === "ar"
+              ? "نص القرآن: مصحف المدينة"
+              : "Traduction du Coran : Muhammad Hamidullah",
+            currentLanguage === "en"
+              ? "Quran text and recitations: Quran.com / Quran Foundation"
+              : currentLanguage === "ar"
+              ? "التلاوات: Quran.com / Quran Foundation"
+              : "Texte et récitations du Coran : Quran.com / Quran Foundation",
+            currentLanguage === "en"
+              ? "Prayer times: astronomical calculation performed on the device"
+              : currentLanguage === "ar"
+              ? "أوقات الصلاة: حساب فلكي يُجرى على الجهاز"
+              : "Horaires de prière : calcul astronomique effectué sur l'appareil",
           ].map((line) => (
             <p key={line} className="font-ui" style={{ color: COLORS.inkSoft, fontSize: 11.5, lineHeight: 1.5 }}>
               {line}
@@ -6492,7 +6577,7 @@ function SettingsScreen({
           style={{ background: inkA(0.05), border: `1px solid ${inkA(0.14)}`, borderRadius: 12, padding: "12px 14px", textDecoration: "none" }}
         >
           <span className="font-ui font-semibold" style={{ color: COLORS.ink, fontSize: 13 }}>
-            Nous contacter
+            {t("contact_us")}
           </span>
           <span className="font-ui" style={{ color: COLORS.inkSoft, fontSize: 10.5 }}>
             {CONTACT_EMAIL}
@@ -6607,7 +6692,7 @@ function PrivacyPolicyScreen({ onBack }) {
   return (
     <div className="min-h-screen flex flex-col px-5 pt-6 pb-10 fade-in">
       <div className="flex items-center justify-between mb-6">
-        <button onClick={onBack} className="p-2.5 -ml-2 active:opacity-60" aria-label="Retour">
+        <button onClick={onBack} className="p-2.5 -ml-2 active:opacity-60" aria-label={t("back")}>
           <BackIcon color={COLORS.ink} />
         </button>
         <p className="font-display" style={{ color: COLORS.ink, fontSize: 15 }}>
@@ -6617,7 +6702,7 @@ function PrivacyPolicyScreen({ onBack }) {
       </div>
 
       <p className="font-ui text-center mb-6" style={{ color: COLORS.inkSoft, fontSize: 11.5 }}>
-        Dernière mise à jour : août 2026
+        {t("last_updated")} {t("last_updated_date")}
       </p>
 
       <div className="flex flex-col gap-4">
@@ -6657,7 +6742,7 @@ function MuezzinPicker({ label, voiceId, onChange }) {
           onClick={() => cycle(-1)}
           className="flex items-center justify-center active:opacity-60"
           style={{ width: 24, height: 24, borderRadius: 8, background: inkA(0.08) }}
-          aria-label={`${label} : voix précédente`}
+          aria-label={`${label} : ${t("nav_previous")}`}
         >
           <ChevronIcon dir="left" color={COLORS.ink} size={13} />
         </button>
@@ -6668,7 +6753,7 @@ function MuezzinPicker({ label, voiceId, onChange }) {
           onClick={() => cycle(1)}
           className="flex items-center justify-center active:opacity-60"
           style={{ width: 24, height: 24, borderRadius: 8, background: inkA(0.08) }}
-          aria-label={`${label} : voix suivante`}
+          aria-label={`${label} : ${t("nav_next")}`}
         >
           <ChevronIcon dir="right" color={COLORS.ink} size={13} />
         </button>
@@ -6690,7 +6775,7 @@ function OffsetStepper({ label, value, onChange, min = CUSTOM_OFFSET_MIN, max = 
           disabled={value <= min}
           className="flex items-center justify-center active:opacity-60"
           style={{ width: 24, height: 24, borderRadius: 8, background: inkA(0.08), opacity: value <= min ? 0.4 : 1 }}
-          aria-label={`${label} : diminuer d'une minute`}
+          aria-label={`${label} : ${t("decrease_minute")}`}
         >
           <span className="font-ui font-semibold" style={{ color: COLORS.ink, fontSize: 14, lineHeight: 1 }}>
             −
@@ -6704,7 +6789,7 @@ function OffsetStepper({ label, value, onChange, min = CUSTOM_OFFSET_MIN, max = 
           disabled={value >= max}
           className="flex items-center justify-center active:opacity-60"
           style={{ width: 24, height: 24, borderRadius: 8, background: inkA(0.08), opacity: value >= max ? 0.4 : 1 }}
-          aria-label={`${label} : augmenter d'une minute`}
+          aria-label={`${label} : ${t("increase_minute")}`}
         >
           <span className="font-ui font-semibold" style={{ color: COLORS.ink, fontSize: 14, lineHeight: 1 }}>
             +
@@ -6754,7 +6839,7 @@ function InvocationsLibraryScreen({ onSelectTopic, onOpenPersonal }) {
       </div>
 
       <p className="font-ui text-center mb-6" style={{ color: COLORS.inkSoft, fontSize: 12.5, lineHeight: 1.5 }}>
-        Une invocation authentique pour chaque moment de la vie
+        {t("invocations_subtitle")}
       </p>
 
       {/* Personal invocations entry, kept separate at the top */}
@@ -6773,10 +6858,10 @@ function InvocationsLibraryScreen({ onSelectTopic, onOpenPersonal }) {
           <span style={{ fontSize: 22 }}>✍️</span>
           <div>
             <p className="font-display font-semibold" style={{ color: COLORS.ink, fontSize: 14.5 }}>
-              Mes invocations personnelles
+              {t("my_personal_invocations")}
             </p>
             <p className="font-ui" style={{ color: COLORS.inkSoft, fontSize: 11.5, marginTop: 1 }}>
-              Ajoute et garde tes propres duas
+              {t("add_keep_duas")}
             </p>
           </div>
         </div>
@@ -6995,14 +7080,14 @@ function RabbanaContent({ arabicSize }) {
   if (status === "loading") {
     return (
       <p className="font-ui text-center mt-10" style={{ color: COLORS.inkSoft, fontSize: 13 }}>
-        Chargement des versets…
+        {t("loading_verses")}
       </p>
     );
   }
   if (status === "error") {
     return (
       <p className="font-ui text-center mt-10 px-4" style={{ color: COLORS.inkSoft, fontSize: 13, lineHeight: 1.6 }}>
-        Impossible de charger les versets. Vérifie ta connexion internet, puis réessaie.
+        {t("error_load_verses")}
       </p>
     );
   }
@@ -7065,7 +7150,7 @@ function InvocationTopicScreen({ topicId, arabicSize, onBack }) {
   return (
     <div className="min-h-screen flex flex-col px-5 pt-6 pb-10 fade-in">
       <div className="flex items-center justify-between mb-6">
-        <button onClick={onBack} className="p-2.5 -ml-2 active:opacity-60" aria-label="Retour">
+        <button onClick={onBack} className="p-2.5 -ml-2 active:opacity-60" aria-label={t("back")}>
           <BackIcon color={COLORS.ink} />
         </button>
         <div className="flex items-center gap-2">
@@ -7162,7 +7247,7 @@ function PersonalInvocationsScreen({ onBack }) {
       setFormError(true);
       return;
     }
-    const next = [{ id: `p${Date.now()}`, title: title.trim() || "Sans titre", text: text.trim() }, ...entries];
+    const next = [{ id: `p${Date.now()}`, title: title.trim() || t("untitled"), text: text.trim() }, ...entries];
     setEntries(next);
     persistEntries(next);
     setTitle("");
@@ -7181,7 +7266,7 @@ function PersonalInvocationsScreen({ onBack }) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <span className="font-ui" style={{ color: COLORS.ink, opacity: 0.7 }}>
-          Chargement…
+          {t("loading")}
         </span>
       </div>
     );
@@ -7190,11 +7275,11 @@ function PersonalInvocationsScreen({ onBack }) {
   return (
     <div className="min-h-screen flex flex-col px-5 pt-6 pb-10 fade-in">
       <div className="flex items-center justify-between mb-6">
-        <button onClick={onBack} className="p-2.5 -ml-2 active:opacity-60" aria-label="Retour">
+        <button onClick={onBack} className="p-2.5 -ml-2 active:opacity-60" aria-label={t("back")}>
           <BackIcon color={COLORS.ink} />
         </button>
         <p className="font-display" style={{ color: COLORS.ink, fontSize: 15 }}>
-          Mes invocations
+          {t("title_my_invocations")}
         </p>
         <button onClick={() => setShowForm((s) => !s)} className="p-2.5 -mr-2 active:opacity-60">
           <span style={{ color: COLORS.goldLight, fontSize: 22, lineHeight: 1 }}>{showForm ? "×" : "+"}</span>
@@ -7212,7 +7297,7 @@ function PersonalInvocationsScreen({ onBack }) {
               setTitle(e.target.value);
               setFormError(false);
             }}
-            placeholder="Titre (ex : pour un examen)"
+            placeholder={t("personal_title_placeholder")}
             className="font-ui w-full"
             style={{
               background: "rgba(0,0,0,0.04)",
@@ -7231,7 +7316,7 @@ function PersonalInvocationsScreen({ onBack }) {
               setText(e.target.value);
               setFormError(false);
             }}
-            placeholder="Ton invocation, en arabe ou en français…"
+            placeholder={t("personal_text_placeholder")}
             rows={4}
             className="font-ui w-full"
             style={{
@@ -7247,7 +7332,7 @@ function PersonalInvocationsScreen({ onBack }) {
           />
           {formError && (
             <p className="font-ui mt-2" style={{ color: COLORS.clay, fontSize: 11.5 }}>
-              Ajoute au moins un titre ou un texte avant d'enregistrer.
+              {t("personal_form_error")}
             </p>
           )}
           <button
@@ -7263,15 +7348,15 @@ function PersonalInvocationsScreen({ onBack }) {
               width: "100%",
             }}
           >
-            Enregistrer
+            {t("save")}
           </button>
         </div>
       )}
 
       {entries.length === 0 && !showForm && (
         <p className="font-ui text-center mt-10" style={{ color: COLORS.inkSoft, fontSize: 13, lineHeight: 1.6 }}>
-          Aucune invocation personnelle pour l'instant.
-          {"\n"}Touche le + pour en ajouter une.
+          {t("personal_empty")}
+          {"\n"}{t("personal_empty_hint")}
         </p>
       )}
 
@@ -7285,7 +7370,7 @@ function PersonalInvocationsScreen({ onBack }) {
               <p className="font-display font-semibold" style={{ color: COLORS.ink, fontSize: 14 }}>
                 {e.title}
               </p>
-              <button onClick={() => handleDelete(e.id)} className="active:opacity-60 flex-shrink-0" aria-label="Supprimer">
+              <button onClick={() => handleDelete(e.id)} className="active:opacity-60 flex-shrink-0" aria-label={t("delete")}>
                 <ResetIcon color={COLORS.inkSoft} />
               </button>
             </div>
@@ -7310,13 +7395,41 @@ function PersonalInvocationsScreen({ onBack }) {
 // the hub's suggestion actually matches what it's labeled as — not just any
 // virtuous surah, but ones meant to be recited before sleeping.
 const RECOMMENDED_ROTATION = [
-  { number: 2, reason: "Āyat al-Kursī et ses deux derniers versets protègent celui qui les récite la nuit (rapporté par Al-Bukhari et Muslim)." },
-  { number: 32, reason: "Récitée avec Al-Mulk avant de dormir (rapporté par At-Tirmidhi)." },
-  { number: 67, reason: "Le Prophète ﷺ la récitait chaque soir avant de dormir (rapporté par At-Tirmidhi)." },
-  { number: 109, reason: "Récitée avant de dormir comme désaveu du polythéisme (rapporté par Abu Dawud et At-Tirmidhi)." },
-  { number: 112, reason: "Récitée avec Al-Falaq et An-Nās, soufflée dans les mains et passée sur le corps avant de dormir (rapporté par Al-Bukhari)." },
-  { number: 113, reason: "Récitée avec Al-Ikhlās et An-Nās avant de dormir (rapporté par Al-Bukhari)." },
-  { number: 114, reason: "Récitée avec Al-Ikhlās et Al-Falaq avant de dormir (rapporté par Al-Bukhari)." },
+  {
+    number: 2,
+    reason: "Āyat al-Kursī et ses deux derniers versets protègent celui qui les récite la nuit (rapporté par Al-Bukhari et Muslim).",
+    reason_en: "Ayat al-Kursi and its last two verses protect whoever recites them at night (narrated by al-Bukhari and Muslim).",
+  },
+  {
+    number: 32,
+    reason: "Récitée avec Al-Mulk avant de dormir (rapporté par At-Tirmidhi).",
+    reason_en: "Recited with Al-Mulk before sleeping (narrated by at-Tirmidhi).",
+  },
+  {
+    number: 67,
+    reason: "Le Prophète ﷺ la récitait chaque soir avant de dormir (rapporté par At-Tirmidhi).",
+    reason_en: "The Prophet ﷺ recited it every night before sleeping (narrated by at-Tirmidhi).",
+  },
+  {
+    number: 109,
+    reason: "Récitée avant de dormir comme désaveu du polythéisme (rapporté par Abu Dawud et At-Tirmidhi).",
+    reason_en: "Recited before sleeping as a disavowal of polytheism (narrated by Abu Dawud and at-Tirmidhi).",
+  },
+  {
+    number: 112,
+    reason: "Récitée avec Al-Falaq et An-Nās, soufflée dans les mains et passée sur le corps avant de dormir (rapporté par Al-Bukhari).",
+    reason_en: "Recited with Al-Falaq and An-Nas, blown into the hands and wiped over the body before sleeping (narrated by al-Bukhari).",
+  },
+  {
+    number: 113,
+    reason: "Récitée avec Al-Ikhlās et An-Nās avant de dormir (rapporté par Al-Bukhari).",
+    reason_en: "Recited with Al-Ikhlas and An-Nas before sleeping (narrated by al-Bukhari).",
+  },
+  {
+    number: 114,
+    reason: "Récitée avec Al-Ikhlās et Al-Falaq avant de dormir (rapporté par Al-Bukhari).",
+    reason_en: "Recited with Al-Ikhlas and Al-Falaq before sleeping (narrated by al-Bukhari).",
+  },
 ];
 function getRecommendedSurah() {
   return RECOMMENDED_ROTATION[dayOfYear(new Date()) % RECOMMENDED_ROTATION.length];
@@ -7351,7 +7464,7 @@ function QuranHomeScreen({ onOpenSurahs, onOpenMushaf, onOpenReciters, onResumeR
     return (
       <div className="min-h-screen flex items-center justify-center">
         <span className="font-ui" style={{ color: COLORS.ink, opacity: 0.7 }}>
-          Chargement…
+          {t("loading")}
         </span>
       </div>
     );
@@ -7379,10 +7492,10 @@ function QuranHomeScreen({ onOpenSurahs, onOpenMushaf, onOpenReciters, onResumeR
           <MiniRing pct={lastSurahPct} color={COLORS.goldLight} done={lastSurahPct >= 1} size={40} />
           <div className="flex-1 min-w-0">
             <p className="font-ui font-semibold" style={{ color: COLORS.goldLight, fontSize: 10.5, letterSpacing: 0.5, textTransform: "uppercase" }}>
-              Reprendre la lecture
+              {t("resume_reading")}
             </p>
             <p className="font-display font-semibold mt-0.5 truncate" style={{ color: COLORS.ink, fontSize: 15 }}>
-              {lastSurahMeta.translit} — verset {progress.lastAyah}
+              {lastSurahMeta.translit} — {t("verse_label")} {progress.lastAyah}
             </p>
           </div>
           <ChevronIcon dir="right" color={COLORS.inkSoft} />
@@ -7393,10 +7506,10 @@ function QuranHomeScreen({ onOpenSurahs, onOpenMushaf, onOpenReciters, onResumeR
           style={{ background: inkA(0.07), border: `1px solid ${inkA(0.14)}`, borderRadius: 18, padding: "16px 16px" }}
         >
           <p className="font-display font-semibold" style={{ color: COLORS.ink, fontSize: 14 }}>
-            Bismillah, commence ta lecture
+            {t("bismillah_start")}
           </p>
           <p className="font-ui mt-1" style={{ color: COLORS.inkSoft, fontSize: 11.5 }}>
-            Choisis une sourate pour débuter
+            {t("choose_surah_start")}
           </p>
         </div>
       )}
@@ -7446,13 +7559,13 @@ function QuranHomeScreen({ onOpenSurahs, onOpenMushaf, onOpenReciters, onResumeR
           </div>
           <div className="flex-1 min-w-0">
             <p className="font-ui font-semibold" style={{ color: COLORS.violetLight, fontSize: 10.5, letterSpacing: 0.4, textTransform: "uppercase" }}>
-              Sourate recommandée avant de dormir
+              {t("recommended_bedtime_surah")}
             </p>
             <p className="font-display font-semibold mt-0.5" style={{ color: COLORS.ink, fontSize: 14 }}>
               {recommendedMeta.translit} <span dir="rtl" className="font-arabic">{recommendedMeta.arabic}</span>
             </p>
             <p className="font-ui mt-1" style={{ color: COLORS.inkSoft, fontSize: 11, lineHeight: 1.5 }}>
-              {recommended.reason}
+              {trField(recommended, "reason")}
             </p>
           </div>
         </button>
@@ -7492,7 +7605,7 @@ function SurahListScreen({ onSelectSurah, onBack }) {
   return (
     <div className="min-h-screen flex flex-col px-5 pt-6 pb-10 fade-in">
       <div className="flex items-center justify-between mb-4">
-        <button onClick={onBack} className="p-2.5 -ml-2 active:opacity-60" aria-label="Retour">
+        <button onClick={onBack} className="p-2.5 -ml-2 active:opacity-60" aria-label={t("back")}>
           <BackIcon color={COLORS.ink} />
         </button>
         <p className="font-display" style={{ color: COLORS.ink, fontSize: 15 }}>
@@ -7509,7 +7622,7 @@ function SurahListScreen({ onSelectSurah, onBack }) {
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Chercher une sourate…"
+          placeholder={t("search_surah")}
           className="font-ui flex-1 bg-transparent outline-none"
           style={{ color: COLORS.ink, fontSize: 13 }}
         />
@@ -7540,7 +7653,7 @@ function SurahListScreen({ onSelectSurah, onBack }) {
                     {s.translit}
                   </p>
                   <p className="font-ui" style={{ color: COLORS.inkSoft, fontSize: 11, marginTop: 1 }}>
-                    {s.meaning} · {s.ayahCount} versets
+                    {s.meaning} · {s.ayahCount} {t("verses_label")}
                   </p>
                 </div>
               </div>
@@ -7555,7 +7668,7 @@ function SurahListScreen({ onSelectSurah, onBack }) {
         })}
         {filtered.length === 0 && (
           <p className="font-ui text-center mt-6" style={{ color: COLORS.inkSoft, fontSize: 12.5 }}>
-            Aucune sourate ne correspond à "{query}"
+            {t("no_surah_match")} "{query}"
           </p>
         )}
       </div>
@@ -7675,7 +7788,7 @@ function RecitersScreen({ onBack, onOpenReciterSpace }) {
   return (
     <div className="min-h-screen flex flex-col px-5 pt-6 pb-10 fade-in">
       <div className="flex items-center justify-between mb-1">
-        <button onClick={onBack} className="p-2.5 -ml-2 active:opacity-60" aria-label="Retour">
+        <button onClick={onBack} className="p-2.5 -ml-2 active:opacity-60" aria-label={t("back")}>
           <BackIcon color={COLORS.ink} />
         </button>
         <p className="font-display" style={{ color: COLORS.ink, fontSize: 15 }}>
@@ -7684,11 +7797,11 @@ function RecitersScreen({ onBack, onOpenReciterSpace }) {
         <div className="w-9" />
       </div>
       <p className="font-ui text-center mb-5 px-2" style={{ color: COLORS.inkSoft, fontSize: 11.5, lineHeight: 1.5 }}>
-        {RECITERS.length} voix disponibles — touche une carte pour entrer dans son espace et lire le Coran avec sa récitation
+        {RECITERS.length} {t("reciters_available")}
       </p>
 
       <p className="font-ui font-semibold mb-2.5" style={{ color: COLORS.goldLight, fontSize: 11.5, letterSpacing: 0.4, textTransform: "uppercase" }}>
-        Les plus suivis
+        {t("most_followed")}
       </p>
       <div className="grid grid-cols-2 gap-2.5 mb-6">
         {popular.map((r) => (
@@ -7697,7 +7810,7 @@ function RecitersScreen({ onBack, onOpenReciterSpace }) {
       </div>
 
       <p className="font-ui font-semibold mb-2.5" style={{ color: COLORS.inkSoft, fontSize: 11.5, letterSpacing: 0.4, textTransform: "uppercase" }}>
-        Autres récitateurs
+        {t("other_reciters")}
       </p>
       <div className="grid grid-cols-2 gap-2.5">
         {others.map((r) => (
@@ -7715,11 +7828,11 @@ function ReciterSpaceScreen({ reciterId, onBack, onSelectSurah }) {
   return (
     <div className="min-h-screen flex flex-col px-5 pt-6 pb-10 fade-in">
       <div className="flex items-center justify-between mb-5">
-        <button onClick={onBack} className="p-2.5 -ml-2 active:opacity-60" aria-label="Retour">
+        <button onClick={onBack} className="p-2.5 -ml-2 active:opacity-60" aria-label={t("back")}>
           <BackIcon color={COLORS.ink} />
         </button>
         <p className="font-display" style={{ color: COLORS.ink, fontSize: 15 }}>
-          Espace récitateur
+          {t("reciter_space")}
         </p>
         <div className="w-9" />
       </div>
@@ -7736,7 +7849,7 @@ function ReciterSpaceScreen({ reciterId, onBack, onSelectSurah }) {
           <AudioPlayButton src={reciterAudioUrl(r.id, 1)} color={COLORS.goldLight} size={36} />
         </div>
         <p className="font-ui mt-2" style={{ color: COLORS.inkSoft, fontSize: 11 }}>
-          114 sourates · choisis-en une pour lire et écouter
+          {t("114_surahs_choose")}
         </p>
       </div>
 
@@ -7762,7 +7875,7 @@ function ReciterSpaceScreen({ reciterId, onBack, onSelectSurah }) {
                   {s.translit}
                 </p>
                 <p className="font-ui" style={{ color: COLORS.inkSoft, fontSize: 11, marginTop: 1 }}>
-                  {s.meaning} · {s.ayahCount} versets
+                  {s.meaning} · {s.ayahCount} {t("verses_label")}
                 </p>
               </div>
             </div>
@@ -7965,7 +8078,7 @@ function QuranReaderScreen({ surahNumber, arabicSize, onBack, onChangeSurah, onO
       )}
 
       <div className="flex items-center justify-between mb-2">
-        <button onClick={onBack} className="p-2.5 -ml-2 active:opacity-60" aria-label="Retour">
+        <button onClick={onBack} className="p-2.5 -ml-2 active:opacity-60" aria-label={t("back")}>
           <BackIcon color={COLORS.ink} />
         </button>
         <div className="text-center">
@@ -7985,7 +8098,7 @@ function QuranReaderScreen({ surahNumber, arabicSize, onBack, onChangeSurah, onO
           disabled={surahNumber <= 1}
           className="p-2.5 active:opacity-60"
           style={{ opacity: surahNumber <= 1 ? 0.3 : 1 }}
-          aria-label="Sourate précédente"
+          aria-label={t("nav_previous")}
         >
           <ChevronIcon dir="left" color={COLORS.ink} />
         </button>
@@ -8000,7 +8113,7 @@ function QuranReaderScreen({ surahNumber, arabicSize, onBack, onChangeSurah, onO
           disabled={surahNumber >= 114}
           className="p-2.5 active:opacity-60"
           style={{ opacity: surahNumber >= 114 ? 0.3 : 1 }}
-          aria-label="Sourate suivante"
+          aria-label={t("nav_next")}
         >
           <ChevronIcon dir="right" color={COLORS.ink} />
         </button>
@@ -8018,7 +8131,7 @@ function QuranReaderScreen({ surahNumber, arabicSize, onBack, onChangeSurah, onO
           }}
           className="flex items-center justify-center active:opacity-60 flex-shrink-0"
           style={{ width: 36, height: 36, borderRadius: 99, background: "rgba(0,0,0,0.05)" }}
-          aria-label={playingAyah !== null ? "Mettre en pause la récitation" : "Écouter la sourate"}
+          aria-label={playingAyah !== null ? t("pause_recitation") : t("play_surah")}
         >
           {playingAyah !== null ? (
             <PauseIcon color={COLORS.goldLight} size={16} />
@@ -8042,25 +8155,25 @@ function QuranReaderScreen({ surahNumber, arabicSize, onBack, onChangeSurah, onO
             className="font-ui font-semibold flex items-center gap-1"
             style={{ color: COLORS.goldLight, fontSize: 11, padding: "5px 10px", borderRadius: 99, background: "rgba(231,204,133,0.16)" }}
           >
-            Changer
+            {t("change_label")}
             <ChevronIcon dir="right" color={COLORS.goldLight} size={12} />
           </span>
         </button>
       </div>
 
       <p className="font-ui text-center mb-5" style={{ color: COLORS.inkSoft, fontSize: 11, letterSpacing: 0.3 }}>
-        Récitation — pour lire la page imprimée du Mushaf, ouvre l'onglet « Mushaf » depuis le Coran
+        {t("recitation_mushaf_hint")}
       </p>
 
       {status === "loading" && (
         <p className="font-ui text-center mt-10" style={{ color: COLORS.inkSoft, fontSize: 13 }}>
-          Chargement de la sourate…
+          {t("loading_surah")}
         </p>
       )}
 
       {status === "error" && (
         <p className="font-ui text-center mt-10 px-4" style={{ color: COLORS.inkSoft, fontSize: 13, lineHeight: 1.6 }}>
-          Impossible de charger cette sourate. Vérifie ta connexion internet, puis réessaie.
+          {t("error_load_surah")}
         </p>
       )}
 
@@ -8103,7 +8216,7 @@ function QuranReaderScreen({ surahNumber, arabicSize, onBack, onChangeSurah, onO
                       onClick={() => (isPlaying ? stopPlayback() : playAyah(a))}
                       className="flex items-center justify-center active:opacity-60"
                       style={{ width: 22, height: 22, borderRadius: 99, background: "rgba(0,0,0,0.05)" }}
-                      aria-label={isPlaying ? "Mettre en pause" : "Écouter à partir de ce verset"}
+                      aria-label={isPlaying ? t("pause_label") : t("play_from_verse")}
                     >
                       {isPlaying ? (
                         <PauseIcon color={COLORS.goldLight} size={10} />
@@ -8187,34 +8300,34 @@ function MushafJumpOverlay({ onSelectSurah, onSelectJuz, onSelectBookmark, onDel
   return (
     <div className="fixed inset-0 flex flex-col fade-in" style={{ background: COLORS.bg, zIndex: 60 }}>
       <div className="flex items-center justify-between px-5 pt-6 pb-3">
-        <button onClick={onClose} className="p-2.5 -ml-2 active:opacity-60" aria-label="Fermer">
+        <button onClick={onClose} className="p-2.5 -ml-2 active:opacity-60" aria-label={t("close")}>
           <BackIcon color={COLORS.ink} />
         </button>
         <p className="font-display" style={{ color: COLORS.ink, fontSize: 15 }}>
-          Aller à…
+          {t("go_to_ellipsis")}
         </p>
         <div className="w-9" />
       </div>
 
       <div className="flex px-5 gap-2 mb-4">
         {[
-          { id: "surah", label: "Sourate" },
-          { id: "juz", label: "Juz" },
-          { id: "bookmarks", label: "Signets" },
-        ].map((t) => (
+          { id: "surah", label: t("tab_surah") },
+          { id: "juz", label: t("tab_juz") },
+          { id: "bookmarks", label: t("tab_bookmarks") },
+        ].map((opt) => (
           <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
+            key={opt.id}
+            onClick={() => setTab(opt.id)}
             className="flex-1 font-ui font-semibold active:opacity-80"
             style={{
               padding: "9px 0",
               borderRadius: 12,
               fontSize: 13,
-              background: tab === t.id ? COLORS.goldLight : inkA(0.06),
-              color: tab === t.id ? COLORS.bg : COLORS.inkSoft,
+              background: tab === opt.id ? COLORS.goldLight : inkA(0.06),
+              color: tab === opt.id ? COLORS.bg : COLORS.inkSoft,
             }}
           >
-            {t.label}
+            {opt.label}
           </button>
         ))}
       </div>
@@ -8229,7 +8342,7 @@ function MushafJumpOverlay({ onSelectSurah, onSelectJuz, onSelectBookmark, onDel
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Chercher une sourate…"
+              placeholder={t("search_surah")}
               className="font-ui flex-1 bg-transparent outline-none"
               style={{ color: COLORS.ink, fontSize: 13 }}
             />
@@ -8256,7 +8369,7 @@ function MushafJumpOverlay({ onSelectSurah, onSelectJuz, onSelectBookmark, onDel
                       {s.translit}
                     </p>
                     <p className="font-ui" style={{ color: COLORS.inkSoft, fontSize: 11, marginTop: 1 }}>
-                      {s.meaning} · {s.ayahCount} versets
+                      {s.meaning} · {s.ayahCount} {t("verses_label")}
                     </p>
                   </div>
                 </div>
@@ -8293,7 +8406,7 @@ function MushafJumpOverlay({ onSelectSurah, onSelectJuz, onSelectBookmark, onDel
         <div className="flex-1 overflow-y-auto px-5 pb-8">
           {bookmarks.length === 0 ? (
             <p className="font-ui text-center mt-10" style={{ color: COLORS.inkSoft, fontSize: 12.5, lineHeight: 1.6 }}>
-              Aucun signet — touche l'étoile en bas de la page pour en ajouter un.
+              {t("no_bookmarks")}
             </p>
           ) : (
             <div className="flex flex-col gap-2">
@@ -8307,15 +8420,15 @@ function MushafJumpOverlay({ onSelectSurah, onSelectJuz, onSelectBookmark, onDel
                   >
                     <button onClick={() => onSelectBookmark(b.page)} className="flex-1 text-left active:opacity-70">
                       <p className="font-display font-semibold" style={{ color: COLORS.ink, fontSize: 14 }}>
-                        Page {b.page}
+                        {t("page_label")} {b.page}
                       </p>
                       {meta && (
                         <p className="font-ui" style={{ color: COLORS.inkSoft, fontSize: 11, marginTop: 1 }}>
-                          Sourate {meta.translit}
+                          {t("surah_label")} {meta.translit}
                         </p>
                       )}
                     </button>
-                    <button onClick={() => onDeleteBookmark(b.page)} className="p-2 active:opacity-60" aria-label="Supprimer ce signet">
+                    <button onClick={() => onDeleteBookmark(b.page)} className="p-2 active:opacity-60" aria-label={t("delete_bookmark")}>
                       <TrashIcon color={COLORS.clay} size={16} />
                     </button>
                   </div>
@@ -8599,7 +8712,7 @@ function MushafPageView({ initialPage, persistKey, showHeader = false, onBack })
           onClick={onBack}
           className="absolute active:opacity-60"
           style={{ top: 8, left: 8, zIndex: 5, padding: 8, borderRadius: 99, background: inkA(0.06) }}
-          aria-label="Retour"
+          aria-label={t("back")}
         >
           <BackIcon color={COLORS.ink} />
         </button>
@@ -8608,13 +8721,13 @@ function MushafPageView({ initialPage, persistKey, showHeader = false, onBack })
       <div ref={pageContainerRef} className="flex-1" style={{ overflow: "hidden" }}>
         {status === "loading" && (
           <p className="font-ui text-center mt-16" style={{ color: COLORS.inkSoft, fontSize: 13 }}>
-            Chargement de la page…
+            {t("loading_page")}
           </p>
         )}
 
         {status === "error" && (
           <p className="font-ui text-center mt-16 px-4" style={{ color: COLORS.inkSoft, fontSize: 13, lineHeight: 1.6 }}>
-            Impossible de charger cette page. Vérifie ta connexion internet, puis réessaie.
+            {t("error_load_page")}
           </p>
         )}
 
@@ -8626,7 +8739,7 @@ function MushafPageView({ initialPage, persistKey, showHeader = false, onBack })
               style={{ paddingBottom: 10, paddingLeft: showHeader ? 40 : undefined, borderBottom: `1px solid ${inkA(0.1)}` }}
             >
               <span className="font-display font-semibold" style={{ color: COLORS.ink, fontSize: 15 }}>
-                Sourate {headerSurahTranslit}
+                {t("surah_label")} {headerSurahTranslit}
               </span>
               {headerJuz && (
                 <span className="font-ui" style={{ color: COLORS.inkSoft, fontSize: 12 }}>
@@ -8691,7 +8804,7 @@ function MushafPageView({ initialPage, persistKey, showHeader = false, onBack })
                 onClick={handleToggleBookmark}
                 className="p-1.5 active:opacity-70"
                 style={{ borderRadius: 99, background: isBookmarked ? "rgba(231,204,133,0.16)" : inkA(0.06) }}
-                aria-label={isBookmarked ? "Retirer ce signet" : "Ajouter un signet sur cette page"}
+                aria-label={isBookmarked ? t("remove_bookmark") : t("add_bookmark")}
               >
                 <StarIcon color={isBookmarked ? COLORS.goldLight : COLORS.inkSoft} filled={isBookmarked} size={14} />
               </button>
@@ -8705,11 +8818,11 @@ function MushafPageView({ initialPage, persistKey, showHeader = false, onBack })
                   borderRadius: 99,
                   padding: "5px 12px",
                 }}
-                aria-label="Marquer cette page comme lue"
+                aria-label={t("mark_page_read")}
               >
                 {pageMarked ? <CheckIcon color={COLORS.goldLight} size={13} /> : <BookmarkIcon color={COLORS.inkSoft} size={13} />}
                 <span className="font-ui font-semibold" style={{ color: pageMarked ? COLORS.goldLight : COLORS.inkSoft, fontSize: 11 }}>
-                  {pageMarked ? "Page lue" : "Marquer comme lue"}
+                  {pageMarked ? t("page_read") : t("mark_page_read")}
                 </span>
               </button>
             </div>
@@ -8724,7 +8837,7 @@ function MushafPageView({ initialPage, persistKey, showHeader = false, onBack })
           disabled={pageNumber <= 1}
           className="p-2.5 active:opacity-60"
           style={{ opacity: pageNumber <= 1 ? 0.3 : 1 }}
-          aria-label="Page précédente"
+          aria-label={t("nav_previous")}
         >
           <ChevronIcon dir="left" color={COLORS.ink} />
         </button>
@@ -8734,7 +8847,7 @@ function MushafPageView({ initialPage, persistKey, showHeader = false, onBack })
             onClick={() => setJumpOverlayOpen(true)}
             className="active:opacity-60 flex items-center justify-center"
             style={{ width: 30, height: 30, borderRadius: 10, background: inkA(0.08) }}
-            aria-label="Aller à une sourate ou un juz"
+            aria-label={t("jump_to_surah_juz")}
           >
             <LayersIcon color={COLORS.ink} size={15} />
           </button>
@@ -8770,7 +8883,7 @@ function MushafPageView({ initialPage, persistKey, showHeader = false, onBack })
           disabled={pageNumber >= QURAN_TOTAL_PAGES}
           className="p-2.5 active:opacity-60"
           style={{ opacity: pageNumber >= QURAN_TOTAL_PAGES ? 0.3 : 1 }}
-          aria-label="Page suivante"
+          aria-label={t("nav_next")}
         >
           <ChevronIcon dir="right" color={COLORS.ink} />
         </button>
