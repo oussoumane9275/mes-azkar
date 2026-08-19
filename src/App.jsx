@@ -5,7 +5,7 @@ import { StatusBar, Style as StatusBarStyle } from "@capacitor/status-bar";
 import { KeepAwake } from "@capacitor-community/keep-awake";
 import { BackgroundMode } from "@anuradev/capacitor-background-mode";
 import WidgetBridge from "./widgetBridge.js";
-import { t, LANGUAGES, currentLanguage, setCurrentLanguage, isRTL } from "./i18n.js";
+import { t, LANGUAGES, currentLanguage, setCurrentLanguage, isRTL, trField, detectSystemLanguage } from "./i18n.js";
 import { exportBackup, importBackup, downloadBackupFile } from "./backup.js";
 import { fetchMushafPage, loadMushafPageFont, fetchChapterStartPage, fetchVersePage } from "./quranFoundation.js";
 import {
@@ -372,163 +372,229 @@ function formatCountdown(mins) {
 // a well-known reciter) rather than a recorded voice note.
 const AL_IKHLAS = {
   title: "Sourate Al-Ikhlās",
+  title_en: "Surah Al-Ikhlas",
   arabic:
     "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ قُلْ هُوَ اللَّهُ أَحَدٌ ﴿١﴾ اللَّهُ الصَّمَدُ ﴿٢﴾ لَمْ يَلِدْ وَلَمْ يُولَدْ ﴿٣﴾ وَلَمْ يَكُن لَّهُ كُفُوًا أَحَدٌ ﴿٤﴾",
   translation:
     "Dis : Il est Allah, Unique. Allah, Le Suffisant, Celui dont tout dépend. Il n'a pas engendré et n'a pas été engendré, et rien ni personne ne Lui est comparable.",
+  translation_en:
+    "Say, He is Allah, [who is] One, Allah, the Eternal Refuge. He neither begets nor is born, nor is there to Him any equivalent.",
   audio: "https://cdn.islamic.network/quran/audio-surah/128/ar.alafasy/112.mp3",
 };
 const AL_FALAQ = {
   title: "Sourate Al-Falaq",
+  title_en: "Surah Al-Falaq",
   arabic:
     "قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ ﴿١﴾ مِنْ شَرِّ مَا خَلَقَ ﴿٢﴾ وَمِن شَرِّ غَاسِقٍ إِذَا وَقَبَ ﴿٣﴾ وَمِن شَرِّ النَّفَّاثَاتِ فِي الْعُقَدِ ﴿٤﴾ وَمِن شَرِّ حَاسِدٍ إِذَا حَسَدَ ﴿٥﴾",
   translation:
     "Dis : Je cherche protection auprès du Seigneur de l'aube naissante, contre le mal de ce qu'Il a créé, contre le mal de l'obscurité quand elle s'installe, contre le mal de celles qui soufflent sur les nœuds, et contre le mal de l'envieux quand il envie.",
+  translation_en:
+    "Say, I seek refuge in the Lord of daybreak, from the evil of that which He created, and from the evil of darkness when it settles, and from the evil of the blowers in knots, and from the evil of an envier when he envies.",
   audio: "https://cdn.islamic.network/quran/audio-surah/128/ar.alafasy/113.mp3",
 };
 const AN_NAS = {
   title: "Sourate An-Nās",
+  title_en: "Surah An-Nas",
   arabic:
     "قُلْ أَعُوذُ بِرَبِّ النَّاسِ ﴿١﴾ مَلِكِ النَّاسِ ﴿٢﴾ إِلَٰهِ النَّاسِ ﴿٣﴾ مِنْ شَرِّ الْوَسْوَاسِ الْخَنَّاسِ ﴿٤﴾ الَّذِي يُوَسْوِسُ فِي صُدُورِ النَّاسِ ﴿٥﴾ مِنَ الْجِنَّةِ وَالنَّاسِ ﴿٦﴾",
   translation:
     "Dis : Je cherche protection auprès du Seigneur des hommes, le Souverain des hommes, le Dieu des hommes, contre le mal du murmure furtif — celui qui souffle le mal dans les cœurs des hommes — qu'il vienne des djinns ou des hommes.",
+  translation_en:
+    "Say, I seek refuge in the Lord of mankind, the Sovereign of mankind, the God of mankind, from the evil of the retreating whisperer who whispers [evil] into the breasts of mankind, from among the jinn and mankind.",
   audio: "https://cdn.islamic.network/quran/audio-surah/128/ar.alafasy/114.mp3",
 };
 const AYAT_AL_KURSI = {
   title: "Āyat al-Kursī",
+  title_en: "Ayat al-Kursi (the Throne Verse)",
   arabic:
     "اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ ۚ لَا تَأْخُذُهُ سِنَةٌ وَلَا نَوْمٌ ۚ لَهُ مَا فِي السَّمَاوَاتِ وَمَا فِي الْأَرْضِ ۗ مَن ذَا الَّذِي يَشْفَعُ عِندَهُ إِلَّا بِإِذْنِهِ ۚ يَعْلَمُ مَا بَيْنَ أَيْدِيهِمْ وَمَا خَلْفَهُمْ ۖ وَلَا يُحِيطُونَ بِشَيْءٍ مِّنْ عِلْمِهِ إِلَّا بِمَا شَاءَ ۚ وَسِعَ كُرْسِيُّهُ السَّمَاوَاتِ وَالْأَرْضَ ۖ وَلَا يَئُودُهُ حِفْظُهُمَا ۚ وَهُوَ الْعَلِيُّ الْعَظِيمُ",
   translation:
     "Allah, il n'y a de divinité que Lui, le Vivant, Celui qui subsiste par Lui-même. Ni somnolence ni sommeil ne Le saisissent. À Lui appartient tout ce qui est dans les cieux et sur la terre. Qui peut intercéder auprès de Lui sans Sa permission ? Il connaît leur passé et leur avenir, et nul n'embrasse de Sa science que ce qu'Il veut. Son Trône s'étend sur les cieux et la terre, dont la garde ne Lui coûte aucune peine. Et Il est le Très-Haut, l'Immense.",
+  translation_en:
+    "Allah - there is no deity except Him, the Ever-Living, the Sustainer of [all] existence. Neither drowsiness overtakes Him nor sleep. To Him belongs whatever is in the heavens and whatever is on the earth. Who is it that can intercede with Him except by His permission? He knows what is [presently] before them and what will be after them, and they encompass not a thing of His knowledge except for what He wills. His Kursi extends over the heavens and the earth, and their preservation tires Him not. And He is the Most High, the Most Great.",
   audio: "https://cdn.islamic.network/quran/audio/128/ar.alafasy/262.mp3",
 };
 const SAYYID_ISTIGHFAR = {
   title: "Sayyid al-Istighfār",
+  title_en: "Sayyid al-Istighfar (the master supplication for forgiveness)",
   arabic:
     "اللَّهُمَّ أَنْتَ رَبِّي لَا إِلَٰهَ إِلَّا أَنْتَ، خَلَقْتَنِي وَأَنَا عَبْدُكَ، وَأَنَا عَلَىٰ عَهْدِكَ وَوَعْدِكَ مَا اسْتَطَعْتُ، أَعُوذُ بِكَ مِنْ شَرِّ مَا صَنَعْتُ، أَبُوءُ لَكَ بِنِعْمَتِكَ عَلَيَّ، وَأَبُوءُ بِذَنْبِي فَاغْفِرْ لِي فَإِنَّهُ لَا يَغْفِرُ الذُّنُوبَ إِلَّا أَنْتَ",
   translation:
     "Ô Allah, Tu es mon Seigneur, il n'y a de divinité que Toi. Tu m'as créé et je suis Ton serviteur. Je m'efforce de tenir mon engagement envers Toi autant que je le peux. Je cherche refuge auprès de Toi contre le mal que j'ai commis. Je reconnais devant Toi Tes bienfaits sur moi et je reconnais mon péché : pardonne-moi, car nul ne pardonne les péchés sinon Toi.",
+  translation_en:
+    "O Allah, You are my Lord, none has the right to be worshipped except You. You created me and I am Your servant, and I abide to Your covenant and promise as best I can. I take refuge in You from the evil of which I have committed. I acknowledge Your favour upon me and I acknowledge my sin, so forgive me, for verily none can forgive sin except You.",
 };
 const HASBIYALLAH = {
   title: "Allah me suffit",
+  title_en: "Allah is sufficient for me",
   arabic: "حَسْبِيَ اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ، عَلَيْهِ تَوَكَّلْتُ وَهُوَ رَبُّ الْعَرْشِ الْعَظِيمِ",
   translation:
     "Allah me suffit, il n'y a de divinité que Lui. En Lui je place ma confiance, et Il est le Seigneur du Trône immense.",
+  translation_en:
+    "Allah is sufficient for me, none has the right to be worshipped except Him, upon Him I rely and He is Lord of the exalted throne.",
 };
 const AFINI = {
   title: "Santé et protection",
+  title_en: "Health and well-being",
   arabic:
     "اللَّهُمَّ عَافِنِي فِي بَدَنِي، اللَّهُمَّ عَافِنِي فِي سَمْعِي، اللَّهُمَّ عَافِنِي فِي بَصَرِي، لَا إِلَٰهَ إِلَّا أَنْتَ. اللَّهُمَّ إِنِّي أَعُوذُ بِكَ مِنَ الْكُفْرِ وَالْفَقْرِ، وَأَعُوذُ بِكَ مِنْ عَذَابِ الْقَبْرِ، لَا إِلَٰهَ إِلَّا أَنْتَ",
   translation:
     "Ô Allah, accorde-moi la santé dans mon corps, dans mon ouïe, dans ma vue. Il n'y a de divinité que Toi. Ô Allah, je cherche protection auprès de Toi contre la mécréance, la pauvreté, et le châtiment de la tombe. Il n'y a de divinité que Toi.",
+  translation_en:
+    "O Allah, grant my body health, O Allah, grant my hearing health, O Allah, grant my sight health. None has the right to be worshipped except You. O Allah, I take refuge with You from disbelief and poverty, and I take refuge with You from the punishment of the grave. None has the right to be worshipped except You.",
 };
 const LA_ILAHA = {
   title: "Attestation d'unicité",
+  title_en: "Testimony of Allah's oneness",
   arabic:
     "لَا إِلَٰهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ، وَهُوَ عَلَىٰ كُلِّ شَيْءٍ قَدِيرٌ",
   translation:
     "Il n'y a de divinité qu'Allah, Seul, sans associé. À Lui le règne, à Lui la louange, et Il est capable de toute chose.",
+  translation_en:
+    "None has the right to be worshipped except Allah, alone, without partner, to Him belongs all sovereignty and praise, and He is over all things omnipotent.",
 };
 const SUBHANALLAHI_BIHAMDIHI = {
   title: "Gloire et louange à Allah",
+  title_en: "Glory and praise be to Allah",
   arabic: "سُبْحَانَ اللَّهِ وَبِحَمْدِهِ",
   translation: "Gloire et pureté à Allah, et louange à Lui.",
+  translation_en: "How perfect Allah is and I praise Him.",
 };
 const USHHIDUKA = {
   title: "Prendre Allah à témoin",
+  title_en: "Calling Allah to witness",
   arabic:
     "اللَّهُمَّ إِنِّي أَصْبَحْتُ أُشْهِدُكَ، وَأُشْهِدُ حَمَلَةَ عَرْشِكَ، وَمَلَائِكَتَكَ، وَجَمِيعَ خَلْقِكَ، أَنَّكَ أَنْتَ اللَّهُ لَا إِلَٰهَ إِلَّا أَنْتَ وَحْدَكَ لَا شَرِيكَ لَكَ، وَأَنَّ مُحَمَّدًا عَبْدُكَ وَرَسُولُكَ",
   translation:
     "Ô Allah, je Te prends à témoin, ainsi que les porteurs de Ton Trône, Tes anges et toute Ta création, que Tu es Allah, il n'y a de divinité que Toi, Seul, sans associé, et que Muhammad est Ton serviteur et Ton messager.",
+  translation_en:
+    "O Allah, verily I have reached the morning and call on You, the bearers of Your throne, Your angels, and all of Your creation to witness that You are Allah, none has the right to be worshipped except You, alone, without partner, and that Muhammad is Your servant and Messenger.",
 };
 const NIMAH = {
   title: "Reconnaissance des bienfaits",
+  title_en: "Acknowledging Allah's blessings",
   arabic:
     "اللَّهُمَّ مَا أَصْبَحَ بِي مِنْ نِعْمَةٍ أَوْ بِأَحَدٍ مِنْ خَلْقِكَ فَمِنْكَ وَحْدَكَ لَا شَرِيكَ لَكَ، فَلَكَ الْحَمْدُ وَلَكَ الشُّكْرُ",
   translation:
     "Ô Allah, tout bienfait dont je jouis ce matin, ou dont jouit l'une de Tes créatures, vient de Toi Seul, sans associé. À Toi la louange et à Toi la gratitude.",
+  translation_en:
+    "O Allah, what blessing I or any of Your creation have risen upon, is from You alone, without partner, so for You is all praise and unto You all thanks.",
 };
 const AFWU_AFIYA = {
   title: "Pardon et protection",
+  title_en: "Pardon and well-being",
   arabic:
     "اللَّهُمَّ إِنِّي أَسْأَلُكَ الْعَفْوَ وَالْعَافِيَةَ فِي الدُّنْيَا وَالْآخِرَةِ، اللَّهُمَّ إِنِّي أَسْأَلُكَ الْعَفْوَ وَالْعَافِيَةَ فِي دِينِي وَدُنْيَايَ وَأَهْلِي وَمَالِي، اللَّهُمَّ احْفَظْنِي مِنْ بَيْنِ يَدَيَّ وَمِنْ خَلْفِي وَعَنْ يَمِينِي وَعَنْ شِمَالِي وَمِنْ فَوْقِي، وَأَعُوذُ بِعَظَمَتِكَ أَنْ أُغْتَالَ مِنْ تَحْتِي",
   translation:
     "Ô Allah, je Te demande le pardon et la préservation en cette vie et dans l'au-delà, dans ma religion, mon existence, ma famille et mes biens. Ô Allah, protège-moi de devant moi, de derrière moi, de ma droite, de ma gauche et d'au-dessus de moi. Et je cherche protection en Ta grandeur contre le fait d'être surpris par le mal venant d'en dessous.",
+  translation_en:
+    "O Allah, I ask You for pardon and well-being in this life and the next. O Allah, I ask You for pardon and well-being in my religious and worldly affairs, and my family and my wealth. O Allah, preserve me from the front and from behind and on my right and on my left and from above, and I take refuge with You lest I be swallowed up by the earth.",
 };
 const ALIM_GHAYB = {
   title: "Connaisseur de l'invisible",
+  title_en: "Knower of the unseen",
   arabic:
     "اللَّهُمَّ عَالِمَ الْغَيْبِ وَالشَّهَادَةِ، فَاطِرَ السَّمَاوَاتِ وَالْأَرْضِ، رَبَّ كُلِّ شَيْءٍ وَمَلِيكَهُ، أَشْهَدُ أَنْ لَا إِلَٰهَ إِلَّا أَنْتَ، أَعُوذُ بِكَ مِنْ شَرِّ نَفْسِي، وَمِنْ شَرِّ الشَّيْطَانِ وَشِرْكِهِ",
   translation:
     "Ô Allah, Connaisseur de l'invisible et du visible, Créateur des cieux et de la terre, Seigneur et Souverain de toute chose, j'atteste qu'il n'y a de divinité que Toi. Je cherche protection auprès de Toi contre le mal de mon âme, et contre le mal du diable et de ses pièges.",
+  translation_en:
+    "O Allah, Knower of the unseen and the seen, Creator of the heavens and the earth, Lord and Sovereign of all things, I bear witness that none has the right to be worshipped except You. I take refuge in You from the evil of my soul and from the evil and shirk of the devil.",
 };
 const BISMILLAH_YADURRU = {
   title: "Rien ne peut nuire",
+  title_en: "Nothing can cause harm",
   arabic:
     "بِسْمِ اللَّهِ الَّذِي لَا يَضُرُّ مَعَ اسْمِهِ شَيْءٌ فِي الْأَرْضِ وَلَا فِي السَّمَاءِ وَهُوَ السَّمِيعُ الْعَلِيمُ",
   translation:
     "Au nom d'Allah, avec le Nom duquel rien ne peut nuire ni sur terre ni dans le ciel, et Il est l'Audient, l'Omniscient.",
+  translation_en:
+    "In the name of Allah, with whose name nothing is harmed on earth nor in the heavens, and He is the All-Hearing, the All-Knowing.",
 };
 const RADITU = {
   title: "Satisfait d'Allah",
+  title_en: "Pleased with Allah",
   arabic: "رَضِيتُ بِاللَّهِ رَبًّا، وَبِالْإِسْلَامِ دِينًا، وَبِمُحَمَّدٍ ﷺ نَبِيًّا",
   translation:
     "Je suis satisfait d'Allah comme Seigneur, de l'Islam comme religion, et de Muhammad ﷺ comme prophète.",
+  translation_en: "I am pleased with Allah as a Lord, and Islam as a religion, and Muhammad ﷺ as a Prophet.",
 };
 const YA_HAYYU_QAYYUM = {
   title: "Ô Vivant, Ô Subsistant",
+  title_en: "O Ever-Living, O Self-Subsisting",
   arabic: "يَا حَيُّ يَا قَيُّومُ، بِرَحْمَتِكَ أَسْتَغِيثُ، أَصْلِحْ لِي شَأْنِي كُلَّهُ، وَلَا تَكِلْنِي إِلَى نَفْسِي طَرْفَةَ عَيْنٍ",
   translation:
     "Ô Toi le Vivant, Ô Toi le Subsistant par Toi-même, c'est par Ta miséricorde que j'implore secours. Améliore toute ma situation, et ne me laisse pas à moi-même, ne serait-ce que le temps d'un clin d'œil.",
+  translation_en:
+    "O Ever-Living, O Self-Subsisting and Supporter of all, by Your mercy I seek assistance, rectify for me all of my affairs and do not leave me to myself, even for the blink of an eye.",
 };
 const ISTIGHFAR100 = {
   title: "Demande de pardon",
+  title_en: "Seeking Allah's forgiveness",
   arabic: "أَسْتَغْفِرُ اللَّهَ وَأَتُوبُ إِلَيْهِ",
   translation: "Je demande pardon à Allah et je me repens à Lui.",
+  translation_en: "I seek the forgiveness of Allah and repent to Him.",
 };
 const SALAWAT = {
   title: "Prière sur le Prophète",
+  title_en: "Sending prayers upon the Prophet",
   arabic: "اللَّهُمَّ صَلِّ وَسَلِّمْ عَلَىٰ نَبِيِّنَا مُحَمَّدٍ",
   translation: "Ô Allah, prie et accorde le salut à notre Prophète Muhammad.",
+  translation_en: "O Allah, send prayers and peace upon our Prophet Muhammad.",
 };
 
 const BISMIKA_AMUTU = {
   title: "Avant de s'endormir",
+  title_en: "Before sleeping",
   arabic: "بِاسْمِكَ اللَّهُمَّ أَمُوتُ وَأَحْيَا",
   translation: "En Ton nom, ô Allah, je meurs et je vis.",
+  translation_en: "In Your name, O Allah, I live and die.",
 };
 const BAQARA_LAST_VERSES = {
   title: "Derniers versets d'Al-Baqara",
+  title_en: "The last two verses of Al-Baqarah",
   arabic:
     "آمَنَ الرَّسُولُ بِمَا أُنْزِلَ إِلَيْهِ مِنْ رَبِّهِ وَالْمُؤْمِنُونَ ۚ كُلٌّ آمَنَ بِاللَّهِ وَمَلَائِكَتِهِ وَكُتُبِهِ وَرُسُلِهِ لَا نُفَرِّقُ بَيْنَ أَحَدٍ مِنْ رُسُلِهِ ۖ وَقَالُوا سَمِعْنَا وَأَطَعْنَا ۖ غُفْرَانَكَ رَبَّنَا وَإِلَيْكَ الْمَصِيرُ. لَا يُكَلِّفُ اللَّهُ نَفْسًا إِلَّا وُسْعَهَا ۚ لَهَا مَا كَسَبَتْ وَعَلَيْهَا مَا اكْتَسَبَتْ ۗ رَبَّنَا لَا تُؤَاخِذْنَا إِنْ نَسِينَا أَوْ أَخْطَأْنَا ۚ رَبَّنَا وَلَا تَحْمِلْ عَلَيْنَا إِصْرًا كَمَا حَمَلْتَهُ عَلَى الَّذِينَ مِنْ قَبْلِنَا ۚ رَبَّنَا وَلَا تُحَمِّلْنَا مَا لَا طَاقَةَ لَنَا بِهِ ۖ وَاعْفُ عَنَّا وَاغْفِرْ لَنَا وَارْحَمْنَا ۚ أَنْتَ مَوْلَانَا فَانْصُرْنَا عَلَى الْقَوْمِ الْكَافِرِينَ",
   translation:
     "Le Messager a cru en ce qu'on a fait descendre vers lui venant de son Seigneur, et les croyants aussi ; tous ont cru en Allah, en Ses anges, à Ses livres et en Ses messagers, sans faire de distinction entre Ses messagers. Et ils ont dit : « Nous avons entendu et obéi. Seigneur, nous implorons Ton pardon, c'est vers Toi que sera le retour final. » Allah n'impose à aucune âme une charge supérieure à sa capacité. Elle sera récompensée du bien qu'elle aura fait, punie du mal qu'elle aura fait. Seigneur, ne nous châtie pas s'il nous arrive d'oublier ou de commettre une erreur. Seigneur, ne nous charge pas d'un fardeau lourd comme Tu l'as imposé à ceux qui vécurent avant nous. Seigneur, ne nous impose pas ce que nous ne pouvons supporter, efface nos fautes, pardonne-nous et fais-nous miséricorde. Tu es notre Maître, accorde-nous la victoire sur les peuples mécréants.",
+  translation_en:
+    "The Messenger has believed in what was revealed to him from his Lord, and [so have] the believers. All of them have believed in Allah and His angels and His books and His messengers, [saying], We make no distinction between any of His messengers. And they say, We hear and we obey. [We seek] Your forgiveness, our Lord, and to You is the [final] destination. Allah does not charge a soul except with that within its capacity. Our Lord, do not impose blame upon us if we forget or make a mistake. Our Lord, and lay not upon us a burden like that which You laid upon those before us. Our Lord, and burden us not with that which we have no ability to bear. And pardon us, forgive us, and have mercy upon us. You are our protector, so give us victory over the disbelieving people.",
 };
 const WADATU_JANBI = {
   title: "En posant le flanc",
+  title_en: "Upon lying down",
   arabic:
     "بِاسْمِكَ رَبِّي وَضَعْتُ جَنْبِي، وَبِكَ أَرْفَعُهُ، فَإِنْ أَمْسَكْتَ نَفْسِي فَارْحَمْهَا، وَإِنْ أَرْسَلْتَهَا فَاحْفَظْهَا بِمَا تَحْفَظُ بِهِ عِبَادَكَ الصَّالِحِينَ",
   translation:
     "En Ton nom, mon Seigneur, je pose mon flanc, et c'est par Toi que je le relève. Si Tu retiens mon âme, fais-lui miséricorde ; et si Tu la renvoies, préserve-la comme Tu préserves Tes serviteurs vertueux.",
+  translation_en:
+    "In Your name my Lord, I lie down and in Your name I rise, so if You should take my soul then have mercy upon it, and if You should return my soul then protect it in the manner You do so with Your righteous servants.",
 };
 const RABBAS_SAMAWAT = {
   title: "Seigneur des sept cieux",
+  title_en: "Lord of the seven heavens",
   arabic:
     "اللَّهُمَّ رَبَّ السَّمَاوَاتِ السَّبْعِ وَرَبَّ الْأَرْضِ، وَرَبَّ الْعَرْشِ الْعَظِيمِ، رَبَّنَا وَرَبَّ كُلِّ شَيْءٍ، فَالِقَ الْحَبِّ وَالنَّوَى، وَمُنْزِلَ التَّوْرَاةِ وَالْإِنْجِيلِ وَالْفُرْقَانِ، أَعُوذُ بِكَ مِنْ شَرِّ كُلِّ ذِي شَرٍّ أَنْتَ آخِذٌ بِنَاصِيَتِهِ، اللَّهُمَّ أَنْتَ الْأَوَّلُ فَلَيْسَ قَبْلَكَ شَيْءٌ، وَأَنْتَ الْآخِرُ فَلَيْسَ بَعْدَكَ شَيْءٌ، وَأَنْتَ الظَّاهِرُ فَلَيْسَ فَوْقَكَ شَيْءٌ، وَأَنْتَ الْبَاطِنُ فَلَيْسَ دُونَكَ شَيْءٌ، اقْضِ عَنَّا الدَّيْنَ وَأَغْنِنَا مِنَ الْفَقْرِ",
   translation:
     "Ô Allah, Seigneur des sept cieux, Seigneur de la terre, Seigneur de l'immense Trône, notre Seigneur et Seigneur de toute chose, Toi qui fends la graine et le noyau, Toi qui as révélé la Torah, l'Évangile et le Discernement, je cherche refuge auprès de Toi contre le mal de tout être malfaisant que Tu tiens par le toupet. Ô Allah, Tu es le Premier, rien n'est avant Toi ; Tu es le Dernier, rien n'est après Toi ; Tu es l'Apparent, rien n'est au-dessus de Toi ; Tu es le Caché, rien n'est en deçà de Toi. Acquitte notre dette et préserve-nous de la pauvreté.",
+  translation_en:
+    "O Allah, Lord of the seven heavens and Lord of the exalted throne, our Lord and Lord of all things, Splitter of the seed and the date stone, Revealer of the Tawrah, the Injeel and the Furqan, I take refuge in You from the evil of all things You shall seize by the forelock. O Allah, You are The First so there is nothing before You and You are The Last so there is nothing after You. You are Ath-Thahir so there is nothing above You and You are Al-Batin so there is nothing closer than You. Settle our debt for us and spare us from poverty.",
 };
 const QINI_ADHABAKA = {
   title: "Protection au Jour du Jugement",
+  title_en: "Protection on the Day of Judgement",
   arabic: "اللَّهُمَّ قِنِي عَذَابَكَ يَوْمَ تَبْعَثُ عِبَادَكَ",
   translation: "Ô Allah, protège-moi de Ton châtiment le jour où Tu ressusciteras Tes serviteurs.",
+  translation_en: "O Allah, protect me from Your punishment on the day Your servants are resurrected.",
 };
 const ASLAMTU_NAFSI = {
   title: "Remise de soi à Allah",
+  title_en: "Submitting oneself to Allah",
   arabic:
     "اللَّهُمَّ أَسْلَمْتُ نَفْسِي إِلَيْكَ، وَفَوَّضْتُ أَمْرِي إِلَيْكَ، وَأَلْجَأْتُ ظَهْرِي إِلَيْكَ، رَغْبَةً وَرَهْبَةً إِلَيْكَ، لَا مَلْجَأَ وَلَا مَنْجَا مِنْكَ إِلَّا إِلَيْكَ، آمَنْتُ بِكِتَابِكَ الَّذِي أَنْزَلْتَ، وَبِنَبِيِّكَ الَّذِي أَرْسَلْتَ",
   translation:
     "Ô Allah, je me suis remis à Toi, j'ai confié mon affaire à Toi, j'ai adossé mon dos à Toi, par désir et par crainte de Toi. Il n'y a de refuge ni de salut de Toi si ce n'est auprès de Toi. Je crois en Ton Livre que Tu as révélé et en Ton Prophète que Tu as envoyé.",
+  translation_en:
+    "O Allah, I submit my soul unto You, and I entrust my affair unto You, and I turn my face towards You, and I totally rely on You, in hope and fear of You. Verily there is no refuge nor safe haven from You except with You. I believe in Your Book which You have revealed and in Your Prophet whom You have sent.",
 };
 
 // Sleep azkar, following the order used in Hisn al-Muslim's «أذكار النوم» chapter
@@ -539,9 +605,9 @@ const SOMMEIL_ITEMS = [
   { id: "d4", count: 3, ...AL_IKHLAS },
   { id: "d5", count: 3, ...AL_FALAQ },
   { id: "d6", count: 3, ...AN_NAS },
-  { id: "d7", count: 33, title: "Gloire à Allah", arabic: "سُبْحَانَ اللَّهِ", translation: "Gloire à Allah." },
-  { id: "d8", count: 33, title: "Louange à Allah", arabic: "الْحَمْدُ لِلَّهِ", translation: "La louange est à Allah." },
-  { id: "d9", count: 34, title: "Allah est le plus Grand", arabic: "اللَّهُ أَكْبَرُ", translation: "Allah est le plus Grand." },
+  { id: "d7", count: 33, title: "Gloire à Allah", title_en: "Glory be to Allah", arabic: "سُبْحَانَ اللَّهِ", translation: "Gloire à Allah.", translation_en: "How perfect Allah is." },
+  { id: "d8", count: 33, title: "Louange à Allah", title_en: "Praise be to Allah", arabic: "الْحَمْدُ لِلَّهِ", translation: "La louange est à Allah.", translation_en: "All praise is due to Allah." },
+  { id: "d9", count: 34, title: "Allah est le plus Grand", title_en: "Allah is the Greatest", arabic: "اللَّهُ أَكْبَرُ", translation: "Allah est le plus Grand.", translation_en: "Allah is the greatest." },
   { id: "d10", count: 1, ...WADATU_JANBI },
   { id: "d11", count: 1, ...RABBAS_SAMAWAT },
   { id: "d12", count: 3, ...QINI_ADHABAKA },
@@ -557,19 +623,25 @@ const MATIN_ITEMS = [
     id: "m5",
     count: 1,
     title: "Formule du matin",
+    title_en: "Morning formula",
     arabic:
       "أَصْبَحْنَا وَأَصْبَحَ الْمُلْكُ لِلَّهِ، وَالْحَمْدُ لِلَّهِ، لَا إِلَٰهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ وَهُوَ عَلَىٰ كُلِّ شَيْءٍ قَدِيرٌ. رَبِّ أَسْأَلُكَ خَيْرَ مَا فِي هَٰذَا الْيَوْمِ وَخَيْرَ مَا بَعْدَهُ، وَأَعُوذُ بِكَ مِنْ شَرِّ مَا فِي هَٰذَا الْيَوْمِ وَشَرِّ مَا بَعْدَهُ، رَبِّ أَعُوذُ بِكَ مِنَ الْكَسَلِ وَسُوءِ الْكِبَرِ، رَبِّ أَعُوذُ بِكَ مِنْ عَذَابٍ فِي النَّارِ وَعَذَابٍ فِي الْقَبْرِ",
     translation:
       "Nous voici au matin, et avec nous le règne appartient à Allah. Louange à Allah, il n'y a de divinité qu'Allah, Seul, sans associé. À Lui le règne, à Lui la louange, et Il est capable de toute chose. Seigneur, je Te demande le bien de ce jour et le bien de ce qui le suit, et je cherche protection contre le mal de ce jour et le mal de ce qui le suit. Seigneur, je cherche protection contre la paresse et la mauvaise vieillesse, et contre un châtiment dans le Feu et dans la tombe.",
+    translation_en:
+      "We have reached the morning and at this very time unto Allah belongs all sovereignty, and all praise is for Allah. None has the right to be worshipped except Allah, alone, without partner, to Him belongs all sovereignty and praise and He is over all things omnipotent. My Lord, I ask You for the good of this day and the good of what follows it and I take refuge in You from the evil of this day and the evil of what follows it. My Lord, I take refuge in You from laziness and senility. My Lord, I take refuge in You from torment in the Fire and punishment in the grave.",
     audio: "/audio/matin/m5-formule-du-matin.ogg",
   },
   {
     id: "m6",
     count: 1,
     title: "Par Toi nous entrons dans le matin",
+    title_en: "By You we enter the morning",
     arabic: "اللَّهُمَّ بِكَ أَصْبَحْنَا، وَبِكَ أَمْسَيْنَا، وَبِكَ نَحْيَا، وَبِكَ نَمُوتُ وَإِلَيْكَ النُّشُورُ",
     translation:
       "Ô Allah, c'est par Toi que nous entrons dans le matin, par Toi que nous entrons dans le soir, par Toi que nous vivons, par Toi que nous mourrons, et vers Toi est la résurrection.",
+    translation_en:
+      "O Allah, by You we enter the morning and by You we enter the evening, by You we live and by You we die, and unto You is the resurrection.",
     audio: "/audio/matin/m6-par-toi-nous-entrons-dans-le-matin.ogg",
   },
   { id: "m7", count: 1, ...SAYYID_ISTIGHFAR, audio: "/audio/matin/m7-sayyid-al-istighfar.ogg" },
@@ -586,10 +658,13 @@ const MATIN_ITEMS = [
     id: "m17",
     count: 1,
     title: "Sur la nature originelle de l'Islam",
+    title_en: "Upon the natural religion of Islam",
     arabic:
       "أَصْبَحْنَا عَلَى فِطْرَةِ الْإِسْلَامِ، وَعَلَى كَلِمَةِ الْإِخْلَاصِ، وَعَلَى دِينِ نَبِيِّنَا مُحَمَّدٍ ﷺ، وَعَلَى مِلَّةِ أَبِينَا إِبْرَاهِيمَ حَنِيفًا مُسْلِمًا، وَمَا كَانَ مِنَ الْمُشْرِكِينَ",
     translation:
       "Nous voici au matin sur la nature originelle de l'Islam, sur la parole du monothéisme pur, sur la religion de notre Prophète Muhammad ﷺ, et sur la voie de notre père Abraham, exclusivement voué à Allah, et qui n'était pas du nombre des polythéistes.",
+    translation_en:
+      "We have reached the morning upon the natural religion of Islam, the word of sincere devotion, the religion of our Prophet Muhammad ﷺ, and the faith of our father Abraham, who was upright in submission to Allah and was not amongst the polytheists.",
     audio: "/audio/matin/m17-nature-originelle-de-lislam.ogg",
   },
   { id: "m18", count: 100, ...SUBHANALLAHI_BIHAMDIHI, audio: "/audio/matin/m18-subhanallahi-wa-bihamdihi.ogg" },
@@ -598,18 +673,24 @@ const MATIN_ITEMS = [
     id: "m20",
     count: 3,
     title: "Gloire à Allah, autant que...",
+    title_en: "Glory be to Allah, as much as...",
     arabic: "سُبْحَانَ اللَّهِ وَبِحَمْدِهِ عَدَدَ خَلْقِهِ، وَرِضَا نَفْسِهِ، وَزِنَةَ عَرْشِهِ، وَمِدَادَ كَلِمَاتِهِ",
     translation:
       "Gloire et louange à Allah, autant que le nombre de Ses créatures, autant que Son agrément, autant que le poids de Son Trône, et autant que l'encre de Ses paroles.",
+    translation_en:
+      "How perfect Allah is and I praise Him, by the multitude of His creation, by His pleasure, by the weight of His throne, and by the extent of His words.",
     audio: "/audio/matin/m20-gloire-a-allah-autant-que.ogg",
   },
   {
     id: "m21",
     count: 1,
     title: "Science utile (après al-Fajr)",
+    title_en: "Beneficial knowledge (after Fajr)",
     arabic: "اللَّهُمَّ إِنِّي أَسْأَلُكَ عِلْمًا نَافِعًا، وَرِزْقًا طَيِّبًا، وَعَمَلًا مُتَقَبَّلًا",
     translation:
       "Ô Allah, je Te demande une science utile, une subsistance bonne, et une œuvre acceptée.",
+    translation_en:
+      "O Allah, I ask You for beneficial knowledge, good provision, and acceptable deeds.",
     audio: "/audio/matin/m21-science-utile.ogg",
   },
   { id: "m22", count: 100, ...ISTIGHFAR100, audio: "/audio/matin/m22-istighfar.ogg" },
@@ -625,18 +706,24 @@ const SOIR_ITEMS = [
     id: "s5",
     count: 1,
     title: "Formule du soir",
+    title_en: "Evening formula",
     arabic:
       "أَمْسَيْنَا وَأَمْسَى الْمُلْكُ لِلَّهِ، وَالْحَمْدُ لِلَّهِ، لَا إِلَٰهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ وَهُوَ عَلَىٰ كُلِّ شَيْءٍ قَدِيرٌ. رَبِّ أَسْأَلُكَ خَيْرَ مَا فِي هَٰذِهِ اللَّيْلَةِ وَخَيْرَ مَا بَعْدَهَا، وَأَعُوذُ بِكَ مِنْ شَرِّ مَا فِي هَٰذِهِ اللَّيْلَةِ وَشَرِّ مَا بَعْدَهَا، رَبِّ أَعُوذُ بِكَ مِنَ الْكَسَلِ وَسُوءِ الْكِبَرِ، رَبِّ أَعُوذُ بِكَ مِنْ عَذَابٍ فِي النَّارِ وَعَذَابٍ فِي الْقَبْرِ",
     translation:
       "Nous voici au soir, et avec nous le règne appartient à Allah. Louange à Allah, il n'y a de divinité qu'Allah, Seul, sans associé. À Lui le règne, à Lui la louange, et Il est capable de toute chose. Seigneur, je Te demande le bien de cette nuit et le bien de ce qui la suit, et je cherche protection contre le mal de cette nuit et le mal de ce qui la suit. Seigneur, je cherche protection contre la paresse et la mauvaise vieillesse, et contre un châtiment dans le Feu et dans la tombe.",
+    translation_en:
+      "We have reached the evening and at this very time unto Allah belongs all sovereignty, and all praise is for Allah. None has the right to be worshipped except Allah, alone, without partner, to Him belongs all sovereignty and praise and He is over all things omnipotent. My Lord, I ask You for the good of this night and the good of what follows it and I take refuge in You from the evil of this night and the evil of what follows it. My Lord, I take refuge in You from laziness and senility. My Lord, I take refuge in You from torment in the Fire and punishment in the grave.",
   },
   {
     id: "s6",
     count: 1,
     title: "Par Toi nous entrons dans le soir",
+    title_en: "By You we enter the evening",
     arabic: "اللَّهُمَّ بِكَ أَمْسَيْنَا، وَبِكَ أَصْبَحْنَا، وَبِكَ نَحْيَا، وَبِكَ نَمُوتُ وَإِلَيْكَ الْمَصِيرُ",
     translation:
       "Ô Allah, c'est par Toi que nous entrons dans le soir, par Toi que nous entrons dans le matin, par Toi que nous vivons, par Toi que nous mourrons, et vers Toi est le retour.",
+    translation_en:
+      "O Allah, by You we enter the evening and by You we enter the morning, by You we live and by You we die, and unto You is our return.",
   },
   { id: "s7", count: 1, ...SAYYID_ISTIGHFAR, audio: "/audio/matin/m7-sayyid-al-istighfar.ogg" },
   { id: "s8", count: 4, ...USHHIDUKA, audio: "/audio/matin/m8-je-te-prends-a-temoin.ogg" },
@@ -644,10 +731,13 @@ const SOIR_ITEMS = [
     id: "s9",
     count: 1,
     title: "Reconnaissance des bienfaits",
+    title_en: "Acknowledging Allah's blessings",
     arabic:
       "اللَّهُمَّ مَا أَمْسَى بِي مِنْ نِعْمَةٍ أَوْ بِأَحَدٍ مِنْ خَلْقِكَ فَمِنْكَ وَحْدَكَ لَا شَرِيكَ لَكَ، فَلَكَ الْحَمْدُ وَلَكَ الشُّكْرُ",
     translation:
       "Ô Allah, tout bienfait dont je jouis ce soir, ou dont jouit l'une de Tes créatures, vient de Toi Seul, sans associé. À Toi la louange et à Toi la gratitude.",
+    translation_en:
+      "O Allah, what blessing I or any of Your creation have reached this evening, is from You alone, without partner, so for You is all praise and unto You all thanks.",
   },
   { id: "s10", count: 3, ...AFINI, audio: "/audio/matin/m10-accorde-moi-la-sante.ogg" },
   { id: "s11", count: 7, ...HASBIYALLAH, audio: "/audio/matin/m11-hasbiyallah.ogg" },
@@ -660,10 +750,13 @@ const SOIR_ITEMS = [
     id: "s17",
     count: 1,
     title: "Sur la nature originelle de l'Islam",
+    title_en: "Upon the natural religion of Islam",
     arabic:
       "أَمْسَيْنَا عَلَى فِطْرَةِ الْإِسْلَامِ، وَعَلَى كَلِمَةِ الْإِخْلَاصِ، وَعَلَى دِينِ نَبِيِّنَا مُحَمَّدٍ ﷺ، وَعَلَى مِلَّةِ أَبِينَا إِبْرَاهِيمَ حَنِيفًا مُسْلِمًا، وَمَا كَانَ مِنَ الْمُشْرِكِينَ",
     translation:
       "Nous voici au soir sur la nature originelle de l'Islam, sur la parole du monothéisme pur, sur la religion de notre Prophète Muhammad ﷺ, et sur la voie de notre père Abraham, exclusivement voué à Allah, et qui n'était pas du nombre des polythéistes.",
+    translation_en:
+      "We have reached the evening upon the natural religion of Islam, the word of sincere devotion, the religion of our Prophet Muhammad ﷺ, and the faith of our father Abraham, who was upright in submission to Allah and was not amongst the polytheists.",
   },
   { id: "s18", count: 100, ...SUBHANALLAHI_BIHAMDIHI, audio: "/audio/matin/m18-subhanallahi-wa-bihamdihi.ogg" },
   { id: "s19", count: 10, ...LA_ILAHA, audio: "/audio/matin/m19-la-ilaha-illallah.ogg" },
@@ -671,9 +764,12 @@ const SOIR_ITEMS = [
     id: "s20",
     count: 3,
     title: "Gloire à Allah, autant que...",
+    title_en: "Glory be to Allah, as much as...",
     arabic: "سُبْحَانَ اللَّهِ وَبِحَمْدِهِ عَدَدَ خَلْقِهِ، وَرِضَا نَفْسِهِ، وَزِنَةَ عَرْشِهِ، وَمِدَادَ كَلِمَاتِهِ",
     translation:
       "Gloire et louange à Allah, autant que le nombre de Ses créatures, autant que Son agrément, autant que le poids de Son Trône, et autant que l'encre de Ses paroles.",
+    translation_en:
+      "How perfect Allah is and I praise Him, by the multitude of His creation, by His pleasure, by the weight of His throne, and by the extent of His words.",
     audio: "/audio/matin/m20-gloire-a-allah-autant-que.ogg",
   },
   { id: "s21", count: 100, ...ISTIGHFAR100, audio: "/audio/matin/m22-istighfar.ogg" },
@@ -688,24 +784,29 @@ function buildApresItems(enhanced) {
       id: "a1",
       count: 3,
       title: "Demande de pardon",
+      title_en: "Seeking forgiveness",
       arabic: "أَسْتَغْفِرُ اللَّهَ",
       translation: "Je demande pardon à Allah.",
+      translation_en: "I seek the forgiveness of Allah.",
     },
     {
       id: "a2",
       count: 1,
       title: "Tu es la Paix",
+      title_en: "You are Peace",
       arabic: "اللَّهُمَّ أَنْتَ السَّلَامُ وَمِنْكَ السَّلَامُ، تَبَارَكْتَ يَا ذَا الْجَلَالِ وَالْإِكْرَامِ",
       translation:
         "Ô Allah, Tu es la Paix, et de Toi vient la paix. Tu es béni, ô Toi le Plein de Majesté et de Munificence.",
+      translation_en:
+        "O Allah, You are Peace and from You comes peace, blessed are You, O Owner of majesty and honour.",
     },
     { id: "a3", count: 1, ...AYAT_AL_KURSI },
     { id: "a4", count: qulCount, ...AL_IKHLAS },
     { id: "a5", count: qulCount, ...AL_FALAQ },
     { id: "a6", count: qulCount, ...AN_NAS },
-    { id: "a7", count: 33, title: "Gloire à Allah", arabic: "سُبْحَانَ اللَّهِ", translation: "Gloire à Allah." },
-    { id: "a8", count: 33, title: "Louange à Allah", arabic: "الْحَمْدُ لِلَّهِ", translation: "La louange est à Allah." },
-    { id: "a9", count: 33, title: "Allah est le plus Grand", arabic: "اللَّهُ أَكْبَرُ", translation: "Allah est le plus Grand." },
+    { id: "a7", count: 33, title: "Gloire à Allah", title_en: "Glory be to Allah", arabic: "سُبْحَانَ اللَّهِ", translation: "Gloire à Allah.", translation_en: "How perfect Allah is." },
+    { id: "a8", count: 33, title: "Louange à Allah", title_en: "Praise be to Allah", arabic: "الْحَمْدُ لِلَّهِ", translation: "La louange est à Allah.", translation_en: "All praise is due to Allah." },
+    { id: "a9", count: 33, title: "Allah est le plus Grand", title_en: "Allah is the Greatest", arabic: "اللَّهُ أَكْبَرُ", translation: "Allah est le plus Grand.", translation_en: "Allah is the greatest." },
     { id: "a10", count: tahlilCount, ...LA_ILAHA },
   ];
 }
@@ -725,9 +826,12 @@ const CATEGORIES = [
   {
     id: "matin",
     label: "Azkar du matin",
+    label_en: "Morning azkar",
     shortLabel: "Azkar matin",
+    shortLabel_en: "Morning azkar",
     arabicLabel: "أذكار الصباح",
     time: "De l'aube au lever du soleil",
+    time_en: "From dawn to sunrise",
     accent: COLORS.gold,
     accentLight: COLORS.goldLight,
     icon: "sun",
@@ -736,9 +840,12 @@ const CATEGORIES = [
   {
     id: "soir",
     label: "Azkar du soir",
+    label_en: "Evening azkar",
     shortLabel: "Azkar soir",
+    shortLabel_en: "Evening azkar",
     arabicLabel: "أذكار المساء",
     time: "De l'après-midi au coucher du soleil",
+    time_en: "From afternoon to sunset",
     accent: COLORS.indigo,
     accentLight: COLORS.indigoLight,
     icon: "moon",
@@ -747,9 +854,12 @@ const CATEGORIES = [
   {
     id: "apres",
     label: "Après la prière",
+    label_en: "After prayer",
     shortLabel: "Azkar après-prière",
+    shortLabel_en: "After-prayer azkar",
     arabicLabel: "أذكار بعد الصلاة",
     time: "Après chaque prière obligatoire",
+    time_en: "After each obligatory prayer",
     accent: COLORS.clay,
     accentLight: COLORS.clayLight,
     icon: "hands",
@@ -758,9 +868,12 @@ const CATEGORIES = [
   {
     id: "sommeil",
     label: "Azkar avant de dormir",
+    label_en: "Bedtime azkar",
     shortLabel: "Azkar du coucher",
+    shortLabel_en: "Bedtime azkar",
     arabicLabel: "أذكار النوم",
     time: "Avant de s'endormir",
+    time_en: "Before falling asleep",
     accent: COLORS.violet,
     accentLight: COLORS.violetLight,
     icon: "bed",
@@ -775,492 +888,661 @@ const CATEGORIES = [
 const INVOCATION_TOPICS = {
   sommeil: {
     label: "Sommeil",
+    label_en: "Sleep",
     emoji: "🌙",
     items: [
       {
         title: "Avant de dormir",
+        title_en: "Before sleeping",
         arabic: "بِاسْمِكَ اللَّهُمَّ أَمُوتُ وَأَحْيَا",
         translation: "En Ton nom, ô Allah, je meurs et je vis.",
+        translation_en: "In Your name, O Allah, I live and die.",
       },
       {
         title: "Au réveil",
+        title_en: "Upon waking",
         arabic: "الْحَمْدُ لِلَّهِ الَّذِي أَحْيَانَا بَعْدَ مَا أَمَاتَنَا وَإِلَيْهِ النُّشُورُ",
         translation:
           "Louange à Allah qui nous a rendus à la vie après nous avoir fait mourir, et vers Lui est la résurrection.",
+        translation_en:
+          "All praise is for Allah who gave us life after having taken it from us and unto Him is the resurrection.",
       },
     ],
   },
   ablutions: {
     label: "Ablutions",
+    label_en: "Ablutions",
     emoji: "💧",
     items: [
-      { title: "Avant les ablutions", arabic: "بِسْمِ اللَّهِ", translation: "Au nom d'Allah." },
+      { title: "Avant les ablutions", title_en: "Before ablutions", arabic: "بِسْمِ اللَّهِ", translation: "Au nom d'Allah.", translation_en: "In the name of Allah." },
       {
         title: "Après les ablutions",
+        title_en: "After ablutions",
         arabic:
           "أَشْهَدُ أَنْ لَا إِلَٰهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، وَأَشْهَدُ أَنَّ مُحَمَّدًا عَبْدُهُ وَرَسُولُهُ، اللَّهُمَّ اجْعَلْنِي مِنَ التَّوَّابِينَ وَاجْعَلْنِي مِنَ الْمُتَطَهِّرِينَ",
         translation:
           "J'atteste qu'il n'y a de divinité qu'Allah, Seul sans associé, et j'atteste que Muhammad est Son serviteur et Son messager. Ô Allah, fais de moi l'un de ceux qui se repentent et l'un de ceux qui se purifient.",
+        translation_en:
+          "I bear witness that none has the right to be worshipped except Allah, alone, without partner, and I bear witness that Muhammad is His servant and Messenger. O Allah, make me among those who repent and make me among those who purify themselves.",
       },
     ],
   },
   maison: {
     label: "Maison",
+    label_en: "Home",
     emoji: "🏠",
     items: [
       {
         title: "En entrant",
+        title_en: "Entering the home",
         arabic: "بِسْمِ اللَّهِ وَلَجْنَا، وَبِسْمِ اللَّهِ خَرَجْنَا، وَعَلَى اللَّهِ رَبِّنَا تَوَكَّلْنَا",
         translation: "Au nom d'Allah nous entrons, au nom d'Allah nous sortons, et en Allah notre Seigneur nous plaçons notre confiance.",
+        translation_en: "In the name of Allah we enter, and in the name of Allah we leave, and upon our Lord we place our trust.",
       },
       {
         title: "En sortant",
+        title_en: "Leaving the home",
         arabic: "بِسْمِ اللَّهِ، تَوَكَّلْتُ عَلَى اللَّهِ، وَلَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللَّهِ",
         translation: "Au nom d'Allah, je place ma confiance en Allah, il n'y a de force ni de puissance qu'en Allah.",
+        translation_en: "In the name of Allah, I place my trust in Allah, there is no power and no strength except with Allah.",
       },
     ],
   },
   habits: {
     label: "Habits",
+    label_en: "Clothing",
     emoji: "👕",
     items: [
       {
         title: "En portant un nouveau vêtement",
+        title_en: "Wearing a new garment",
         arabic:
           "اللَّهُمَّ لَكَ الْحَمْدُ أَنْتَ كَسَوْتَنِيهِ، أَسْأَلُكَ مِنْ خَيْرِهِ وَخَيْرِ مَا صُنِعَ لَهُ، وَأَعُوذُ بِكَ مِنْ شَرِّهِ وَشَرِّ مَا صُنِعَ لَهُ",
         translation:
           "Ô Allah, à Toi la louange, c'est Toi qui me l'as donné à porter. Je Te demande son bien et le bien de ce pour quoi il a été fait, et je cherche protection contre son mal.",
+        translation_en:
+          "O Allah, for You is all praise, You have clothed me with it. I ask You for its good and the good for which it was made, and I take refuge in You from its evil and the evil for which it was made.",
       },
       {
         title: "En se déshabillant",
+        title_en: "Undressing",
         arabic: "بِسْمِ اللَّهِ",
         translation: "Au nom d'Allah.",
+        translation_en: "In the name of Allah.",
         merit: "Le Prophète ﷺ a enseigné de dire Bismillah en se dévêtant, pour se voiler du regard des djinns. Rapporté par at-Tirmidhî (hadith hasan).",
+        merit_en: "The Prophet ﷺ taught saying Bismillah while undressing, as a screen between the eyes of the jinn and the nakedness of the children of Adam. Narrated by at-Tirmidhi (hasan).",
       },
     ],
   },
   toilettes: {
     label: "Toilettes",
+    label_en: "Restroom",
     emoji: "🚪",
     items: [
       {
         title: "En entrant",
+        title_en: "Entering",
         arabic: "اللَّهُمَّ إِنِّي أَعُوذُ بِكَ مِنَ الْخُبُثِ وَالْخَبَائِثِ",
         translation: "Ô Allah, je cherche protection auprès de Toi contre les démons mâles et femelles.",
+        translation_en: "O Allah, I take refuge in You from the male and female devils.",
       },
-      { title: "En sortant", arabic: "غُفْرَانَكَ", translation: "Je Te demande pardon." },
+      { title: "En sortant", title_en: "Leaving", arabic: "غُفْرَانَكَ", translation: "Je Te demande pardon.", translation_en: "I ask You (Allah) for forgiveness." },
     ],
   },
   nourriture: {
     label: "Nourriture",
+    label_en: "Food",
     emoji: "🍽️",
     items: [
-      { title: "Avant de manger", arabic: "بِسْمِ اللَّهِ", translation: "Au nom d'Allah." },
+      { title: "Avant de manger", title_en: "Before eating", arabic: "بِسْمِ اللَّهِ", translation: "Au nom d'Allah.", translation_en: "In the name of Allah." },
       {
         title: "Après avoir mangé",
+        title_en: "After eating",
         arabic: "الْحَمْدُ لِلَّهِ الَّذِي أَطْعَمَنِي هَذَا وَرَزَقَنِيهِ مِنْ غَيْرِ حَوْلٍ مِنِّي وَلَا قُوَّةٍ",
         translation: "Louange à Allah qui m'a nourri de ceci et me l'a accordé sans force ni puissance de ma part.",
+        translation_en: "All praise is for Allah who fed me this and provided it for me without any power or might on my part.",
       },
     ],
   },
   mosquee: {
     label: "Mosquée",
+    label_en: "Mosque",
     emoji: "🕌",
     items: [
       {
         title: "En entrant",
+        title_en: "Entering",
         arabic: "اللَّهُمَّ افْتَحْ لِي أَبْوَابَ رَحْمَتِكَ",
         translation: "Ô Allah, ouvre-moi les portes de Ta miséricorde.",
+        translation_en: "O Allah, open the gates of Your mercy for me.",
       },
       {
         title: "En sortant",
+        title_en: "Leaving",
         arabic: "اللَّهُمَّ إِنِّي أَسْأَلُكَ مِنْ فَضْلِكَ",
         translation: "Ô Allah, je Te demande de Ta grâce.",
+        translation_en: "O Allah, I ask You for Your favour.",
       },
     ],
   },
   priere: {
     label: "Avant la prière",
+    label_en: "Before prayer",
     emoji: "🤲",
     items: [
       {
         title: "Entre l'appel et la prière",
+        title_en: "Between the call to prayer and the prayer",
         arabic:
           "اللَّهُمَّ رَبَّ هَذِهِ الدَّعْوَةِ التَّامَّةِ وَالصَّلَاةِ الْقَائِمَةِ، آتِ مُحَمَّدًا الْوَسِيلَةَ وَالْفَضِيلَةَ، وَابْعَثْهُ مَقَامًا مَحْمُودًا الَّذِي وَعَدْتَهُ",
         translation:
           "Ô Allah, Seigneur de cet appel parfait et de la prière qui va être accomplie, accorde à Muhammad al-Wasīlah et la faveur, et élève-le au rang louable que Tu lui as promis.",
+        translation_en:
+          "O Allah, Lord of this perfect call and established prayer, grant Muhammad the intercession and favour, and raise him to the praiseworthy station You have promised him.",
       },
       {
         title: "Doa d'ouverture (Istiftâh)",
+        title_en: "Opening supplication (Istiftah)",
         arabic: "سُبْحَانَكَ اللَّهُمَّ وَبِحَمْدِكَ، وَتَبَارَكَ اسْمُكَ، وَتَعَالَى جَدُّكَ، وَلَا إِلَٰهَ غَيْرُكَ",
         translation:
           "Gloire et louange à Toi, ô Allah. Béni soit Ton Nom, exalté soit Ton pouvoir, et il n'y a de divinité que Toi.",
+        translation_en:
+          "How perfect You are, O Allah, and praise be to You. Blessed is Your name, and exalted is Your majesty, and none has the right to be worshipped except You.",
         merit: "Dite au tout début de la prière, après le premier Takbîr. Rapportée par Abû Dâwûd et at-Tirmidhî.",
+        merit_en: "Said at the very start of the prayer, after the opening Takbir. Narrated by Abu Dawud and at-Tirmidhi.",
       },
     ],
   },
   istikhara: {
     label: "Prière de consultation (Istikhâra)",
+    label_en: "Prayer of guidance (Istikhara)",
     emoji: "🧭",
     items: [
       {
         title: "Après 2 rakât surérogatoires, en nommant son affaire",
+        title_en: "After 2 voluntary rak'ahs, naming the matter",
         arabic:
           "اللَّهُمَّ إِنِّي أَسْتَخِيرُكَ بِعِلْمِكَ، وَأَسْتَقْدِرُكَ بِقُدْرَتِكَ، وَأَسْأَلُكَ مِنْ فَضْلِكَ الْعَظِيمِ، فَإِنَّكَ تَقْدِرُ وَلَا أَقْدِرُ، وَتَعْلَمُ وَلَا أَعْلَمُ، وَأَنْتَ عَلَّامُ الْغُيُوبِ، اللَّهُمَّ إِنْ كُنْتَ تَعْلَمُ أَنَّ هَذَا الْأَمْرَ خَيْرٌ لِي فِي دِينِي وَمَعَاشِي وَعَاقِبَةِ أَمْرِي، فَاقْدُرْهُ لِي وَيَسِّرْهُ لِي، ثُمَّ بَارِكْ لِي فِيهِ، وَإِنْ كُنْتَ تَعْلَمُ أَنَّ هَذَا الْأَمْرَ شَرٌّ لِي فِي دِينِي وَمَعَاشِي وَعَاقِبَةِ أَمْرِي، فَاصْرِفْهُ عَنِّي وَاصْرِفْنِي عَنْهُ، وَاقْدُرْ لِيَ الْخَيْرَ حَيْثُ كَانَ، ثُمَّ أَرْضِنِي بِهِ",
         translation:
           "Ô Allah, je Te consulte par Ta science, je Te demande de m'accorder la capacité par Ton pouvoir, et je Te sollicite de Ton immense grâce, car Tu es capable et je ne le suis pas, Tu sais et je ne sais pas, et Tu es Celui qui connaît parfaitement l'invisible. Ô Allah, si Tu sais que cette affaire [la nommer] est un bien pour moi dans ma religion, ma vie et l'issue de mes affaires, alors décide-la et facilite-la moi, puis bénis-la moi. Et si Tu sais que cette affaire est un mal pour moi dans ma religion, ma vie et l'issue de mes affaires, alors éloigne-la de moi et éloigne-moi d'elle, et décide pour moi le bien où qu'il se trouve, puis rends-moi satisfait de cela.",
+        translation_en:
+          "O Allah, I seek Your guidance by virtue of Your knowledge, and I seek ability by virtue of Your power, and I ask You of Your great bounty. You have power, I have none, and You know, I know not, and You are the Knower of hidden things. O Allah, if in Your knowledge this matter [name it] is good for me in my religion, my livelihood and the outcome of my affairs, then ordain it for me, make it easy for me, and bless it for me. And if in Your knowledge this matter is bad for me in my religion, my livelihood and the outcome of my affairs, then turn it away from me and turn me away from it, and ordain for me the good wherever it may be, and make me pleased with it.",
       },
     ],
   },
   hajj: {
     label: "Hajj / Omra",
+    label_en: "Hajj / Umrah",
     emoji: "🕋",
     items: [
       {
         title: "La Talbiya",
+        title_en: "The Talbiyah",
         arabic: "لَبَّيْكَ اللَّهُمَّ لَبَّيْكَ، لَبَّيْكَ لَا شَرِيكَ لَكَ لَبَّيْكَ، إِنَّ الْحَمْدَ وَالنِّعْمَةَ لَكَ وَالْمُلْكَ، لَا شَرِيكَ لَكَ",
         translation:
           "Me voici, ô Allah, me voici. Me voici, Tu n'as pas d'associé, me voici. La louange, le bienfait et le règne T'appartiennent, Tu n'as pas d'associé.",
+        translation_en:
+          "Here I am, O Allah, here I am. Here I am, You have no partner, here I am. Verily all praise, favour and sovereignty are Yours. You have no partner.",
       },
       {
         title: "Entre le coin yéménite et la Pierre noire (tawaf)",
+        title_en: "Between the Yemeni corner and the Black Stone (tawaf)",
         arabic: "رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً وَفِي الْآخِرَةِ حَسَنَةً وَقِنَا عَذَابَ النَّارِ",
         translation:
           "Notre Seigneur, accorde-nous belle part ici-bas et belle part dans l'au-delà, et préserve-nous du châtiment du Feu.",
+        translation_en:
+          "Our Lord, grant us good in this world and good in the hereafter, and save us from the punishment of the Fire.",
         merit: "L'invocation la plus fréquente du Prophète ﷺ, répétée entre le coin yéménite et la Pierre noire durant le tawaf (Sourate Al-Baqara, 201). Rapportée par al-Bukhari et Muslim.",
+        merit_en: "The Prophet's ﷺ most frequent supplication, repeated between the Yemeni corner and the Black Stone during tawaf (Surah Al-Baqarah, 201). Narrated by al-Bukhari and Muslim.",
       },
     ],
   },
   ramadan: {
     label: "Ramadan",
+    label_en: "Ramadan",
     emoji: "🌙",
     items: [
       {
         title: "En rompant le jeûne",
+        title_en: "Breaking the fast",
         arabic: "ذَهَبَ الظَّمَأُ وَابْتَلَّتِ الْعُرُوقُ وَثَبَتَ الْأَجْرُ إِنْ شَاءَ اللَّهُ",
         translation: "La soif s'en est allée, les veines se sont humidifiées, et la récompense est confirmée, si Allah le veut.",
+        translation_en: "The thirst is gone, the veins are moist, and the reward is confirmed, if Allah wills.",
       },
       {
         title: "En voyant le croissant lunaire",
+        title_en: "Sighting the new moon",
         arabic: "اللَّهُمَّ أَهِلَّهُ عَلَيْنَا بِالْأَمْنِ وَالْإِيمَانِ، وَالسَّلَامَةِ وَالْإِسْلَامِ، رَبِّي وَرَبُّكَ اللَّهُ",
         translation:
           "Ô Allah, fais que cette nouvelle lune se lève sur nous avec la sécurité, la foi, la préservation et l'islam. Mon Seigneur et le tien est Allah.",
+        translation_en:
+          "O Allah, bring this moon upon us with security and faith, with safety and Islam. My Lord and your Lord is Allah.",
         merit: "Rapportée par at-Tirmidhî (hadith hasan), dite par le Prophète ﷺ à la vue de chaque nouvelle lune.",
+        merit_en: "Narrated by at-Tirmidhi (hasan), said by the Prophet ﷺ upon sighting every new moon.",
       },
     ],
   },
   louange: {
     label: "Louange",
+    label_en: "Praise",
     emoji: "🙌",
     items: [
       {
         title: "Louange générale",
+        title_en: "General praise",
         arabic: "الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ",
         translation: "La louange est à Allah, Seigneur des mondes.",
+        translation_en: "All praise is for Allah, Lord of the worlds.",
       },
       {
         title: "Grande louange",
+        title_en: "Abundant praise",
         arabic: "الْحَمْدُ لِلَّهِ حَمْدًا كَثِيرًا طَيِّبًا مُبَارَكًا فِيهِ",
         translation: "Louange à Allah, une louange abondante, excellente et bénie.",
+        translation_en: "Praise be to Allah, praise in abundance, good and blessed.",
         merit: "Formule prononcée par un compagnon durant la prière ; le Prophète ﷺ rapporta que douze anges s'étaient empressés de l'inscrire. Rapportée par al-Bukhari.",
+        merit_en: "Said by a companion during prayer; the Prophet ﷺ reported that twelve angels rushed to record it. Narrated by al-Bukhari.",
       },
     ],
   },
   repentir: {
     label: "Repentir",
+    label_en: "Repentance",
     emoji: "🕊️",
     items: [
       {
         title: "Demande de pardon et de repentir",
+        title_en: "Seeking forgiveness and repentance",
         arabic: "رَبِّ اغْفِرْ لِي وَتُبْ عَلَيَّ إِنَّكَ أَنْتَ التَّوَّابُ الرَّحِيمُ",
         translation: "Seigneur, pardonne-moi et accepte mon repentir, Tu es Celui qui accepte le repentir, le Très Miséricordieux.",
+        translation_en: "My Lord, forgive me and accept my repentance, You are the Ever-Relenting, the Merciful.",
       },
       {
         title: "Formule complète de repentir",
+        title_en: "Complete formula of repentance",
         arabic: "أَسْتَغْفِرُ اللَّهَ الَّذِي لَا إِلَٰهَ إِلَّا هُوَ الْحَيَّ الْقَيُّومَ وَأَتُوبُ إِلَيْهِ",
         translation:
           "Je demande pardon à Allah, en dehors de qui il n'y a de divinité, le Vivant, Celui qui subsiste par Lui-même, et je me repens à Lui.",
+        translation_en:
+          "I seek the forgiveness of Allah, besides whom there is no deity, the Ever-Living, the Self-Subsisting, and I repent to Him.",
         merit: "Le Prophète ﷺ a enseigné que quiconque la prononce, Allah lui pardonne même s'il a fui le combat. Rapportée par Abû Dâwûd et at-Tirmidhî (hadith hasan sahîh).",
+        merit_en: "The Prophet ﷺ taught that whoever says it, Allah forgives him even if he had fled from battle. Narrated by Abu Dawud and at-Tirmidhi (hasan sahih).",
       },
     ],
   },
   rabbana: {
     label: "Invocations du Coran",
+    label_en: "Quranic supplications",
     emoji: "📖",
     dynamic: true,
   },
   tristesse: {
     label: "Tristesse",
+    label_en: "Sadness",
     emoji: "😔",
     items: [
       {
         title: "Contre le chagrin et l'anxiété",
+        title_en: "Against grief and anxiety",
         arabic:
           "اللَّهُمَّ إِنِّي أَعُوذُ بِكَ مِنَ الْهَمِّ وَالْحَزَنِ، وَالْعَجْزِ وَالْكَسَلِ، وَالْجُبْنِ وَالْبُخْلِ، وَضَلَعِ الدَّيْنِ وَغَلَبَةِ الرِّجَالِ",
         translation:
           "Ô Allah, je cherche protection auprès de Toi contre le souci et la tristesse, l'incapacité et la paresse, la lâcheté et l'avarice, le poids des dettes et la domination des hommes.",
+        translation_en:
+          "O Allah, I take refuge in You from anxiety and sorrow, weakness and laziness, cowardice and miserliness, the burden of debts and being overpowered by men.",
       },
       {
         title: "Allah nous suffit",
+        title_en: "Allah is sufficient for us",
         arabic: "حَسْبُنَا اللَّهُ وَنِعْمَ الْوَكِيلُ",
         translation: "Allah nous suffit, Il est le meilleur garant.",
+        translation_en: "Allah is sufficient for us, and He is the best disposer of affairs.",
         merit: "Parole des croyants face à l'épreuve (Sourate Âl 'Imrân, 173), reprise par le Prophète ﷺ. Rapportée par al-Bukhari.",
+        merit_en: "Words of the believers facing trial (Surah Aal 'Imran, 173), repeated by the Prophet ﷺ. Narrated by al-Bukhari.",
       },
     ],
   },
   joie: {
     label: "Joie",
+    label_en: "Joy",
     emoji: "😊",
     items: [
       {
         title: "En cas de joie",
+        title_en: "In times of joy",
         arabic: "الْحَمْدُ لِلَّهِ الَّذِي بِنِعْمَتِهِ تَتِمُّ الصَّالِحَاتُ",
         translation: "Louange à Allah, par la grâce de qui les bonnes œuvres s'accomplissent.",
+        translation_en: "All praise is for Allah, by whose grace good deeds are completed.",
       },
     ],
   },
   doute: {
     label: "Doute",
+    label_en: "Doubt",
     emoji: "🤔",
     items: [
       {
         title: "Contre les pensées intrusives",
+        title_en: "Against intrusive thoughts",
         arabic: "آمَنْتُ بِاللَّهِ وَرُسُلِهِ",
         translation: "Je crois en Allah et en Ses messagers.",
+        translation_en: "I believe in Allah and His messengers.",
       },
     ],
   },
   colere: {
     label: "Colère",
+    label_en: "Anger",
     emoji: "😠",
     items: [
       {
         title: "En cas de colère",
+        title_en: "In times of anger",
         arabic: "أَعُوذُ بِاللَّهِ مِنَ الشَّيْطَانِ الرَّجِيمِ",
         translation: "Je cherche protection auprès d'Allah contre le diable banni.",
+        translation_en: "I take refuge in Allah from the accursed devil.",
       },
     ],
   },
   tentation: {
     label: "Tentation",
+    label_en: "Temptation",
     emoji: "🛡️",
     items: [
       {
         title: "Guidée et chasteté",
+        title_en: "Guidance and chastity",
         arabic: "اللَّهُمَّ إِنِّي أَسْأَلُكَ الْهُدَى وَالتُّقَى وَالْعَفَافَ وَالْغِنَى",
         translation: "Ô Allah, je Te demande la guidée, la piété, la chasteté et la suffisance.",
+        translation_en: "O Allah, I ask You for guidance, piety, chastity and self-sufficiency.",
       },
       {
         title: "Contre les suggestions du diable",
+        title_en: "Against the whispers of the devil",
         arabic: "رَبِّ أَعُوذُ بِكَ مِنْ هَمَزَاتِ الشَّيَاطِينِ وَأَعُوذُ بِكَ رَبِّ أَنْ يَحْضُرُونِ",
         translation:
           "Seigneur, je cherche protection auprès de Toi contre les incitations des démons, et je cherche protection auprès de Toi, Seigneur, contre leur présence.",
+        translation_en:
+          "My Lord, I seek refuge in You from the incitements of the devils, and I seek refuge in You, my Lord, lest they be present with me.",
         merit: "Sourate Al-Mu'minûn, versets 97-98.",
+        merit_en: "Surah Al-Mu'minun, verses 97-98.",
       },
     ],
   },
   protection: {
     label: "Protection",
+    label_en: "Protection",
     emoji: "🔰",
     items: [
       {
         title: "Contre tout mal",
+        title_en: "Against all evil",
         arabic: "أَعُوذُ بِكَلِمَاتِ اللَّهِ التَّامَّاتِ مِنْ شَرِّ مَا خَلَقَ",
         translation: "Je cherche protection dans les paroles parfaites d'Allah contre le mal de ce qu'Il a créé.",
+        translation_en: "I take refuge in the perfect words of Allah from the evil of what He has created.",
       },
     ],
   },
   mariage: {
     label: "Mariage",
+    label_en: "Marriage",
     emoji: "💍",
     items: [
       {
         title: "Pour un nouveau marié",
+        title_en: "For a newly married person",
         arabic: "بَارَكَ اللَّهُ لَكَ، وَبَارَكَ عَلَيْكَ، وَجَمَعَ بَيْنَكُمَا فِي خَيْرٍ",
         translation: "Qu'Allah te bénisse, répande Sa bénédiction sur toi, et vous unisse tous deux dans le bien.",
+        translation_en: "May Allah bless you, and shower His blessings upon you, and join you both in goodness.",
       },
       {
         title: "Le mari, en épousant sa femme",
+        title_en: "The husband, upon marrying his wife",
         arabic:
           "اللَّهُمَّ إِنِّي أَسْأَلُكَ خَيْرَهَا وَخَيْرَ مَا جَبَلْتَهَا عَلَيْهِ، وَأَعُوذُ بِكَ مِنْ شَرِّهَا وَشَرِّ مَا جَبَلْتَهَا عَلَيْهِ",
         translation:
           "Ô Allah, je Te demande son bien et le bien de la nature sur laquelle Tu l'as façonnée, et je cherche protection auprès de Toi contre son mal et le mal de la nature sur laquelle Tu l'as façonnée.",
+        translation_en:
+          "O Allah, I ask You for the good in her and the good You made her disposed to, and I take refuge in You from the evil in her and the evil You made her disposed to.",
         merit: "Formule que le mari prononce en posant la main sur le front de son épouse. Rapportée par Abû Dâwûd et Ibn Mâjah (hadith hasan).",
+        merit_en: "Said by the husband while placing his hand on his wife's forehead. Narrated by Abu Dawud and Ibn Majah (hasan).",
       },
     ],
   },
   enfants: {
     label: "Enfants",
+    label_en: "Children",
     emoji: "👶",
     items: [
       {
         title: "Protection d'un enfant",
+        title_en: "Protecting a child",
         arabic:
           "أُعِيذُكَ بِكَلِمَاتِ اللَّهِ التَّامَّةِ مِنْ كُلِّ شَيْطَانٍ وَهَامَّةٍ، وَمِنْ كُلِّ عَيْنٍ لَامَّةٍ",
         translation:
           "Je te place sous la protection des paroles parfaites d'Allah, contre tout diable, toute bête venimeuse, et tout œil malveillant.",
+        translation_en:
+          "I seek protection for you in the perfect words of Allah, from every devil and every poisonous creature, and from every evil eye.",
         merit: "Formule que le Prophète ﷺ récitait pour protéger ses petits-fils Hassan et Husayn. Rapporté par al-Bukhari.",
+        merit_en: "Said by the Prophet ﷺ to protect his grandsons Hassan and Husayn. Narrated by al-Bukhari.",
       },
     ],
   },
   parents: {
     label: "Parents",
+    label_en: "Parents",
     emoji: "👨‍👩‍👧",
     items: [
       {
         title: "Pour ses parents",
+        title_en: "For one's parents",
         arabic: "رَبِّ ارْحَمْهُمَا كَمَا رَبَّيَانِي صَغِيرًا",
         translation: "Seigneur, fais-leur miséricorde comme ils m'ont élevé tout petit.",
+        translation_en: "My Lord, have mercy upon them as they raised me when I was small.",
       },
       {
         title: "Demande de pardon pour ses parents",
+        title_en: "Asking forgiveness for one's parents",
         arabic: "رَبِّ اغْفِرْ لِي وَلِوَالِدَيَّ وَلِلْمُؤْمِنِينَ يَوْمَ يَقُومُ الْحِسَابُ",
         translation: "Seigneur, pardonne-moi, ainsi qu'à mes parents et aux croyants, le jour où sera dressé le compte.",
+        translation_en: "My Lord, forgive me and my parents and the believers on the Day the reckoning is established.",
         merit: "Sourate Ibrâhîm, verset 41.",
+        merit_en: "Surah Ibrahim, verse 41.",
       },
     ],
   },
   maladie: {
     label: "Maladie",
+    label_en: "Illness",
     emoji: "🤒",
     items: [
       {
         title: "Pour un malade",
+        title_en: "For a sick person",
         arabic: "أَذْهِبِ الْبَأْسَ رَبَّ النَّاسِ، اشْفِ أَنْتَ الشَّافِي، لَا شِفَاءَ إِلَّا شِفَاؤُكَ، شِفَاءً لَا يُغَادِرُ سَقَمًا",
         translation:
           "Éloigne le mal, Seigneur des hommes, guéris, Tu es Celui qui guérit, il n'y a de guérison que la Tienne, une guérison qui ne laisse aucune maladie.",
+        translation_en:
+          "Remove the harm, Lord of mankind, and heal, You are the Healer, there is no healing but Your healing, a healing that leaves no illness behind.",
       },
       {
         title: "En visitant un malade",
+        title_en: "Visiting a sick person",
         arabic: "أَسْأَلُ اللَّهَ الْعَظِيمَ رَبَّ الْعَرْشِ الْعَظِيمِ أَنْ يَشْفِيَكَ",
         translation: "Je demande à Allah l'Immense, Seigneur du Trône immense, de te guérir.",
+        translation_en: "I ask Allah the Mighty, Lord of the mighty throne, to heal you.",
         merit: "À répéter sept fois auprès d'un malade dont le terme n'est pas arrivé. Rapporté par at-Tirmidhî (hadith hasan).",
+        merit_en: "To be repeated seven times by a sick person whose time has not come. Narrated by at-Tirmidhi (hasan).",
       },
     ],
   },
   deces: {
     label: "Décès",
+    label_en: "Death",
     emoji: "🤍",
     items: [
       {
         title: "Pour un défunt",
+        title_en: "For the deceased",
         arabic: "اللَّهُمَّ اغْفِرْ لَهُ وَارْحَمْهُ وَعَافِهِ وَاعْفُ عَنْهُ",
         translation: "Ô Allah, pardonne-lui, fais-lui miséricorde, préserve-le, et efface ses fautes.",
+        translation_en: "O Allah, forgive him, have mercy upon him, keep him safe, and pardon him.",
       },
       {
         title: "En cas de deuil ou d'épreuve",
+        title_en: "In grief or trial",
         arabic: "إِنَّا لِلَّهِ وَإِنَّا إِلَيْهِ رَاجِعُونَ، اللَّهُمَّ أْجُرْنِي فِي مُصِيبَتِي وَأَخْلِفْ لِي خَيْرًا مِنْهَا",
         translation:
           "Certes nous appartenons à Allah et c'est à Lui que nous retournons. Ô Allah, récompense-moi dans mon épreuve et accorde-moi mieux en échange.",
+        translation_en:
+          "Truly, to Allah we belong and truly, to Him we shall return. O Allah, reward me for my affliction and compensate me with something better than it.",
         merit: "Sourate Al-Baqara, verset 156, complétée par l'invocation du Prophète ﷺ rapportée par Muslim (hadith d'Umm Salama).",
+        merit_en: "Surah Al-Baqarah, verse 156, completed by the Prophet's ﷺ supplication narrated by Muslim (hadith of Umm Salamah).",
       },
     ],
   },
   societe: {
     label: "Société",
+    label_en: "Society",
     emoji: "🤝",
     items: [
       {
         title: "Le salut entre croyants",
+        title_en: "The greeting between believers",
         arabic: "السَّلَامُ عَلَيْكُمْ وَرَحْمَةُ اللَّهِ وَبَرَكَاتُهُ",
         translation: "Que la paix, la miséricorde d'Allah et Ses bénédictions soient sur vous.",
+        translation_en: "May peace, the mercy of Allah, and His blessings be upon you.",
       },
       {
         title: "En réponse à celui qui éternue",
+        title_en: "Replying to someone who sneezes",
         arabic: "يَرْحَمُكَ اللَّهُ",
         translation: "Qu'Allah te fasse miséricorde.",
+        translation_en: "May Allah have mercy on you.",
         merit: "Réponse prescrite lorsqu'une personne dit « Al-hamdu lillah » après avoir éternué. Rapportée par al-Bukhari.",
+        merit_en: "The prescribed reply when a person says 'Al-hamdu lillah' after sneezing. Narrated by al-Bukhari.",
       },
     ],
   },
   voyage: {
     label: "Voyage",
+    label_en: "Travel",
     emoji: "✈️",
     items: [
       {
         title: "En montant en voiture",
+        title_en: "Getting into a vehicle",
         arabic:
           "بِسْمِ اللَّهِ، الْحَمْدُ لِلَّهِ، سُبْحَانَ الَّذِي سَخَّرَ لَنَا هَذَا وَمَا كُنَّا لَهُ مُقْرِنِينَ، وَإِنَّا إِلَى رَبِّنَا لَمُنْقَلِبُونَ",
         translation:
           "Au nom d'Allah. Louange à Allah. Gloire à Celui qui a mis ceci à notre service, nous n'aurions pu le maîtriser par nous-mêmes, et c'est vers notre Seigneur que nous retournerons.",
+        translation_en:
+          "In the name of Allah. All praise is for Allah. How perfect He is, the One who has placed this at our service, and we ourselves would not have been capable of that, and unto our Lord we shall return.",
       },
       {
         title: "En prenant la route (long voyage)",
+        title_en: "Setting off (long journey)",
         arabic:
           "اللَّهُ أَكْبَرُ، اللَّهُ أَكْبَرُ، اللَّهُ أَكْبَرُ، اللَّهُمَّ إِنَّا نَسْأَلُكَ فِي سَفَرِنَا هَذَا الْبِرَّ وَالتَّقْوَى، وَمِنَ الْعَمَلِ مَا تَرْضَى، اللَّهُمَّ هَوِّنْ عَلَيْنَا سَفَرَنَا هَذَا وَاطْوِ عَنَّا بُعْدَهُ، اللَّهُمَّ أَنْتَ الصَّاحِبُ فِي السَّفَرِ، وَالْخَلِيفَةُ فِي الْأَهْلِ",
         translation:
           "Allah est le plus Grand (×3). Ô Allah, nous Te demandons, en ce voyage, la piété et la crainte révérencielle, et les œuvres qui T'agréent. Ô Allah, facilite-nous ce voyage et raccourcis-en la distance. Ô Allah, Tu es le Compagnon du voyage et le Gardien de la famille restée en arrière.",
+        translation_en:
+          "Allah is the greatest (×3). O Allah, we ask You for righteousness and piety on this journey of ours, and for deeds that please You. O Allah, make this journey easy for us and shorten its distance. O Allah, You are our Companion on the road and the One in whose care we leave our family.",
       },
     ],
   },
   pluie: {
     label: "Pluie",
+    label_en: "Rain",
     emoji: "🌧️",
     items: [
       {
         title: "En voyant la pluie",
+        title_en: "Upon seeing the rain",
         arabic: "اللَّهُمَّ صَيِّبًا نَافِعًا",
         translation: "Ô Allah, fais que ce soit une pluie bénéfique.",
+        translation_en: "O Allah, make it a beneficial rain.",
       },
       {
         title: "Après la pluie",
+        title_en: "After the rain",
         arabic: "مُطِرْنَا بِفَضْلِ اللَّهِ وَرَحْمَتِهِ",
         translation: "Nous avons été arrosés par la grâce et la miséricorde d'Allah.",
+        translation_en: "We have been given rain by the grace and mercy of Allah.",
         merit: "Formule qui exprime la foi correcte face à la pluie. Rapportée par al-Bukhari et Muslim.",
+        merit_en: "The expression of correct faith when facing rain. Narrated by al-Bukhari and Muslim.",
       },
     ],
   },
   animaux: {
     label: "Animaux",
+    label_en: "Animals",
     emoji: "🐑",
     items: [
       {
         title: "En montant une monture",
+        title_en: "Mounting a ride",
         arabic: "بِسْمِ اللَّهِ",
         translation: "Au nom d'Allah.",
+        translation_en: "In the name of Allah.",
       },
     ],
   },
   richesse: {
     label: "Richesse",
+    label_en: "Wealth",
     emoji: "💰",
     items: [
       {
         title: "Pour la subsistance licite",
+        title_en: "For lawful provision",
         arabic: "اللَّهُمَّ اكْفِنِي بِحَلَالِكَ عَنْ حَرَامِكَ، وَأَغْنِنِي بِفَضْلِكَ عَمَّنْ سِوَاكَ",
         translation:
           "Ô Allah, suffis-moi par ce qui est licite loin de ce qui est illicite, et rends-moi riche par Ta grâce, me passant de tout autre que Toi.",
+        translation_en:
+          "O Allah, suffice me with what You have allowed instead of what You have forbidden, and make me independent of all others besides You by Your grace.",
       },
     ],
   },
   savoir: {
     label: "Savoir",
+    label_en: "Knowledge",
     emoji: "📚",
     items: [
       {
         title: "Demande de science",
+        title_en: "Asking for knowledge",
         arabic: "رَبِّ زِدْنِي عِلْمًا",
         translation: "Seigneur, accroît mon savoir.",
+        translation_en: "My Lord, increase me in knowledge.",
       },
       {
         title: "Science bénéfique",
+        title_en: "Beneficial knowledge",
         arabic: "اللَّهُمَّ انْفَعْنِي بِمَا عَلَّمْتَنِي، وَعَلِّمْنِي مَا يَنْفَعُنِي، وَزِدْنِي عِلْمًا",
         translation: "Ô Allah, fais-moi profiter de ce que Tu m'as enseigné, enseigne-moi ce qui m'est utile, et accroît mon savoir.",
+        translation_en: "O Allah, benefit me with what You have taught me, and teach me what will benefit me, and increase me in knowledge.",
         merit: "Rapportée par Ibn Mâjah et authentifiée par l'imam al-Albânî.",
+        merit_en: "Narrated by Ibn Majah and authenticated by Imam al-Albani.",
       },
     ],
   },
   bienfaits: {
     label: "Bienfaits",
+    label_en: "Blessings",
     emoji: "🎁",
     items: [
       {
         title: "En voyant une personne éprouvée",
+        title_en: "Upon seeing someone afflicted",
         arabic:
           "الْحَمْدُ لِلَّهِ الَّذِي عَافَانِي مِمَّا ابْتَلَاكَ بِهِ، وَفَضَّلَنِي عَلَى كَثِيرٍ مِمَّنْ خَلَقَ تَفْضِيلًا",
         translation:
           "Louange à Allah qui m'a préservé de ce dont Il t'a éprouvé, et m'a favorisé par rapport à beaucoup de Ses créatures.",
+        translation_en:
+          "All praise is for Allah who has kept me safe from what He has afflicted you with, and favoured me above much of what He has created.",
         merit: "À dire discrètement, sans que la personne éprouvée l'entende. Rapporté par at-Tirmidhi.",
+        merit_en: "To be said quietly, without the afflicted person hearing it. Narrated by at-Tirmidhi.",
       },
     ],
   },
@@ -1268,12 +1550,12 @@ const INVOCATION_TOPICS = {
 
 // Intelligent grouping — thematic, not a flat grid
 const INVOCATION_GROUPS = [
-  { id: "quotidien", label: "Moments du quotidien", topics: ["sommeil", "ablutions", "maison", "habits", "toilettes", "nourriture"] },
-  { id: "culte", label: "Actes d'adoration", topics: ["mosquee", "priere", "istikhara", "hajj", "ramadan", "louange", "repentir", "rabbana"] },
-  { id: "coeur", label: "États du cœur", topics: ["tristesse", "joie", "doute", "colere", "tentation", "protection"] },
-  { id: "relations", label: "Étapes et relations", topics: ["mariage", "enfants", "parents", "maladie", "deces", "societe"] },
-  { id: "monde", label: "Dans le monde", topics: ["voyage", "pluie", "animaux", "richesse", "savoir"] },
-  { id: "perso", label: "Personnel", topics: ["bienfaits"] },
+  { id: "quotidien", label: "Moments du quotidien", label_en: "Daily moments", topics: ["sommeil", "ablutions", "maison", "habits", "toilettes", "nourriture"] },
+  { id: "culte", label: "Actes d'adoration", label_en: "Acts of worship", topics: ["mosquee", "priere", "istikhara", "hajj", "ramadan", "louange", "repentir", "rabbana"] },
+  { id: "coeur", label: "États du cœur", label_en: "States of the heart", topics: ["tristesse", "joie", "doute", "colere", "tentation", "protection"] },
+  { id: "relations", label: "Étapes et relations", label_en: "Life stages and relationships", topics: ["mariage", "enfants", "parents", "maladie", "deces", "societe"] },
+  { id: "monde", label: "Dans le monde", label_en: "Out in the world", topics: ["voyage", "pluie", "animaux", "richesse", "savoir"] },
+  { id: "perso", label: "Personnel", label_en: "Personal", topics: ["bienfaits"] },
 ];
 
 const PERSONAL_INVOCATIONS_KEY = "azkar-personal-invocations-v1";
@@ -1936,7 +2218,7 @@ function BeadRing({ current, target, color, colorLight, pulse }) {
               {current}
             </span>
             <span className="font-ui" style={{ fontSize: 13, color: COLORS.inkSoft, marginTop: 2 }}>
-              sur {target}
+              {t("label_of")} {target}
             </span>
           </>
         )}
@@ -2308,14 +2590,17 @@ function AzkarApp() {
     []
   );
 
-  // App language (UI chrome only for now — azkar/invocation content stays
-  // French until translated in a later pass). Arabic also flips the whole
-  // app to RTL.
+  // App language. 'system' follows the phone's own locale (like the theme's
+  // "Système" option); otherwise the user's explicit fr/en/ar choice is used
+  // as-is. Arabic also flips the whole app to RTL.
   const [language, setLanguageState] = useState("fr");
-  const handleSetLanguage = useCallback((lang) => {
-    setCurrentLanguage(lang);
-    setLanguageState(lang);
-    window.storage.set(LANGUAGE_KEY, lang, false).catch(() => {});
+  const [languagePref, setLanguagePref] = useState("system"); // 'system' | 'fr' | 'en' | 'ar'
+  const handleSetLanguage = useCallback((pref) => {
+    const effective = pref === "system" ? detectSystemLanguage() : pref;
+    setLanguagePref(pref);
+    setCurrentLanguage(effective);
+    setLanguageState(effective);
+    window.storage.set(LANGUAGE_KEY, pref, false).catch(() => {});
   }, []);
 
   // Haptic feedback on/off (tasbih + bead-ring taps)
@@ -2514,15 +2799,19 @@ function AzkarApp() {
       currentAccent = loadedAccentTheme;
       setAccentThemeState(loadedAccentTheme);
 
-      let loadedLanguage = "fr";
+      let loadedLanguagePref = "system";
       try {
         const res = await window.storage.get(LANGUAGE_KEY, false);
-        if (res && LANGUAGES.some((l) => l.id === res.value)) loadedLanguage = res.value;
+        if (res && res.value && (res.value === "system" || LANGUAGES.some((l) => l.id === res.value))) {
+          loadedLanguagePref = res.value;
+        }
       } catch (e) {
-        // no saved language — default to French
+        // no saved preference — default to following the system
       }
-      setCurrentLanguage(loadedLanguage);
-      setLanguageState(loadedLanguage);
+      const effectiveLanguage = loadedLanguagePref === "system" ? detectSystemLanguage() : loadedLanguagePref;
+      setLanguagePref(loadedLanguagePref);
+      setCurrentLanguage(effectiveLanguage);
+      setLanguageState(effectiveLanguage);
 
       let loadedHaptics = true;
       try {
@@ -2806,6 +3095,7 @@ function AzkarApp() {
     const calc = resolveCalcConfig(prayerSettings);
     const offset = calc.offsetMin || {};
     const iqama = prayerSettings.iqamaOffsets || {};
+    const notify = prayerSettings.notifyPrayers || {};
     WidgetBridge.update({
       lat: location.lat,
       lng: location.lng,
@@ -2824,6 +3114,11 @@ function AzkarApp() {
       iqamaAsr: iqama.asr ?? 0,
       iqamaMaghrib: iqama.maghrib ?? 0,
       iqamaIsha: iqama.isha ?? 0,
+      notifyFajr: notify.fajr !== false,
+      notifyDhuhr: notify.dhuhr !== false,
+      notifyAsr: notify.asr !== false,
+      notifyMaghrib: notify.maghrib !== false,
+      notifyIsha: notify.isha !== false,
     }).catch(() => {});
   }, [
     loaded,
@@ -2833,6 +3128,7 @@ function AzkarApp() {
     prayerSettings.customIshaAngle,
     prayerSettings.customOffsets,
     prayerSettings.iqamaOffsets,
+    prayerSettings.notifyPrayers,
   ]);
 
   const updateCategory = useCallback(
@@ -2982,6 +3278,8 @@ function AzkarApp() {
           prayerSettings={prayerSettings}
           onToggleNotifyPrayer={handleToggleNotifyPrayer}
           onReplayOnboarding={replayOnboarding}
+          languagePref={languagePref}
+          onSetLanguage={handleSetLanguage}
         />
       )}
 
@@ -3110,6 +3408,7 @@ function AzkarApp() {
           onOpenPrivacy={() => setScreen("privacy")}
           onReplayOnboarding={replayOnboarding}
           language={language}
+          languagePref={languagePref}
           onSetLanguage={handleSetLanguage}
         />
       )}
@@ -3384,25 +3683,80 @@ function OnboardingOverlay({ onNavigate, onEnableNotifications, onDismiss }) {
 /* ------------------------------------------------------------------ */
 /* Home screen                                                         */
 /* ------------------------------------------------------------------ */
-function HomeScreen({ progress, catCompletion, onOpen, onOpenApresPicker, streak, onOpenHistory, onOpenQibla, onOpenCalendar, onOpenMushaf, onToggleTheme, location, prayerSettings, onToggleNotifyPrayer, onReplayOnboarding }) {
+function HomeScreen({ progress, catCompletion, onOpen, onOpenApresPicker, streak, onOpenHistory, onOpenQibla, onOpenCalendar, onOpenMushaf, onToggleTheme, location, prayerSettings, onToggleNotifyPrayer, onReplayOnboarding, languagePref, onSetLanguage }) {
   const { times, nextKey, minutesRemaining } = usePrayerTimes(location, prayerSettings);
   const today = new Date();
   const hijriLabel = getHijriLabel(today);
   const gregorianLabel = getGregorianLabel(today);
+  const [showLanguageMenu, setShowLanguageMenu] = useState(false);
 
   return (
     <div className="min-h-screen flex flex-col px-5 pt-6 pb-28 fade-in">
-      {/* Top bar: quick theme toggle (left), tutorial + history (right) —
-          Tasbih/Coran/Invocations/Réglages already live in the bottom tab bar. */}
+      {/* Top bar: quick theme + language toggles (left), tutorial + history
+          (right) — Tasbih/Coran/Invocations/Réglages already live in the
+          bottom tab bar. */}
       <div className="flex items-center justify-between mb-3">
-        <button onClick={onToggleTheme} className="p-2.5 -ml-2 active:opacity-60" aria-label="Changer de thème">
-          <CategoryIcon type={currentTheme === "dark" ? "sun" : "moon"} color={COLORS.ink} size={20} />
-        </button>
+        <div className="flex items-center gap-1 -ml-2">
+          <button onClick={onToggleTheme} className="p-2.5 active:opacity-60" aria-label={t("toggle_theme")}>
+            <CategoryIcon type={currentTheme === "dark" ? "sun" : "moon"} color={COLORS.ink} size={20} />
+          </button>
+          <div className="relative">
+            <button
+              onClick={() => setShowLanguageMenu((v) => !v)}
+              className="p-2.5 active:opacity-60"
+              aria-label={t("settings_language")}
+            >
+              <GlobeIcon color={COLORS.ink} size={20} />
+            </button>
+            {showLanguageMenu && (
+              <>
+                <div className="fixed inset-0" style={{ zIndex: 40 }} onClick={() => setShowLanguageMenu(false)} />
+                <div
+                  className="absolute left-0 top-full mt-1 flex flex-col gap-1 fade-in"
+                  style={{
+                    background: COLORS.parchment,
+                    border: `1px solid ${COLORS.parchmentDark}`,
+                    borderRadius: 14,
+                    padding: 6,
+                    minWidth: 180,
+                    zIndex: 41,
+                    boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+                  }}
+                >
+                  {[{ id: "system", label: t("lang_system") }, ...LANGUAGES].map((l) => {
+                    const active = languagePref === l.id;
+                    return (
+                      <button
+                        key={l.id}
+                        onClick={() => {
+                          onSetLanguage(l.id);
+                          setShowLanguageMenu(false);
+                        }}
+                        className="flex items-center justify-between active:opacity-70"
+                        style={{
+                          background: active ? "rgba(231,204,133,0.16)" : "transparent",
+                          borderRadius: 9,
+                          padding: "8px 10px",
+                          textAlign: "left",
+                        }}
+                      >
+                        <span className="font-ui font-semibold" style={{ color: active ? COLORS.goldLight : COLORS.ink, fontSize: 12.5 }}>
+                          {l.label}
+                        </span>
+                        {active && <CheckIcon color={COLORS.goldLight} size={14} />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
         <div className="flex items-center gap-1 -mr-2">
-          <button onClick={onReplayOnboarding} className="p-2.5 active:opacity-60" aria-label="Revoir le tutoriel">
+          <button onClick={onReplayOnboarding} className="p-2.5 active:opacity-60" aria-label={t("tour_replay")}>
             <InfoIcon color={COLORS.ink} size={20} />
           </button>
-          <button onClick={onOpenHistory} className="p-2.5 active:opacity-60" aria-label="Historique">
+          <button onClick={onOpenHistory} className="p-2.5 active:opacity-60" aria-label={t("title_history")}>
             <HistoryIcon color={COLORS.ink} size={20} />
           </button>
         </div>
@@ -3462,7 +3816,7 @@ function HomeScreen({ progress, catCompletion, onOpen, onOpenApresPicker, streak
                 </div>
               </div>
               <p className="font-display font-semibold mt-1.5" style={{ color: COLORS.ink, fontSize: 9.5, lineHeight: 1.2 }}>
-                {cat.shortLabel || cat.label}
+                {currentLanguage === "ar" && cat.arabicLabel ? cat.arabicLabel : trField(cat, "shortLabel") || trField(cat, "label")}
               </p>
             </button>
           );
@@ -3616,8 +3970,10 @@ function VerseOfDayCard() {
     let cancelled = false;
     (async () => {
       const dateKey = todayKey();
+      const lang = currentLanguage;
+      const cacheKey = `${VERSE_OF_DAY_KEY}-${lang}`;
       try {
-        const res = await window.storage.get(VERSE_OF_DAY_KEY, false);
+        const res = await window.storage.get(cacheKey, false);
         if (res && res.value) {
           const parsed = JSON.parse(res.value);
           if (parsed.date === dateKey && parsed.verse) {
@@ -3631,22 +3987,23 @@ function VerseOfDayCard() {
       }
       try {
         const globalAyah = (dayOfYear(new Date()) % QURAN_TOTAL_AYAHS) + 1;
-        const res = await fetch(`https://api.alquran.cloud/v1/ayah/${globalAyah}/editions/quran-uthmani,fr.hamidullah`).then((r) =>
+        const editions = lang === "ar" ? "quran-uthmani" : `quran-uthmani,${lang === "en" ? "en.sahih" : "fr.hamidullah"}`;
+        const res = await fetch(`https://api.alquran.cloud/v1/ayah/${globalAyah}/editions/${editions}`).then((r) =>
           r.json()
         );
         if (cancelled) return;
         const data = res?.data;
-        if (!Array.isArray(data) || data.length < 2) throw new Error("bad response");
+        if (!Array.isArray(data) || (lang !== "ar" && data.length < 2)) throw new Error("bad response");
         const surahMeta = QURAN_SURAHS.find((s) => s.number === data[0].surah.number);
         const v = {
           arabic: data[0].text,
-          translation: data[1].text,
+          translation: lang === "ar" ? "" : data[1].text,
           surahTranslit: surahMeta ? surahMeta.translit : data[0].surah.englishName,
           ayahNumber: data[0].numberInSurah,
         };
         setVerse(v);
         setStatus("ready");
-        window.storage.set(VERSE_OF_DAY_KEY, JSON.stringify({ date: dateKey, verse: v }), false).catch(() => {});
+        window.storage.set(cacheKey, JSON.stringify({ date: dateKey, verse: v }), false).catch(() => {});
       } catch (e) {
         if (!cancelled) setStatus("error");
       }
@@ -3654,7 +4011,7 @@ function VerseOfDayCard() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [currentLanguage]);
 
   if (status === "error") return null;
 
@@ -3668,7 +4025,7 @@ function VerseOfDayCard() {
           className="font-ui font-semibold"
           style={{ color: COLORS.inkSoft, fontSize: 10, letterSpacing: 0.6, textTransform: "uppercase" }}
         >
-          Verset du jour
+          {t("verse_of_day")}
         </p>
         {verse && (
           <p className="font-ui" style={{ color: COLORS.goldLight, fontSize: 10.5 }}>
@@ -3678,17 +4035,21 @@ function VerseOfDayCard() {
       </div>
       {status === "loading" || !verse ? (
         <p className="font-ui" style={{ color: COLORS.inkSoft, fontSize: 12 }}>
-          Chargement…
+          {t("loading")}
         </p>
       ) : (
         <>
           <p dir="rtl" className="font-arabic text-right" style={{ color: COLORS.ink, fontSize: 18, lineHeight: 1.8 }}>
             {verse.arabic}
           </p>
-          <div style={{ height: 1, background: COLORS.parchmentDark, margin: "10px 0" }} />
-          <p className="font-display" style={{ color: COLORS.inkSoft, fontSize: 13, fontStyle: "italic", lineHeight: 1.5 }}>
-            {verse.translation}
-          </p>
+          {currentLanguage !== "ar" && (
+            <>
+              <div style={{ height: 1, background: COLORS.parchmentDark, margin: "10px 0" }} />
+              <p className="font-display" style={{ color: COLORS.inkSoft, fontSize: 13, fontStyle: "italic", lineHeight: 1.5 }}>
+                {verse.translation}
+              </p>
+            </>
+          )}
         </>
       )}
     </div>
@@ -3772,7 +4133,9 @@ function PrayerTimesCard({ times, nextKey, minutesRemaining, locationLabel, iqam
                   onClick={() => onToggleNotifyPrayer(p.key)}
                   className="active:opacity-60"
                   style={{ padding: 4, marginTop: 2 }}
-                  aria-label={`${p.label} : ${notifyPrayers && notifyPrayers[p.key] === false ? "activer" : "désactiver"} le rappel`}
+                  aria-label={`${p.label} : ${
+                    notifyPrayers && notifyPrayers[p.key] === false ? t("enable_reminder") : t("disable_reminder")
+                  }`}
                 >
                   <BellIcon
                     color={notifyPrayers && notifyPrayers[p.key] === false ? inkA(0.3) : COLORS.goldLight}
@@ -4122,15 +4485,19 @@ function CategoryScreen({
     <div className="min-h-screen flex flex-col px-5 pt-6 pb-8 fade-in">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
-        <button onClick={onBack} className="p-2.5 -ml-2 active:opacity-60" aria-label="Retour">
+        <button onClick={onBack} className="p-2.5 -ml-2 active:opacity-60" aria-label={t("back")}>
           <BackIcon color={COLORS.ink} />
         </button>
         <div className="text-center">
           <p className="font-display" style={{ color: COLORS.ink, fontSize: 15 }}>
-            {prayerLabel ? `Après ${prayerLabel}` : category.label}
+            {prayerLabel
+              ? `${t("label_after")} ${prayerLabel}`
+              : currentLanguage === "ar" && category.arabicLabel
+              ? category.arabicLabel
+              : trField(category, "label")}
           </p>
         </div>
-        <button onClick={onReset} className="p-2.5 -mr-2 active:opacity-60" aria-label="Réinitialiser la progression">
+        <button onClick={onReset} className="p-2.5 -mr-2 active:opacity-60" aria-label={t("reset_progress")}>
           <ResetIcon color={COLORS.ink} />
         </button>
       </div>
@@ -4169,7 +4536,7 @@ function CategoryScreen({
         >
           <div className="flex items-center justify-center gap-2">
             <p className="font-ui font-semibold text-center" style={{ color: category.accent, fontSize: 12, letterSpacing: 0.5, textTransform: "uppercase" }}>
-              {item.title}
+              {trField(item, "title")}
             </p>
             {item.audio && <AudioPlayButton key={item.id} src={item.audio} color={category.accent} />}
           </div>
@@ -4182,11 +4549,14 @@ function CategoryScreen({
             {item.arabic}
           </p>
 
-          <div style={{ height: 1, background: COLORS.parchmentDark, margin: "18px 0" }} />
-
-          <p className="font-display" style={{ color: COLORS.inkSoft, fontSize: 14, lineHeight: 1.6, fontStyle: "italic" }}>
-            {item.translation}
-          </p>
+          {currentLanguage !== "ar" && (
+            <>
+              <div style={{ height: 1, background: COLORS.parchmentDark, margin: "18px 0" }} />
+              <p className="font-display" style={{ color: COLORS.inkSoft, fontSize: 14, lineHeight: 1.6, fontStyle: "italic" }}>
+                {trField(item, "translation")}
+              </p>
+            </>
+          )}
         </div>
 
         {/* Bead ring — tap to count */}
@@ -4204,7 +4574,7 @@ function CategoryScreen({
             pulse={pulseId === item.id}
           />
           <span className="font-ui" style={{ color: COLORS.ink, fontSize: 12, opacity: 0.75 }}>
-            {complete ? "Terminé ✓" : "Toucher pour compter"}
+            {complete ? t("label_completed") : t("tap_to_count")}
           </span>
         </button>
       </div>
@@ -4216,7 +4586,7 @@ function CategoryScreen({
           disabled={index === 0}
           className="p-3 rounded-full active:opacity-60"
           style={{ opacity: index === 0 ? 0.25 : 1 }}
-          aria-label="Dhikr précédent"
+          aria-label={t("prev_dhikr")}
         >
           <ChevronIcon dir="left" color={COLORS.ink} />
         </button>
@@ -4228,7 +4598,7 @@ function CategoryScreen({
           disabled={index === items.length - 1}
           className="p-3 rounded-full active:opacity-60"
           style={{ opacity: index === items.length - 1 ? 0.25 : 1 }}
-          aria-label="Dhikr suivant"
+          aria-label={t("next_dhikr")}
         >
           <ChevronIcon dir="right" color={COLORS.ink} />
         </button>
@@ -4261,7 +4631,15 @@ function DoneScreen({ category, prayerLabel, onHome }) {
         ما شاء الله
       </p>
       <p className="font-display" style={{ color: COLORS.ink, fontSize: 18, marginTop: 10 }}>
-        {prayerLabel ? `Azkar après ${prayerLabel} terminés` : `${category.label} terminés`}
+        {prayerLabel
+          ? currentLanguage === "en"
+            ? `${prayerLabel} azkar completed`
+            : currentLanguage === "ar"
+            ? `اكتملت أذكار بعد ${prayerLabel}`
+            : `Azkar après ${prayerLabel} terminés`
+          : currentLanguage === "ar" && category.arabicLabel
+          ? `اكتملت ${category.arabicLabel}`
+          : `${trField(category, "label")} ${t("label_done")}`}
       </p>
       <p className="font-ui" style={{ color: COLORS.inkSoft, fontSize: 13, marginTop: 8, lineHeight: 1.6 }}>
         Qu'Allah accepte ton dhikr et t'accorde Sa protection.
@@ -4511,7 +4889,7 @@ function DashboardScreen({ history, streak }) {
                 {done ? <CheckIcon color={cat.accent} size={20} /> : <CategoryIcon type={cat.icon} color={inkA(0.35)} size={18} />}
               </div>
               <p className="font-display font-semibold mt-1.5" style={{ color: COLORS.ink, fontSize: 9.5, lineHeight: 1.2 }}>
-                {cat.shortLabel || cat.label}
+                {currentLanguage === "ar" && cat.arabicLabel ? cat.arabicLabel : trField(cat, "shortLabel") || trField(cat, "label")}
               </p>
             </div>
           );
@@ -4694,6 +5072,7 @@ const TASBIH_PHRASES = [
     short: "Subhanallahi wa bihamdihi",
     arabic: "سُبْحَانَ اللَّهِ وَبِحَمْدِهِ",
     translation: "Gloire et pureté à Allah, et louange à Lui.",
+    translation_en: "How perfect Allah is and I praise Him.",
     merit:
       "Deux paroles légères sur la langue, lourdes dans la balance des bonnes actions et aimées du Tout Miséricordieux. Rapporté par al-Bukhari et Muslim.",
   },
@@ -4702,6 +5081,7 @@ const TASBIH_PHRASES = [
     short: "Subhanallah",
     arabic: "سُبْحَانَ اللَّهِ",
     translation: "Gloire à Allah.",
+    translation_en: "How perfect Allah is.",
     merit:
       "Fait partie des quatre paroles les plus aimées d'Allah, avec Alhamdulillah, Lā ilāha illallāh et Allahu Akbar. Rapporté par Muslim.",
   },
@@ -4710,6 +5090,7 @@ const TASBIH_PHRASES = [
     short: "Alhamdulillah",
     arabic: "الْحَمْدُ لِلَّهِ",
     translation: "La louange est à Allah.",
+    translation_en: "All praise is due to Allah.",
     merit:
       "Le Prophète ﷺ a enseigné que cette parole remplit la balance des bonnes actions le Jour du Jugement. Rapporté par Muslim.",
   },
@@ -4718,6 +5099,7 @@ const TASBIH_PHRASES = [
     short: "Allahu Akbar",
     arabic: "اللَّهُ أَكْبَرُ",
     translation: "Allah est le plus Grand.",
+    translation_en: "Allah is the greatest.",
     merit:
       "L'une des quatre paroles les plus aimées d'Allah parmi tout ce qui peut être dit. Rapporté par Muslim.",
   },
@@ -4726,6 +5108,7 @@ const TASBIH_PHRASES = [
     short: "Lā ilāha illallāh",
     arabic: "لَا إِلَٰهَ إِلَّا اللَّهُ",
     translation: "Il n'y a de divinité qu'Allah.",
+    translation_en: "None has the right to be worshipped except Allah.",
     merit:
       "La meilleure invocation, selon le Prophète ﷺ, est celle qu'il a lui-même prononcée ainsi que les prophètes avant lui : Lā ilāha illallāh. Rapporté par at-Tirmidhi.",
   },
@@ -4735,6 +5118,8 @@ const TASBIH_PHRASES = [
     arabic: "لَا إِلَٰهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ، وَهُوَ عَلَىٰ كُلِّ شَيْءٍ قَدِيرٌ",
     translation:
       "Il n'y a de divinité qu'Allah, Seul, sans associé. À Lui le règne, à Lui la louange, et Il est capable de toute chose.",
+    translation_en:
+      "None has the right to be worshipped except Allah, alone, without partner, to Him belongs all sovereignty and praise, and He is over all things omnipotent.",
     merit:
       "Celui qui la répète cent fois par jour obtient une récompense équivalente à l'affranchissement de dix esclaves, cent bonnes actions sont inscrites, cent péchés effacés, et il est protégé du diable ce jour-là. Rapporté par al-Bukhari et Muslim.",
   },
@@ -4743,6 +5128,7 @@ const TASBIH_PHRASES = [
     short: "Lā hawla wa lā quwwata…",
     arabic: "لَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللَّهِ",
     translation: "Il n'y a de force ni de puissance qu'en Allah.",
+    translation_en: "There is no power and no strength except with Allah.",
     merit: "Le Prophète ﷺ l'a désignée comme un trésor parmi les trésors du Paradis. Rapporté par al-Bukhari et Muslim.",
   },
   {
@@ -4750,6 +5136,7 @@ const TASBIH_PHRASES = [
     short: "Astaghfirullah",
     arabic: "أَسْتَغْفِرُ اللَّهَ",
     translation: "Je demande pardon à Allah.",
+    translation_en: "I seek the forgiveness of Allah.",
     merit:
       "Le Prophète ﷺ, pourtant préservé du péché, demandait pardon à Allah plus de soixante-dix fois par jour. Rapporté par al-Bukhari.",
   },
@@ -4758,6 +5145,7 @@ const TASBIH_PHRASES = [
     short: "Salawat sur le Prophète",
     arabic: "اللَّهُمَّ صَلِّ عَلَىٰ مُحَمَّدٍ",
     translation: "Ô Allah, prie sur Muhammad.",
+    translation_en: "O Allah, send prayers upon Muhammad.",
     merit:
       "Quiconque prie une fois sur le Prophète ﷺ, Allah prie dix fois sur lui en retour. Rapporté par Muslim.",
   },
@@ -4766,6 +5154,7 @@ const TASBIH_PHRASES = [
     short: "Hasbunallahu wa ni'mal wakīl",
     arabic: "حَسْبُنَا اللَّهُ وَنِعْمَ الْوَكِيلُ",
     translation: "Allah nous suffit, et quel excellent garant Il est.",
+    translation_en: "Allah is sufficient for us, and He is the best disposer of affairs.",
     merit:
       "Parole prononcée par Ibrahim lorsqu'il fut jeté dans le feu, et par les croyants face à leurs ennemis. Rapportée dans le Coran, sourate Āl 'Imrān, verset 173.",
   },
@@ -4774,6 +5163,7 @@ const TASBIH_PHRASES = [
     short: "Subhanallahi-l-'Adhīm…",
     arabic: "سُبْحَانَ اللَّهِ الْعَظِيمِ وَبِحَمْدِهِ",
     translation: "Gloire à Allah l'Immense, et louange à Lui.",
+    translation_en: "How perfect Allah, the Almighty, is, and I praise Him.",
     merit: "Celui qui la répète souvent voit un palmier planté pour lui au Paradis. Rapporté par at-Tirmidhi.",
   },
   {
@@ -4781,6 +5171,7 @@ const TASBIH_PHRASES = [
     short: "Allahumma innaka 'afuwwun…",
     arabic: "اللَّهُمَّ إِنَّكَ عَفُوٌّ تُحِبُّ الْعَفْوَ فَاعْفُ عَنِّي",
     translation: "Ô Allah, Tu es Celui qui pardonne et Tu aimes le pardon, pardonne-moi.",
+    translation_en: "O Allah, You are Most Forgiving, and You love forgiveness, so forgive me.",
     merit:
       "Le Prophète ﷺ a enseigné cette invocation à 'Ā'icha pour la Nuit du Destin, mais elle peut être dite à tout moment. Rapporté par at-Tirmidhi.",
   },
@@ -4789,6 +5180,7 @@ const TASBIH_PHRASES = [
     short: "Invocation de Yūnus",
     arabic: "لَا إِلَٰهَ إِلَّا أَنْتَ سُبْحَانَكَ إِنِّي كُنْتُ مِنَ الظَّالِمِينَ",
     translation: "Il n'y a de divinité que Toi, gloire à Toi, j'ai été du nombre des injustes.",
+    translation_en: "There is no deity except You; exalted are You. Indeed, I have been of the wrongdoers.",
     merit:
       "L'invocation par laquelle le prophète Yūnus fut délivré du ventre de la baleine. Le Prophète ﷺ a dit qu'aucun musulman ne l'invoque pour une affliction sans qu'Allah ne la lui dissipe. Rapporté par at-Tirmidhi.",
   },
@@ -4797,6 +5189,8 @@ const TASBIH_PHRASES = [
     short: "Allahu akbaru kabīran…",
     arabic: "اللَّهُ أَكْبَرُ كَبِيرًا، وَالْحَمْدُ لِلَّهِ كَثِيرًا، وَسُبْحَانَ اللَّهِ بُكْرَةً وَأَصِيلًا",
     translation: "Allah est le plus Grand, immensément grand. Louange à Allah, abondamment. Gloire à Allah, matin et soir.",
+    translation_en:
+      "Allah is the Greatest, greatly. All praise is due to Allah, abundantly. And how perfect Allah is, morning and evening.",
     merit:
       "Le Prophète ﷺ a demandé qui avait prononcé ces mots tant ils lui avaient plu : douze anges se sont empressés de les faire monter au ciel. Rapporté par Muslim.",
   },
@@ -4805,6 +5199,7 @@ const TASBIH_PHRASES = [
     short: "Rabbi ighfir lī",
     arabic: "رَبِّ اغْفِرْ لِي",
     translation: "Seigneur, pardonne-moi.",
+    translation_en: "My Lord, forgive me.",
     merit: "Une demande de pardon simple et directe, que le Prophète ﷺ répétait entre les deux prosternations de la prière.",
   },
 ];
@@ -5059,22 +5454,28 @@ function TasbihScreen({ arabicSize }) {
           <p dir="rtl" className="font-arabic text-right mt-3" style={{ color: COLORS.ink, fontSize: arabicSize || ARABIC_SIZES.md, lineHeight: 1.7 }}>
             {phrase.arabic}
           </p>
-          <div style={{ height: 1, background: COLORS.parchmentDark, margin: "12px 0" }} />
-          <p className="font-display" style={{ color: COLORS.inkSoft, fontSize: 13.5, fontStyle: "italic" }}>
-            {phrase.translation}
-          </p>
-          <div className="flex items-start gap-2 mt-3" style={{ paddingTop: 10, borderTop: `1px dashed ${COLORS.parchmentDark}` }}>
-            <MeritIcon color={COLORS.gold} />
-            <p className="font-ui" style={{ color: COLORS.inkSoft, fontSize: 12, lineHeight: 1.55 }}>
-              {phrase.merit}
-            </p>
-          </div>
+          {currentLanguage !== "ar" && (
+            <>
+              <div style={{ height: 1, background: COLORS.parchmentDark, margin: "12px 0" }} />
+              <p className="font-display" style={{ color: COLORS.inkSoft, fontSize: 13.5, fontStyle: "italic" }}>
+                {trField(phrase, "translation")}
+              </p>
+            </>
+          )}
+          {currentLanguage !== "ar" && (
+            <div className="flex items-start gap-2 mt-3" style={{ paddingTop: 10, borderTop: `1px dashed ${COLORS.parchmentDark}` }}>
+              <MeritIcon color={COLORS.gold} />
+              <p className="font-ui" style={{ color: COLORS.inkSoft, fontSize: 12, lineHeight: 1.55 }}>
+                {trField(phrase, "merit")}
+              </p>
+            </div>
+          )}
         </div>
 
         <button onClick={handleTap} className="mt-7 flex flex-col items-center gap-3" style={{ touchAction: "manipulation" }}>
           <TasbihButton count={count} pulse={pulse} />
           <span className="font-ui" style={{ color: COLORS.ink, fontSize: 12, opacity: 0.75 }}>
-            Toucher pour compter — sans limite
+            {t("tap_to_count_unlimited")}
           </span>
         </button>
       </div>
@@ -5378,6 +5779,7 @@ function SettingsScreen({
   onOpenPrivacy,
   onReplayOnboarding,
   language,
+  languagePref,
   onSetLanguage,
 }) {
   const location = prayerSettings.location || DEFAULT_LOCATION;
@@ -5580,8 +5982,8 @@ function SettingsScreen({
         onToggle={() => toggleSection("langue")}
       >
         <div className="flex flex-col gap-2">
-          {LANGUAGES.map((l) => {
-            const active = language === l.id;
+          {[{ id: "system", label: t("lang_system") }, ...LANGUAGES].map((l) => {
+            const active = languagePref === l.id;
             return (
               <button
                 key={l.id}
@@ -5607,7 +6009,7 @@ function SettingsScreen({
           })}
         </div>
         <p className="font-ui text-center mt-3" style={{ color: COLORS.inkSoft, fontSize: 10.5, lineHeight: 1.5 }}>
-          Les menus et boutons changent de langue. Les azkar, invocations et hadiths restent en français pour l'instant.
+          {t("lang_footnote")}
         </p>
       </SettingsAccordionItem>
 
@@ -6141,31 +6543,63 @@ function SettingsAccordionItem({ icon, title, expanded, onToggle, children }) {
 const PRIVACY_SECTIONS = [
   {
     title: "Aucune inscription, aucun compte",
+    title_en: "No sign-up, no account",
     body: "Mes Azkar ne demande ni compte ni inscription. Aucune information permettant de t'identifier (nom, e-mail, numéro de téléphone) n'est jamais collectée par l'application.",
+    body_en: "Mes Azkar never asks for an account or sign-up. No information that could identify you (name, email, phone number) is ever collected by the app.",
   },
   {
     title: "Tes données restent sur ton téléphone",
-    body: "Ta progression dans les azkar, ton tasbih, tes invocations personnelles, ta progression de lecture du Coran et tes réglages sont stockés uniquement sur ton appareil, dans la mémoire locale de l'application. Rien n'est envoyé vers un serveur : l'application n'a pas de serveur ni de base de données à elle.",
+    title_en: "Your data stays on your phone",
+    body: "Ta progression dans les azkar, ton tasbih, tes invocations personnelles, ta progression de lecture du Coran, ta langue choisie et tes réglages (y compris la personnalisation pour ta mosquée) sont stockés uniquement sur ton appareil, dans la mémoire locale de l'application. Rien n'est envoyé vers un serveur : l'application n'a pas de serveur ni de base de données à elle.",
+    body_en: "Your azkar progress, your tasbih count, your personal invocations, your Quran reading progress, your chosen language, and your settings (including your mosque's custom prayer-time calibration) are stored only on your device, in the app's local storage. Nothing is sent to a server: the app has no server or database of its own.",
   },
   {
     title: "Localisation",
+    title_en: "Location",
     body: "Si tu autorises l'accès à ta position, elle sert uniquement à calculer les horaires de prière et la direction de la Qibla directement sur ton téléphone. Cette position n'est transmise à aucun service extérieur et n'est pas conservée au-delà du calcul.",
+    body_en: "If you allow access to your location, it is used only to calculate prayer times and the Qibla direction directly on your phone. This location is never sent to any external service and is not kept beyond the calculation.",
+  },
+  {
+    title: "Notifications et rappels de prière",
+    title_en: "Notifications and prayer reminders",
+    body: "Les rappels de prière (et le choix du muezzin pour chacun) sont programmés localement sur ton téléphone, à partir des horaires calculés sur l'appareil. Aucune notification ne transite par un serveur externe.",
+    body_en: "Prayer reminders (and the muezzin voice chosen for each) are scheduled locally on your phone, from the times calculated on the device. No notification passes through an external server.",
+  },
+  {
+    title: "Widget d'écran d'accueil",
+    title_en: "Home screen widget",
+    body: "Le widget affiche les horaires de prière directement sur ton écran d'accueil. Il réutilise les mêmes réglages (position, méthode de calcul, personnalisation) stockés localement sur ton appareil, et ne communique avec aucun serveur.",
+    body_en: "The widget shows prayer times directly on your home screen. It reuses the same settings (location, calculation method, customization) stored locally on your device, and does not communicate with any server.",
+  },
+  {
+    title: "Lecture audio en arrière-plan",
+    title_en: "Background audio playback",
+    body: "Lorsque tu écoutes une récitation du Coran ou un adhan, la lecture peut continuer même après avoir quitté l'application, via un service audio du système. Aucune donnée n'est collectée à cette occasion.",
+    body_en: "When you listen to a Quran recitation or an adhan, playback can continue even after leaving the app, via a system audio service. No data is collected during this.",
   },
   {
     title: "Contenus chargés depuis Internet",
+    title_en: "Content loaded from the internet",
     body: "Le texte du Coran, ses traductions et les récitations audio sont récupérés directement depuis des services publics (Quran.com / Quran Foundation, alquran.cloud). Comme pour toute requête Internet, ces services voient l'adresse IP de ton appareil au moment du chargement — l'application elle-même ne leur transmet aucune information sur toi.",
+    body_en: "The Quran text, its translations and audio recitations are fetched directly from public services (Quran.com / Quran Foundation, alquran.cloud). As with any internet request, these services see your device's IP address at the moment of loading — the app itself never sends them any information about you.",
   },
   {
     title: "Aucune publicité, aucun traqueur",
+    title_en: "No ads, no tracker",
     body: "L'application ne contient ni publicité ni outil d'analyse ou de suivi (analytics, statistiques d'usage envoyées à un tiers).",
+    body_en: "The app contains no advertising and no analytics or tracking tool (no usage statistics are sent to a third party).",
   },
   {
     title: "Export de tes données",
+    title_en: "Exporting your data",
     body: "Tu peux à tout moment exporter une copie de tes données dans un fichier que tu contrôles entièrement, ou tout supprimer depuis Réglages > Données.",
+    body_en: "You can export a copy of your data at any time into a file you fully control, or delete everything from Settings > Data.",
   },
   {
     title: "Contact",
+    title_en: "Contact",
     body: `Pour toute question sur cette politique de confidentialité, écris à ${CONTACT_EMAIL}.`,
+    body_en: `For any question about this privacy policy, write to ${CONTACT_EMAIL}.`,
   },
 ];
 
@@ -6193,10 +6627,10 @@ function PrivacyPolicyScreen({ onBack }) {
             style={{ background: COLORS.parchment, borderRadius: 18, border: `1px solid ${COLORS.parchmentDark}`, padding: "16px 16px" }}
           >
             <p className="font-display font-semibold" style={{ color: COLORS.ink, fontSize: 14 }}>
-              {s.title}
+              {trField(s, "title")}
             </p>
             <p className="font-ui mt-2" style={{ color: COLORS.inkSoft, fontSize: 12.5, lineHeight: 1.6 }}>
-              {s.body}
+              {trField(s, "body")}
             </p>
           </div>
         ))}
@@ -6354,7 +6788,7 @@ function InvocationsLibraryScreen({ onSelectTopic, onOpenPersonal }) {
             className="font-ui font-semibold mb-2.5"
             style={{ color: COLORS.goldLight, fontSize: 11.5, letterSpacing: 0.5, textTransform: "uppercase" }}
           >
-            {group.label}
+            {trField(group, "label")}
           </p>
           <div className="grid grid-cols-3 gap-2.5">
             {group.topics.map((topicId) => {
@@ -6377,7 +6811,7 @@ function InvocationsLibraryScreen({ onSelectTopic, onOpenPersonal }) {
                     className="font-ui font-medium text-center"
                     style={{ color: COLORS.ink, fontSize: 11.5, lineHeight: 1.2 }}
                   >
-                    {topic.label}
+                    {trField(topic, "label")}
                   </span>
                 </button>
               );
@@ -6492,9 +6926,12 @@ function RabbanaContent({ arabicSize }) {
   useEffect(() => {
     let cancelled = false;
     const refKey = (r) => `${r.surah}:${r.ayah}`;
+    const lang = currentLanguage;
+    const editions = lang === "ar" ? "quran-uthmani" : `quran-uthmani,${lang === "en" ? "en.sahih" : "fr.hamidullah"}`;
+    const cacheKey = `${QURAN_DUA_CACHE_KEY}-${lang}`;
     (async () => {
       try {
-        const cached = await window.storage.get(QURAN_DUA_CACHE_KEY, false);
+        const cached = await window.storage.get(cacheKey, false);
         if (cached && cached.value) {
           const parsed = JSON.parse(cached.value);
           if (parsed && QURAN_DUA_REFS.every((r) => parsed[refKey(r)])) {
@@ -6517,7 +6954,7 @@ function RabbanaContent({ arabicSize }) {
           const batch = QURAN_DUA_REFS.slice(i, i + batchSize);
           const batchResults = await Promise.all(
             batch.map((r) =>
-              fetch(`https://api.alquran.cloud/v1/ayah/${r.surah}:${r.ayah}/editions/quran-uthmani,fr.hamidullah`).then((res) =>
+              fetch(`https://api.alquran.cloud/v1/ayah/${r.surah}:${r.ayah}/editions/${editions}`).then((res) =>
                 res.json()
               )
             )
@@ -6532,11 +6969,12 @@ function RabbanaContent({ arabicSize }) {
         results.forEach((res, i) => {
           const r = QURAN_DUA_REFS[i];
           const data = res?.data;
-          const arabic = Array.isArray(data) ? data[0]?.text : "";
+          const arabic = Array.isArray(data) ? data[0]?.text : data?.text;
           const translation = Array.isArray(data) ? data[1]?.text : "";
           const surahMeta = QURAN_SURAHS.find((s) => s.number === r.surah);
+          const label = lang === "en" ? "verse" : "verset";
           map[refKey(r)] = {
-            title: surahMeta ? `${surahMeta.translit} — verset ${r.ayah}` : `Verset ${r.ayah}`,
+            title: surahMeta ? `${surahMeta.translit} — ${label} ${r.ayah}` : `${label} ${r.ayah}`,
             arabic,
             translation,
           };
@@ -6544,7 +6982,7 @@ function RabbanaContent({ arabicSize }) {
         if (Object.values(map).some((v) => !v.arabic)) throw new Error("incomplete response");
         setVerseMap(map);
         setStatus("ready");
-        window.storage.set(QURAN_DUA_CACHE_KEY, JSON.stringify(map), false).catch(() => {});
+        window.storage.set(cacheKey, JSON.stringify(map), false).catch(() => {});
       } catch (e) {
         if (!cancelled) setStatus("error");
       }
@@ -6552,7 +6990,7 @@ function RabbanaContent({ arabicSize }) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [currentLanguage]);
 
   if (status === "loading") {
     return (
@@ -6599,10 +7037,14 @@ function RabbanaContent({ arabicSize }) {
                   <p dir="rtl" className="font-arabic text-right mt-3" style={{ color: COLORS.ink, fontSize: arabicSize || ARABIC_SIZES.md, lineHeight: 1.8 }}>
                     {it.arabic}
                   </p>
-                  <div style={{ height: 1, background: COLORS.parchmentDark, margin: "12px 0" }} />
-                  <p className="font-display" style={{ color: COLORS.inkSoft, fontSize: 13.5, fontStyle: "italic" }}>
-                    {it.translation}
-                  </p>
+                  {currentLanguage !== "ar" && (
+                    <>
+                      <div style={{ height: 1, background: COLORS.parchmentDark, margin: "12px 0" }} />
+                      <p className="font-display" style={{ color: COLORS.inkSoft, fontSize: 13.5, fontStyle: "italic" }}>
+                        {it.translation}
+                      </p>
+                    </>
+                  )}
                 </div>
               );
             })}
@@ -6629,7 +7071,7 @@ function InvocationTopicScreen({ topicId, arabicSize, onBack }) {
         <div className="flex items-center gap-2">
           <span style={{ fontSize: 18 }}>{topic.emoji}</span>
           <p className="font-display" style={{ color: COLORS.ink, fontSize: 15 }}>
-            {topic.label}
+            {trField(topic, "label")}
           </p>
         </div>
         <div className="w-9" />
@@ -6650,7 +7092,7 @@ function InvocationTopicScreen({ topicId, arabicSize, onBack }) {
               }}
             >
               <p className="font-ui font-semibold" style={{ color: COLORS.clay, fontSize: 12, letterSpacing: 0.3, textTransform: "uppercase" }}>
-                {it.title}
+                {trField(it, "title")}
               </p>
               <p
                 dir="rtl"
@@ -6659,15 +7101,19 @@ function InvocationTopicScreen({ topicId, arabicSize, onBack }) {
               >
                 {it.arabic}
               </p>
-              <div style={{ height: 1, background: COLORS.parchmentDark, margin: "12px 0" }} />
-              <p className="font-display" style={{ color: COLORS.inkSoft, fontSize: 13.5, fontStyle: "italic" }}>
-                {it.translation}
-              </p>
-              {it.merit && (
+              {currentLanguage !== "ar" && (
+                <>
+                  <div style={{ height: 1, background: COLORS.parchmentDark, margin: "12px 0" }} />
+                  <p className="font-display" style={{ color: COLORS.inkSoft, fontSize: 13.5, fontStyle: "italic" }}>
+                    {trField(it, "translation")}
+                  </p>
+                </>
+              )}
+              {it.merit && currentLanguage !== "ar" && (
                 <div className="flex items-start gap-2 mt-3" style={{ paddingTop: 10, borderTop: `1px dashed ${COLORS.parchmentDark}` }}>
                   <MeritIcon color={COLORS.gold} />
                   <p className="font-ui" style={{ color: COLORS.inkSoft, fontSize: 11.5, lineHeight: 1.5 }}>
-                    {it.merit}
+                    {trField(it, "merit")}
                   </p>
                 </div>
               )}
@@ -7422,26 +7868,44 @@ function QuranReaderScreen({ surahNumber, arabicSize, onBack, onChangeSurah, onO
     })();
   }, []);
 
-  // Fetch the surah's Arabic text (public-domain scripture) and its French
-  // translation live from a Quran API — nothing is embedded in the app itself.
+  // Fetch the surah's Arabic text (public-domain scripture) and its
+  // translation live from a Quran API — nothing is embedded in the app
+  // itself. The translation edition follows the app's language (French,
+  // English) and is skipped entirely in Arabic mode.
   useEffect(() => {
     let cancelled = false;
     setStatus("loading");
     setAyahs(null);
     (async () => {
       try {
-        const [arRes, frRes] = await Promise.all([
+        const lang = currentLanguage;
+        if (lang === "ar") {
+          const arRes = await fetch(`${QURAN_API_BASE}/${surahNumber}/quran-uthmani`).then((r) => r.json());
+          if (cancelled) return;
+          const arList = arRes?.data?.ayahs || [];
+          const merged = arList.map((a) => ({
+            n: a.numberInSurah,
+            number: a.number,
+            arabic: a.text,
+            translation: "",
+          }));
+          setAyahs(merged);
+          setStatus("ready");
+          return;
+        }
+        const edition = lang === "en" ? "en.sahih" : "fr.hamidullah";
+        const [arRes, trRes] = await Promise.all([
           fetch(`${QURAN_API_BASE}/${surahNumber}/quran-uthmani`).then((r) => r.json()),
-          fetch(`${QURAN_API_BASE}/${surahNumber}/fr.hamidullah`).then((r) => r.json()),
+          fetch(`${QURAN_API_BASE}/${surahNumber}/${edition}`).then((r) => r.json()),
         ]);
         if (cancelled) return;
         const arList = arRes?.data?.ayahs || [];
-        const frList = frRes?.data?.ayahs || [];
+        const trList = trRes?.data?.ayahs || [];
         const merged = arList.map((a, i) => ({
           n: a.numberInSurah,
           number: a.number,
           arabic: a.text,
-          translation: frList[i] ? frList[i].text : "",
+          translation: trList[i] ? trList[i].text : "",
         }));
         setAyahs(merged);
         setStatus("ready");
@@ -7452,7 +7916,7 @@ function QuranReaderScreen({ surahNumber, arabicSize, onBack, onChangeSurah, onO
     return () => {
       cancelled = true;
     };
-  }, [surahNumber]);
+  }, [surahNumber, currentLanguage]);
 
   const markAyah = (ayahNumber) => {
     markQuranAyahRead(surahNumber, ayahNumber).then(setProgress);

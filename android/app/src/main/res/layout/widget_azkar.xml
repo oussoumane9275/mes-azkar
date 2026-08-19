@@ -7,26 +7,47 @@
     android:background="@drawable/widget_background"
     android:padding="14dp">
 
-    <TextView
-        android:id="@+id/tv_location"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Mes Azkar"
-        android:textColor="#B8CFC9"
-        android:textSize="10sp"
-        android:singleLine="true"
-        android:ellipsize="end" />
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/tv_location"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_gravity="center_vertical"
+            android:text="Mes Azkar"
+            android:textColor="#6B6558"
+            android:textSize="10sp"
+            android:letterSpacing="0.05"
+            android:singleLine="true"
+            android:ellipsize="end" />
+
+        <TextClock
+            android:id="@+id/tv_clock"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:format12Hour="HH:mm:ss"
+            android:format24Hour="HH:mm:ss"
+            android:textColor="#23291F"
+            android:textStyle="bold"
+            android:textSize="14sp" />
+
+    </LinearLayout>
 
     <TextView
         android:id="@+id/tv_next"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
-        android:layout_marginBottom="8dp"
+        android:layout_marginTop="6dp"
+        android:layout_marginBottom="10dp"
+        android:gravity="center"
         android:text="—"
         android:textColor="#D9A94A"
         android:textStyle="bold"
-        android:textSize="15sp"
+        android:textSize="16sp"
         android:singleLine="true"
         android:ellipsize="end" />
 
@@ -37,45 +58,62 @@
         android:weightSum="5">
 
         <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:gravity="center">
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Fajr" android:textColor="#8FADA5" android:textSize="9sp" />
-            <TextView android:id="@+id/tv_time_fajr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="--:--" android:textColor="#F5F1E6" android:textSize="12sp" android:textStyle="bold" />
-            <TextView android:id="@+id/tv_iqama_fajr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="" android:textColor="#6E8983" android:textSize="8sp" />
+            <TextView android:id="@+id/tv_label_fajr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Fajr" android:textColor="#6B6558" android:textSize="10sp" />
+            <TextView android:id="@+id/tv_time_fajr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="--:--" android:textColor="#23291F" android:textSize="13sp" android:textStyle="bold" />
+            <TextView android:id="@+id/tv_iqama_fajr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="" android:textColor="#9A9484" android:textSize="8.5sp" />
+            <ImageView android:id="@+id/iv_bell_fajr" android:layout_width="14dp" android:layout_height="14dp" android:layout_marginTop="4dp" android:src="@drawable/ic_widget_bell" />
+            <FrameLayout android:id="@+id/dot_fajr" android:layout_width="5dp" android:layout_height="5dp" android:layout_marginTop="4dp" android:background="@drawable/widget_dot" android:visibility="gone" />
         </LinearLayout>
 
         <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:gravity="center">
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Dohr" android:textColor="#8FADA5" android:textSize="9sp" />
-            <TextView android:id="@+id/tv_time_dhuhr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="--:--" android:textColor="#F5F1E6" android:textSize="12sp" android:textStyle="bold" />
-            <TextView android:id="@+id/tv_iqama_dhuhr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="" android:textColor="#6E8983" android:textSize="8sp" />
+            <TextView android:id="@+id/tv_label_dhuhr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Dohr" android:textColor="#6B6558" android:textSize="10sp" />
+            <TextView android:id="@+id/tv_time_dhuhr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="--:--" android:textColor="#23291F" android:textSize="13sp" android:textStyle="bold" />
+            <TextView android:id="@+id/tv_iqama_dhuhr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="" android:textColor="#9A9484" android:textSize="8.5sp" />
+            <ImageView android:id="@+id/iv_bell_dhuhr" android:layout_width="14dp" android:layout_height="14dp" android:layout_marginTop="4dp" android:src="@drawable/ic_widget_bell" />
+            <FrameLayout android:id="@+id/dot_dhuhr" android:layout_width="5dp" android:layout_height="5dp" android:layout_marginTop="4dp" android:background="@drawable/widget_dot" android:visibility="gone" />
         </LinearLayout>
 
         <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:gravity="center">
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Asr" android:textColor="#8FADA5" android:textSize="9sp" />
-            <TextView android:id="@+id/tv_time_asr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="--:--" android:textColor="#F5F1E6" android:textSize="12sp" android:textStyle="bold" />
-            <TextView android:id="@+id/tv_iqama_asr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="" android:textColor="#6E8983" android:textSize="8sp" />
+            <TextView android:id="@+id/tv_label_asr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Asr" android:textColor="#6B6558" android:textSize="10sp" />
+            <TextView android:id="@+id/tv_time_asr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="--:--" android:textColor="#23291F" android:textSize="13sp" android:textStyle="bold" />
+            <TextView android:id="@+id/tv_iqama_asr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="" android:textColor="#9A9484" android:textSize="8.5sp" />
+            <ImageView android:id="@+id/iv_bell_asr" android:layout_width="14dp" android:layout_height="14dp" android:layout_marginTop="4dp" android:src="@drawable/ic_widget_bell" />
+            <FrameLayout android:id="@+id/dot_asr" android:layout_width="5dp" android:layout_height="5dp" android:layout_marginTop="4dp" android:background="@drawable/widget_dot" android:visibility="gone" />
         </LinearLayout>
 
         <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:gravity="center">
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Maghrib" android:textColor="#8FADA5" android:textSize="9sp" />
-            <TextView android:id="@+id/tv_time_maghrib" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="--:--" android:textColor="#F5F1E6" android:textSize="12sp" android:textStyle="bold" />
-            <TextView android:id="@+id/tv_iqama_maghrib" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="" android:textColor="#6E8983" android:textSize="8sp" />
+            <TextView android:id="@+id/tv_label_maghrib" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Maghrib" android:textColor="#6B6558" android:textSize="10sp" />
+            <TextView android:id="@+id/tv_time_maghrib" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="--:--" android:textColor="#23291F" android:textSize="13sp" android:textStyle="bold" />
+            <TextView android:id="@+id/tv_iqama_maghrib" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="" android:textColor="#9A9484" android:textSize="8.5sp" />
+            <ImageView android:id="@+id/iv_bell_maghrib" android:layout_width="14dp" android:layout_height="14dp" android:layout_marginTop="4dp" android:src="@drawable/ic_widget_bell" />
+            <FrameLayout android:id="@+id/dot_maghrib" android:layout_width="5dp" android:layout_height="5dp" android:layout_marginTop="4dp" android:background="@drawable/widget_dot" android:visibility="gone" />
         </LinearLayout>
 
         <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:gravity="center">
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Isha" android:textColor="#8FADA5" android:textSize="9sp" />
-            <TextView android:id="@+id/tv_time_isha" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="--:--" android:textColor="#F5F1E6" android:textSize="12sp" android:textStyle="bold" />
-            <TextView android:id="@+id/tv_iqama_isha" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="" android:textColor="#6E8983" android:textSize="8sp" />
+            <TextView android:id="@+id/tv_label_isha" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Isha" android:textColor="#6B6558" android:textSize="10sp" />
+            <TextView android:id="@+id/tv_time_isha" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="--:--" android:textColor="#23291F" android:textSize="13sp" android:textStyle="bold" />
+            <TextView android:id="@+id/tv_iqama_isha" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="" android:textColor="#9A9484" android:textSize="8.5sp" />
+            <ImageView android:id="@+id/iv_bell_isha" android:layout_width="14dp" android:layout_height="14dp" android:layout_marginTop="4dp" android:src="@drawable/ic_widget_bell" />
+            <FrameLayout android:id="@+id/dot_isha" android:layout_width="5dp" android:layout_height="5dp" android:layout_marginTop="4dp" android:background="@drawable/widget_dot" android:visibility="gone" />
         </LinearLayout>
 
     </LinearLayout>
 
-    <TextView
-        android:id="@+id/tv_sunrise"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:gravity="center"
-        android:text="🌅 Chourouk --:--"
-        android:textColor="#8FADA5"
-        android:textSize="9.5sp" />
+        android:layout_marginTop="10dp"
+        android:orientation="horizontal"
+        android:gravity="center">
+
+        <TextView
+            android:id="@+id/tv_sunrise"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🌅 Chourouk --:--"
+            android:textColor="#6B6558"
+            android:textSize="10sp" />
+
+    </LinearLayout>
 
 </LinearLayout>

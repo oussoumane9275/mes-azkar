@@ -17,18 +17,22 @@ const ALL_NOTIFICATION_IDS = DAY_OFFSETS.flatMap((dayOffset) =>
   PRAYERS_FOR_REMINDERS.map((_, i) => dayOffset * 10 + i + 1)
 );
 
-// Seven adhan recordings bundled as Android raw resources (res/raw/adhan_N.mp3)
+// Five adhan recordings bundled as Android raw resources (res/raw/adhan_*.mp3)
 // so the sound plays even when the app is closed — a remote URL can't be
-// used as a notification sound on Android. Labelled generically since we
-// can't reliably attribute each recording to a named muezzin. The same files
-// are also copied under public/audio/adhan/ purely so the Réglages screen can
-// preview them with a normal <audio> element (the res/raw copies are what
-// actually get used for the notification sound).
-export const ADHAN_VOICES = [1, 2, 3, 4, 5, 6, 7].map((n) => ({
-  id: `adhan_${n}`,
-  label: `Voix ${n}`,
-  audio: `/audio/adhan/adhan_${n}.mp3`,
-}));
+// used as a notification sound on Android. Sourced from aladhan.com (the
+// prayer-times sibling of the alquran.cloud CDN already used elsewhere in
+// this app) and tvquran.com, both of which credit each recording to a named
+// muezzin — unlike the original anonymous "Voix 1"–"Voix 7" set. The same
+// files are also copied under public/audio/adhan/ purely so the Réglages
+// screen can preview them with a normal <audio> element (the res/raw copies
+// are what actually get used for the notification sound).
+export const ADHAN_VOICES = [
+  { id: "alafasy", label: "Mishary Alafasy" },
+  { id: "ahmad_al_nafees", label: "Ahmad Al-Nafees" },
+  { id: "mustafa_ozcan", label: "Mustafa Özcan" },
+  { id: "mansour_al_zahrani", label: "Mansour Al-Zahrani" },
+  { id: "nasser_al_qatami", label: "Nasser Al-Qatami" },
+].map((v) => ({ ...v, audio: `/audio/adhan/adhan_${v.id}.mp3` }));
 export const DEFAULT_MUEZZIN = ADHAN_VOICES[0].id;
 
 // Android 8+ ties notification sound to the channel, not the individual
@@ -42,7 +46,7 @@ export async function ensureAdhanChannels() {
       LocalNotifications.createChannel({
         id: `${v.id}_channel`,
         name: `Adhan — ${v.label}`,
-        sound: `${v.id}.mp3`,
+        sound: `adhan_${v.id}.mp3`,
         importance: 5,
         visibility: 1,
       }).catch(() => {})

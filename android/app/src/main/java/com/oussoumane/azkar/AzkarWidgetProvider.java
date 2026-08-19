@@ -6,6 +6,7 @@ import android.appwidget.AppWidgetProvider;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.widget.RemoteViews;
 import java.util.Calendar;
 import java.util.TimeZone;
@@ -29,6 +30,10 @@ public class AzkarWidgetProvider extends AppWidgetProvider {
         }
     }
 
+    private static final int COLOR_GOLD = Color.parseColor("#D9A94A");
+    private static final int COLOR_INK = Color.parseColor("#23291F");
+    private static final int COLOR_LABEL = Color.parseColor("#6B6558");
+
     private static RemoteViews buildViews(Context context) {
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.widget_azkar);
         SharedPreferences prefs = context.getSharedPreferences(WidgetBridgePlugin.PREFS_NAME, Context.MODE_PRIVATE);
@@ -47,7 +52,7 @@ public class AzkarWidgetProvider extends AppWidgetProvider {
         double maghribOffset = prefs.getFloat("maghribOffset", 0f);
         double ishaOffset = prefs.getFloat("ishaOffset", 0f);
 
-        views.setTextViewText(R.id.tv_location, locationLabel);
+        views.setTextViewText(R.id.tv_location, locationLabel.toUpperCase());
 
         Calendar now = Calendar.getInstance();
         double[] decimals = computeTimes(
@@ -78,7 +83,6 @@ public class AzkarWidgetProvider extends AppWidgetProvider {
             if (timeViewIds[i] == -1) continue;
             views.setTextViewText(timeViewIds[i], formatHour(decimals[i]));
         }
-        views.setTextViewText(R.id.tv_sunrise, "🌅 Chourouk " + formatHour(decimals[1]));
 
         int iqamaFajr = prefs.getInt("iqamaFajr", -1);
         int iqamaDhuhr = prefs.getInt("iqamaDhuhr", -1);
@@ -90,6 +94,17 @@ public class AzkarWidgetProvider extends AppWidgetProvider {
         views.setTextViewText(R.id.tv_iqama_asr, iqamaAsr >= 0 ? "+" + iqamaAsr : "");
         views.setTextViewText(R.id.tv_iqama_maghrib, iqamaMaghrib >= 0 ? "+" + iqamaMaghrib : "");
         views.setTextViewText(R.id.tv_iqama_isha, iqamaIsha >= 0 ? "+" + iqamaIsha : "");
+
+        boolean notifyFajr = prefs.getBoolean("notifyFajr", true);
+        boolean notifyDhuhr = prefs.getBoolean("notifyDhuhr", true);
+        boolean notifyAsr = prefs.getBoolean("notifyAsr", true);
+        boolean notifyMaghrib = prefs.getBoolean("notifyMaghrib", true);
+        boolean notifyIsha = prefs.getBoolean("notifyIsha", true);
+        views.setImageViewResource(R.id.iv_bell_fajr, notifyFajr ? R.drawable.ic_widget_bell : R.drawable.ic_widget_bell_muted);
+        views.setImageViewResource(R.id.iv_bell_dhuhr, notifyDhuhr ? R.drawable.ic_widget_bell : R.drawable.ic_widget_bell_muted);
+        views.setImageViewResource(R.id.iv_bell_asr, notifyAsr ? R.drawable.ic_widget_bell : R.drawable.ic_widget_bell_muted);
+        views.setImageViewResource(R.id.iv_bell_maghrib, notifyMaghrib ? R.drawable.ic_widget_bell : R.drawable.ic_widget_bell_muted);
+        views.setImageViewResource(R.id.iv_bell_isha, notifyIsha ? R.drawable.ic_widget_bell : R.drawable.ic_widget_bell_muted);
 
         double nowDecimal = now.get(Calendar.HOUR_OF_DAY) + now.get(Calendar.MINUTE) / 60.0 + now.get(Calendar.SECOND) / 3600.0;
         int nextIndex = -1;
@@ -107,6 +122,24 @@ public class AzkarWidgetProvider extends AppWidgetProvider {
             nextText = labels[nextIndex] + " dans " + formatCountdown(minutesLeft);
         }
         views.setTextViewText(R.id.tv_next, nextText);
+
+        // Sunrise line: highlighted like any other "active" slot when it's the next event
+        boolean sunriseActive = nextIndex == 1;
+        views.setTextViewText(R.id.tv_sunrise, "🌅 Chourouk " + formatHour(decimals[1]));
+        views.setTextColor(R.id.tv_sunrise, sunriseActive ? COLOR_GOLD : COLOR_LABEL);
+
+        // Highlight the next prayer's column (label + time in gold, dot shown)
+        // — indices into the 6-slot decimals array that map to the 5-column grid
+        int[] gridPrayerIndex = { 0, 2, 3, 4, 5 }; // fajr, dhuhr, asr, maghrib, isha
+        int[] labelViewIds = { R.id.tv_label_fajr, R.id.tv_label_dhuhr, R.id.tv_label_asr, R.id.tv_label_maghrib, R.id.tv_label_isha };
+        int[] gridTimeViewIds = { R.id.tv_time_fajr, R.id.tv_time_dhuhr, R.id.tv_time_asr, R.id.tv_time_maghrib, R.id.tv_time_isha };
+        int[] dotViewIds = { R.id.dot_fajr, R.id.dot_dhuhr, R.id.dot_asr, R.id.dot_maghrib, R.id.dot_isha };
+        for (int col = 0; col < 5; col++) {
+            boolean active = gridPrayerIndex[col] == nextIndex;
+            views.setTextColor(labelViewIds[col], active ? COLOR_GOLD : COLOR_LABEL);
+            views.setTextColor(gridTimeViewIds[col], active ? COLOR_GOLD : COLOR_INK);
+            views.setViewVisibility(dotViewIds[col], active ? android.view.View.VISIBLE : android.view.View.GONE);
+        }
 
         Intent launchIntent = context.getPackageManager().getLaunchIntentForPackage(context.getPackageName());
         if (launchIntent != null) {

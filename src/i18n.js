@@ -1,7 +1,7 @@
-// Phase 1 of multi-language support: the app's UI chrome (navigation,
-// screen titles, buttons, Réglages) in French/English/Arabic. The azkar,
-// invocations, and hadith citations stay French for now — translating
-// scripture and hadith text accurately is a separate, more careful pass.
+// Multi-language support: the app's UI chrome (navigation, screen titles,
+// buttons, Réglages) plus the religious content itself — azkar, invocations,
+// tasbih and Quran translations — in French/English/Arabic. Arabic mode
+// shows only the original Arabic text, without a re-translation.
 export const LANGUAGES = [
   { id: "fr", label: "Français" },
   { id: "en", label: "English" },
@@ -14,6 +14,18 @@ export function setCurrentLanguage(lang) {
 }
 export function isRTL(lang = currentLanguage) {
   return lang === "ar";
+}
+
+// Reads the phone/browser's own locale and maps it to one of our supported
+// languages, so "Système" can follow the device instead of a fixed choice.
+export function detectSystemLanguage() {
+  const raw =
+    (typeof navigator !== "undefined" && (navigator.language || (navigator.languages && navigator.languages[0]))) ||
+    "fr";
+  const code = raw.slice(0, 2).toLowerCase();
+  if (code === "ar") return "ar";
+  if (code === "en") return "en";
+  return "fr";
 }
 
 const TRANSLATIONS = {
@@ -38,6 +50,7 @@ const TRANSLATIONS = {
     apply: "Appliquer",
     search: "Rechercher",
     loading: "Chargement…",
+    verse_of_day: "Verset du jour",
 
     // Screen titles
     title_tasbih: "Tasbih libre",
@@ -65,6 +78,8 @@ const TRANSLATIONS = {
     settings_data: "Données",
     settings_about: "À propos",
     settings_language: "Langue",
+    lang_system: "Système (langue de l'appareil)",
+    lang_footnote: "Menus, azkar, invocations et Coran s'affichent dans la langue choisie. En arabe, seul le texte original est affiché.",
     theme_system: "Système",
     theme_light: "Clair",
     theme_dark: "Sombre",
@@ -79,6 +94,19 @@ const TRANSLATIONS = {
     tour_replay: "Revoir la présentation de l'app",
     tour_enable_notifications: "Activer les rappels de prière",
     tour_later: "Plus tard",
+
+    label_after: "Après",
+    label_done: "terminés",
+    label_of: "sur",
+    tap_to_count: "Toucher pour compter",
+    tap_to_count_unlimited: "Toucher pour compter — sans limite",
+    label_completed: "Terminé ✓",
+    prev_dhikr: "Dhikr précédent",
+    next_dhikr: "Dhikr suivant",
+    reset_progress: "Réinitialiser la progression",
+    enable_reminder: "activer le rappel",
+    disable_reminder: "désactiver le rappel",
+    toggle_theme: "Changer de thème",
   },
   en: {
     nav_home: "Home",
@@ -99,6 +127,7 @@ const TRANSLATIONS = {
     apply: "Apply",
     search: "Search",
     loading: "Loading…",
+    verse_of_day: "Verse of the day",
 
     title_tasbih: "Free Tasbih",
     title_quran: "The Quran",
@@ -124,6 +153,8 @@ const TRANSLATIONS = {
     settings_data: "Data",
     settings_about: "About",
     settings_language: "Language",
+    lang_system: "System (device language)",
+    lang_footnote: "Menus, azkar, invocations and Quran are shown in the chosen language. In Arabic, only the original text is shown.",
     theme_system: "System",
     theme_light: "Light",
     theme_dark: "Dark",
@@ -136,6 +167,19 @@ const TRANSLATIONS = {
     tour_replay: "Replay the app tour",
     tour_enable_notifications: "Enable prayer reminders",
     tour_later: "Later",
+
+    label_after: "After",
+    label_done: "completed",
+    label_of: "of",
+    tap_to_count: "Tap to count",
+    tap_to_count_unlimited: "Tap to count — no limit",
+    label_completed: "Completed ✓",
+    prev_dhikr: "Previous dhikr",
+    next_dhikr: "Next dhikr",
+    reset_progress: "Reset progress",
+    enable_reminder: "enable reminder",
+    disable_reminder: "disable reminder",
+    toggle_theme: "Toggle theme",
   },
   ar: {
     nav_home: "الرئيسية",
@@ -156,6 +200,7 @@ const TRANSLATIONS = {
     apply: "تطبيق",
     search: "بحث",
     loading: "جارٍ التحميل…",
+    verse_of_day: "آية اليوم",
 
     title_tasbih: "التسبيح الحر",
     title_quran: "القرآن الكريم",
@@ -181,6 +226,8 @@ const TRANSLATIONS = {
     settings_data: "البيانات",
     settings_about: "حول التطبيق",
     settings_language: "اللغة",
+    lang_system: "النظام (لغة الجهاز)",
+    lang_footnote: "تُعرض القوائم والأذكار والأدعية والقرآن باللغة المختارة. في اللغة العربية، يُعرض النص الأصلي فقط.",
     theme_system: "النظام",
     theme_light: "فاتح",
     theme_dark: "داكن",
@@ -193,10 +240,36 @@ const TRANSLATIONS = {
     tour_replay: "إعادة عرض التقديم",
     tour_enable_notifications: "تفعيل تذكير الصلاة",
     tour_later: "لاحقًا",
+
+    label_after: "بعد",
+    label_done: "اكتملت",
+    label_of: "من",
+    tap_to_count: "المس للعد",
+    tap_to_count_unlimited: "المس للعد — بلا حد",
+    label_completed: "اكتمل ✓",
+    prev_dhikr: "الذكر السابق",
+    next_dhikr: "الذكر التالي",
+    reset_progress: "إعادة تعيين التقدم",
+    enable_reminder: "تفعيل التذكير",
+    disable_reminder: "إيقاف التذكير",
+    toggle_theme: "تغيير المظهر",
   },
 };
 
 export function t(key) {
   const dict = TRANSLATIONS[currentLanguage] || TRANSLATIONS.fr;
   return dict[key] || TRANSLATIONS.fr[key] || key;
+}
+
+// Phase 2: per-item content translation (azkar/invocations/tasbih). Items
+// carry French fields (title, translation, merit) plus optional _en variants
+// added as they get translated — falls back to French wherever an _en
+// variant doesn't exist yet, so partial coverage never breaks anything.
+// Arabic intentionally has no "translation" variant: a native Arabic reader
+// doesn't need the Arabic scripture re-explained in Arabic, so callers hide
+// that field entirely in Arabic mode instead of calling trField for it.
+export function trField(item, field) {
+  if (!item) return "";
+  if (currentLanguage === "en" && item[`${field}_en`]) return item[`${field}_en`];
+  return item[field] || "";
 }

@@ -46,6 +46,10 @@ public class WidgetBridgePlugin extends Plugin {
         for (String key : iqamaKeys) {
             if (call.hasOption(key)) editor.putInt(key, call.getInt(key, 0));
         }
+        String[] notifyKeys = { "notifyFajr", "notifyDhuhr", "notifyAsr", "notifyMaghrib", "notifyIsha" };
+        for (String key : notifyKeys) {
+            if (call.hasOption(key)) editor.putBoolean(key, Boolean.TRUE.equals(call.getBoolean(key)));
+        }
         editor.apply();
 
         AppWidgetManager manager = AppWidgetManager.getInstance(context);
