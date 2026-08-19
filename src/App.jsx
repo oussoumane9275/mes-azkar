@@ -5,6 +5,7 @@ import { StatusBar, Style as StatusBarStyle } from "@capacitor/status-bar";
 import { KeepAwake } from "@capacitor-community/keep-awake";
 import { BackgroundMode } from "@anuradev/capacitor-background-mode";
 import WidgetBridge from "./widgetBridge.js";
+import { t, LANGUAGES, currentLanguage, setCurrentLanguage, isRTL } from "./i18n.js";
 import { exportBackup, importBackup, downloadBackupFile } from "./backup.js";
 import { fetchMushafPage, loadMushafPageFont, fetchChapterStartPage, fetchVersePage } from "./quranFoundation.js";
 import {
@@ -1758,6 +1759,14 @@ function QiblaIcon({ color, size = 24 }) {
     </svg>
   );
 }
+function GlobeIcon({ color, size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="9" stroke={color} strokeWidth="1.6" />
+      <path d="M3 12h18M12 3c2.5 2.5 3.8 5.8 3.8 9s-1.3 6.5-3.8 9c-2.5-2.5-3.8-5.8-3.8-9S9.5 5.5 12 3Z" stroke={color} strokeWidth="1.6" strokeLinejoin="round" />
+    </svg>
+  );
+}
 function SunriseIcon({ color, size = 16 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -2071,6 +2080,7 @@ const ONBOARDING_KEY = "azkar-onboarding-v1";
 const THEME_PREFERENCE_KEY = "azkar-theme-preference-v1";
 const ACCENT_THEME_KEY = "azkar-accent-theme-v1";
 const HAPTICS_KEY = "azkar-haptics-enabled-v1";
+const LANGUAGE_KEY = "azkar-language-v1";
 const APP_VERSION = "1.0.0";
 const CONTACT_EMAIL = "oussoumanedoucoure12@gmail.com";
 const ARABIC_SIZES = { sm: 19, md: 24, lg: 29, xl: 35 };
@@ -2154,12 +2164,12 @@ const lastDaysLevels = (history, days = 28) => {
 // sub-screen reached by drilling in, with its own back button.
 const TAB_SCREENS = ["home", "quran-list", "tasbih", "invocations", "dashboard", "settings"];
 const NAV_TABS = [
-  { screen: "home", label: "Accueil", Icon: HomeIcon },
-  { screen: "quran-list", label: "Coran", Icon: QuranIcon },
-  { screen: "tasbih", label: "Tasbih", Icon: TasbihIcon },
-  { screen: "invocations", label: "Invocations", Icon: BookIcon },
-  { screen: "dashboard", label: "Bilan", Icon: ChartIcon },
-  { screen: "settings", label: "Réglages", Icon: SettingsIcon },
+  { screen: "home", labelKey: "nav_home", Icon: HomeIcon },
+  { screen: "quran-list", labelKey: "nav_quran", Icon: QuranIcon },
+  { screen: "tasbih", labelKey: "nav_tasbih", Icon: TasbihIcon },
+  { screen: "invocations", labelKey: "nav_invocations", Icon: BookIcon },
+  { screen: "dashboard", labelKey: "nav_dashboard", Icon: ChartIcon },
+  { screen: "settings", labelKey: "nav_settings", Icon: SettingsIcon },
 ];
 
 function BottomNav({ active, onNavigate }) {
@@ -2173,7 +2183,7 @@ function BottomNav({ active, onNavigate }) {
         zIndex: 20,
       }}
     >
-      {NAV_TABS.map(({ screen, label, Icon }) => {
+      {NAV_TABS.map(({ screen, labelKey, Icon }) => {
         const isActive = active === screen;
         return (
           <button
@@ -2191,7 +2201,7 @@ function BottomNav({ active, onNavigate }) {
                 color: isActive ? COLORS.goldLight : COLORS.inkSoft,
               }}
             >
-              {label}
+              {t(labelKey)}
             </span>
           </button>
         );
@@ -2297,6 +2307,16 @@ function AzkarApp() {
     },
     []
   );
+
+  // App language (UI chrome only for now — azkar/invocation content stays
+  // French until translated in a later pass). Arabic also flips the whole
+  // app to RTL.
+  const [language, setLanguageState] = useState("fr");
+  const handleSetLanguage = useCallback((lang) => {
+    setCurrentLanguage(lang);
+    setLanguageState(lang);
+    window.storage.set(LANGUAGE_KEY, lang, false).catch(() => {});
+  }, []);
 
   // Haptic feedback on/off (tasbih + bead-ring taps)
   const [hapticsEnabled, setHapticsEnabled] = useState(true);
@@ -2493,6 +2513,16 @@ function AzkarApp() {
       }
       currentAccent = loadedAccentTheme;
       setAccentThemeState(loadedAccentTheme);
+
+      let loadedLanguage = "fr";
+      try {
+        const res = await window.storage.get(LANGUAGE_KEY, false);
+        if (res && LANGUAGES.some((l) => l.id === res.value)) loadedLanguage = res.value;
+      } catch (e) {
+        // no saved language — default to French
+      }
+      setCurrentLanguage(loadedLanguage);
+      setLanguageState(loadedLanguage);
 
       let loadedHaptics = true;
       try {
@@ -2933,7 +2963,7 @@ function AzkarApp() {
   }
 
   return (
-    <div style={{ background: COLORS.bg, minHeight: "100vh" }} className="font-ui">
+    <div style={{ background: COLORS.bg, minHeight: "100vh" }} className="font-ui" dir={isRTL(language) ? "rtl" : "ltr"}>
       <style>{FONT_STYLE}</style>
 
       {screen === "home" && (
@@ -3079,6 +3109,8 @@ function AzkarApp() {
           onFactoryReset={handleFactoryReset}
           onOpenPrivacy={() => setScreen("privacy")}
           onReplayOnboarding={replayOnboarding}
+          language={language}
+          onSetLanguage={handleSetLanguage}
         />
       )}
 
@@ -3254,7 +3286,7 @@ function OnboardingOverlay({ onNavigate, onEnableNotifications, onDismiss }) {
       <div className="w-full flex justify-end" style={{ padding: "10px 16px 0" }}>
         <button onClick={onDismiss} className="active:opacity-70" style={{ padding: "6px 10px" }}>
           <span className="font-ui font-semibold" style={{ color: "rgba(255,255,255,0.85)", fontSize: 12.5 }}>
-            Passer ✕
+            {t("skip")} ✕
           </span>
         </button>
       </div>
@@ -3308,11 +3340,11 @@ function OnboardingOverlay({ onNavigate, onEnableNotifications, onDismiss }) {
                 fontSize: 14,
               }}
             >
-              Activer les rappels de prière
+              {t("tour_enable_notifications")}
             </button>
             <button onClick={onDismiss} className="mt-3 w-full active:opacity-70" style={{ padding: "8px 20px" }}>
               <span className="font-ui" style={{ color: COLORS.inkSoft, fontSize: 13 }}>
-                Plus tard
+                {t("tour_later")}
               </span>
             </button>
           </>
@@ -3340,7 +3372,7 @@ function OnboardingOverlay({ onNavigate, onEnableNotifications, onDismiss }) {
                 fontSize: 14,
               }}
             >
-              Suivant
+              {t("next")}
             </button>
           </div>
         )}
@@ -3845,7 +3877,7 @@ function QiblaScreen({ location, onBack }) {
           <BackIcon color={COLORS.ink} />
         </button>
         <p className="font-display" style={{ color: COLORS.ink, fontSize: 15 }}>
-          Qibla
+          {t("title_qibla")}
         </p>
         <div className="w-9" />
       </div>
@@ -4276,7 +4308,7 @@ function HistoryScreen({ history, streak, onBack }) {
           <BackIcon color={COLORS.ink} />
         </button>
         <p className="font-display" style={{ color: COLORS.ink, fontSize: 15 }}>
-          Historique
+          {t("title_history")}
         </p>
         <div className="w-9" />
       </div>
@@ -4424,7 +4456,7 @@ function DashboardScreen({ history, streak }) {
             بِلَان الْيَوْم
           </span>
           <span className="font-display" style={{ color: COLORS.ink, fontSize: 17 }}>
-            {isToday ? "Bilan du jour" : "Bilan"}
+            {isToday ? t("title_dashboard") : t("title_dashboard_short")}
           </span>
         </div>
         <div className="flex items-center justify-center gap-3 mt-1.5">
@@ -4960,7 +4992,7 @@ function TasbihScreen({ arabicSize }) {
             التسبيح
           </span>
           <span className="font-display" style={{ color: COLORS.ink, fontSize: 17 }}>
-            Tasbih libre
+            {t("title_tasbih")}
           </span>
         </div>
         {total > 0 && (
@@ -5345,6 +5377,8 @@ function SettingsScreen({
   onFactoryReset,
   onOpenPrivacy,
   onReplayOnboarding,
+  language,
+  onSetLanguage,
 }) {
   const location = prayerSettings.location || DEFAULT_LOCATION;
   const isCustomMethod = prayerSettings.method === "custom";
@@ -5427,7 +5461,7 @@ function SettingsScreen({
             الإعدادات
           </span>
           <span className="font-display" style={{ color: COLORS.ink, fontSize: 17 }}>
-            Réglages
+            {t("title_settings")}
           </span>
         </div>
       </div>
@@ -5436,15 +5470,15 @@ function SettingsScreen({
       <SettingsAccordionItem
         id="apparence"
         icon={<CategoryIcon type={currentTheme === "dark" ? "moon" : "sun"} color={COLORS.gold} size={17} />}
-        title="Apparence"
+        title={t("settings_appearance")}
         expanded={expanded === "apparence"}
         onToggle={() => toggleSection("apparence")}
       >
         <div className="flex gap-2">
           {[
-            { key: "system", label: "Système" },
-            { key: "light", label: "Clair" },
-            { key: "dark", label: "Sombre" },
+            { key: "system", label: t("theme_system") },
+            { key: "light", label: t("theme_light") },
+            { key: "dark", label: t("theme_dark") },
           ].map(({ key, label }) => {
             const active = themePreference === key;
             return (
@@ -5536,11 +5570,52 @@ function SettingsScreen({
         </div>
       </SettingsAccordionItem>
 
+      {/* Language — UI chrome only for now; azkar/invocation content stays
+          French until translated in a later pass. */}
+      <SettingsAccordionItem
+        id="langue"
+        icon={<GlobeIcon color={COLORS.gold} size={16} />}
+        title={t("settings_language")}
+        expanded={expanded === "langue"}
+        onToggle={() => toggleSection("langue")}
+      >
+        <div className="flex flex-col gap-2">
+          {LANGUAGES.map((l) => {
+            const active = language === l.id;
+            return (
+              <button
+                key={l.id}
+                onClick={() => {
+                  onSetLanguage(l.id);
+                  flashToast("✓");
+                }}
+                className="flex items-center justify-between active:opacity-80"
+                style={{
+                  background: active ? "rgba(231,204,133,0.16)" : inkA(0.05),
+                  border: `1px solid ${active ? COLORS.goldLight : inkA(0.14)}`,
+                  borderRadius: 12,
+                  padding: "11px 14px",
+                  textAlign: "left",
+                }}
+              >
+                <span className="font-ui font-semibold" style={{ color: active ? COLORS.goldLight : COLORS.ink, fontSize: 13.5 }}>
+                  {l.label}
+                </span>
+                {active && <CheckIcon color={COLORS.goldLight} size={16} />}
+              </button>
+            );
+          })}
+        </div>
+        <p className="font-ui text-center mt-3" style={{ color: COLORS.inkSoft, fontSize: 10.5, lineHeight: 1.5 }}>
+          Les menus et boutons changent de langue. Les azkar, invocations et hadiths restent en français pour l'instant.
+        </p>
+      </SettingsAccordionItem>
+
       {/* Arabic text size */}
       <SettingsAccordionItem
         id="taille"
         icon={<span className="font-arabic" style={{ color: COLORS.gold, fontSize: 16 }}>أ</span>}
-        title="Taille du texte arabe"
+        title={t("settings_text_size")}
         expanded={expanded === "taille"}
         onToggle={() => toggleSection("taille")}
       >
@@ -5596,7 +5671,7 @@ function SettingsScreen({
       <SettingsAccordionItem
         id="notifications"
         icon={<BellIcon color={COLORS.gold} size={16} />}
-        title="Notifications"
+        title={t("settings_notifications")}
         expanded={expanded === "notifications"}
         onToggle={() => toggleSection("notifications")}
       >
@@ -5660,7 +5735,7 @@ function SettingsScreen({
       <SettingsAccordionItem
         id="localisation"
         icon={<PinIcon color={COLORS.gold} size={16} />}
-        title="Localisation"
+        title={t("settings_location")}
         expanded={expanded === "localisation"}
         onToggle={() => toggleSection("localisation")}
       >
@@ -5706,7 +5781,7 @@ function SettingsScreen({
       <SettingsAccordionItem
         id="methode"
         icon={<ClockIcon color={COLORS.gold} size={16} />}
-        title="Méthode de calcul"
+        title={t("settings_method")}
         expanded={expanded === "methode"}
         onToggle={() => toggleSection("methode")}
       >
@@ -5813,7 +5888,7 @@ function SettingsScreen({
       <SettingsAccordionItem
         id="iqama"
         icon={<BellIcon color={COLORS.gold} size={16} />}
-        title="Iqama et muezzin"
+        title={t("settings_iqama")}
         expanded={expanded === "iqama"}
         onToggle={() => toggleSection("iqama")}
       >
@@ -5863,7 +5938,7 @@ function SettingsScreen({
       <SettingsAccordionItem
         id="recitateur"
         icon={<MicIcon color={COLORS.gold} size={17} />}
-        title="Récitateur"
+        title={t("settings_reciter")}
         expanded={expanded === "recitateur"}
         onToggle={() => toggleSection("recitateur")}
       >
@@ -5874,7 +5949,7 @@ function SettingsScreen({
       <SettingsAccordionItem
         id="donnees"
         icon={<DownloadIcon color={COLORS.gold} size={16} />}
-        title="Données"
+        title={t("settings_data")}
         expanded={expanded === "donnees"}
         onToggle={() => toggleSection("donnees")}
       >
@@ -5885,7 +5960,7 @@ function SettingsScreen({
             style={{ background: inkA(0.05), border: `1px solid ${inkA(0.14)}`, borderRadius: 12, padding: "12px 14px" }}
           >
             <span className="font-ui font-semibold" style={{ color: COLORS.ink, fontSize: 13 }}>
-              Exporter mes données
+              {t("data_export")}
             </span>
             <span className="font-ui" style={{ color: COLORS.inkSoft, fontSize: 10.5 }}>
               fichier .json
@@ -5897,7 +5972,7 @@ function SettingsScreen({
             style={{ background: inkA(0.05), border: `1px solid ${inkA(0.14)}`, borderRadius: 12, padding: "12px 14px" }}
           >
             <span className="font-ui font-semibold" style={{ color: COLORS.ink, fontSize: 13 }}>
-              Importer une sauvegarde
+              {t("data_import")}
             </span>
           </button>
           <input ref={importInputRef} type="file" accept="application/json,.json" onChange={handleImportFile} style={{ display: "none" }} />
@@ -5907,7 +5982,7 @@ function SettingsScreen({
             style={{ background: inkA(0.05), border: `1px solid ${inkA(0.14)}`, borderRadius: 12, padding: "12px 14px" }}
           >
             <span className="font-ui font-semibold" style={{ color: COLORS.ink, fontSize: 13 }}>
-              {resetDone ? "Azkar du jour réinitialisés ✓" : "Réinitialiser les azkar du jour"}
+              {resetDone ? "Azkar du jour réinitialisés ✓" : t("data_reset_today")}
             </span>
             <span className="font-ui" style={{ color: COLORS.inkSoft, fontSize: 10.5 }}>
               si bloqués sur la veille
@@ -5962,7 +6037,7 @@ function SettingsScreen({
             style={{ padding: "8px 0" }}
           >
             <span className="font-ui" style={{ color: COLORS.clay, fontSize: 12, textDecoration: "underline" }}>
-              Réinitialiser toutes les données de l'app
+              {t("data_reset_all")}
             </span>
           </button>
         )}
@@ -5972,7 +6047,7 @@ function SettingsScreen({
       <SettingsAccordionItem
         id="apropos"
         icon={<InfoIcon color={COLORS.gold} size={17} />}
-        title="À propos"
+        title={t("settings_about")}
         expanded={expanded === "apropos"}
         onToggle={() => toggleSection("apropos")}
       >
@@ -6005,7 +6080,7 @@ function SettingsScreen({
           style={{ background: inkA(0.05), border: `1px solid ${inkA(0.14)}`, borderRadius: 12, padding: "12px 14px" }}
         >
           <span className="font-ui font-semibold" style={{ color: COLORS.ink, fontSize: 13 }}>
-            Politique de confidentialité
+            {t("title_privacy")}
           </span>
         </button>
 
@@ -6028,7 +6103,7 @@ function SettingsScreen({
           style={{ background: inkA(0.05), border: `1px solid ${inkA(0.14)}`, borderRadius: 12, padding: "12px 14px" }}
         >
           <span className="font-ui font-semibold" style={{ color: COLORS.ink, fontSize: 13 }}>
-            Revoir la présentation de l'app
+            {t("tour_replay")}
           </span>
         </button>
       </SettingsAccordionItem>
@@ -6102,7 +6177,7 @@ function PrivacyPolicyScreen({ onBack }) {
           <BackIcon color={COLORS.ink} />
         </button>
         <p className="font-display" style={{ color: COLORS.ink, fontSize: 15 }}>
-          Confidentialité
+          {t("title_privacy")}
         </p>
         <div className="w-9" />
       </div>
@@ -6239,7 +6314,7 @@ function InvocationsLibraryScreen({ onSelectTopic, onOpenPersonal }) {
       <div className="flex items-center justify-between mb-2">
         <div className="w-9" />
         <p className="font-display" style={{ color: COLORS.ink, fontSize: 15 }}>
-          Invocations
+          {t("title_invocations")}
         </p>
         <div className="w-9" />
       </div>
@@ -6844,7 +6919,7 @@ function QuranHomeScreen({ onOpenSurahs, onOpenMushaf, onOpenReciters, onResumeR
             القرآن الكريم
           </span>
           <span className="font-display" style={{ color: COLORS.ink, fontSize: 17 }}>
-            Le Coran
+            {t("title_quran")}
           </span>
         </div>
       </div>
@@ -6884,9 +6959,9 @@ function QuranHomeScreen({ onOpenSurahs, onOpenMushaf, onOpenReciters, onResumeR
 
       <div className="grid grid-cols-3 gap-2.5">
         {[
-          { key: "surahs", label: "Sourates", icon: <BookIcon color={COLORS.gold} size={20} />, onClick: onOpenSurahs, pct: overallPct },
-          { key: "mushaf", label: "Mushaf", icon: <QuranIcon color={COLORS.indigo} size={20} />, onClick: onOpenMushaf, pct: null },
-          { key: "reciters", label: "Récitateurs", icon: <MicIcon color={COLORS.clay} size={20} />, onClick: onOpenReciters, pct: null },
+          { key: "surahs", label: t("title_surahs"), icon: <BookIcon color={COLORS.gold} size={20} />, onClick: onOpenSurahs, pct: overallPct },
+          { key: "mushaf", label: t("title_mushaf"), icon: <QuranIcon color={COLORS.indigo} size={20} />, onClick: onOpenMushaf, pct: null },
+          { key: "reciters", label: t("title_reciters"), icon: <MicIcon color={COLORS.clay} size={20} />, onClick: onOpenReciters, pct: null },
         ].map((tile) => (
           <button
             key={tile.key}
@@ -6975,7 +7050,7 @@ function SurahListScreen({ onSelectSurah, onBack }) {
           <BackIcon color={COLORS.ink} />
         </button>
         <p className="font-display" style={{ color: COLORS.ink, fontSize: 15 }}>
-          Sourates
+          {t("title_surahs")}
         </p>
         <div className="w-9" />
       </div>
@@ -7158,7 +7233,7 @@ function RecitersScreen({ onBack, onOpenReciterSpace }) {
           <BackIcon color={COLORS.ink} />
         </button>
         <p className="font-display" style={{ color: COLORS.ink, fontSize: 15 }}>
-          Récitateurs
+          {t("title_reciters")}
         </p>
         <div className="w-9" />
       </div>
