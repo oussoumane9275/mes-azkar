@@ -2951,6 +2951,7 @@ function AzkarApp() {
           location={prayerSettings.location || DEFAULT_LOCATION}
           prayerSettings={prayerSettings}
           onToggleNotifyPrayer={handleToggleNotifyPrayer}
+          onReplayOnboarding={replayOnboarding}
         />
       )}
 
@@ -3351,7 +3352,7 @@ function OnboardingOverlay({ onNavigate, onEnableNotifications, onDismiss }) {
 /* ------------------------------------------------------------------ */
 /* Home screen                                                         */
 /* ------------------------------------------------------------------ */
-function HomeScreen({ progress, catCompletion, onOpen, onOpenApresPicker, streak, onOpenHistory, onOpenQibla, onOpenCalendar, onOpenMushaf, onToggleTheme, location, prayerSettings, onToggleNotifyPrayer }) {
+function HomeScreen({ progress, catCompletion, onOpen, onOpenApresPicker, streak, onOpenHistory, onOpenQibla, onOpenCalendar, onOpenMushaf, onToggleTheme, location, prayerSettings, onToggleNotifyPrayer, onReplayOnboarding }) {
   const { times, nextKey, minutesRemaining } = usePrayerTimes(location, prayerSettings);
   const today = new Date();
   const hijriLabel = getHijriLabel(today);
@@ -3359,15 +3360,20 @@ function HomeScreen({ progress, catCompletion, onOpen, onOpenApresPicker, streak
 
   return (
     <div className="min-h-screen flex flex-col px-5 pt-6 pb-28 fade-in">
-      {/* Top bar: quick theme toggle (left), history shortcut (right) —
+      {/* Top bar: quick theme toggle (left), tutorial + history (right) —
           Tasbih/Coran/Invocations/Réglages already live in the bottom tab bar. */}
       <div className="flex items-center justify-between mb-3">
         <button onClick={onToggleTheme} className="p-2.5 -ml-2 active:opacity-60" aria-label="Changer de thème">
           <CategoryIcon type={currentTheme === "dark" ? "sun" : "moon"} color={COLORS.ink} size={20} />
         </button>
-        <button onClick={onOpenHistory} className="p-2.5 -mr-2 active:opacity-60" aria-label="Historique">
-          <HistoryIcon color={COLORS.ink} size={20} />
-        </button>
+        <div className="flex items-center gap-1 -mr-2">
+          <button onClick={onReplayOnboarding} className="p-2.5 active:opacity-60" aria-label="Revoir le tutoriel">
+            <InfoIcon color={COLORS.ink} size={20} />
+          </button>
+          <button onClick={onOpenHistory} className="p-2.5 active:opacity-60" aria-label="Historique">
+            <HistoryIcon color={COLORS.ink} size={20} />
+          </button>
+        </div>
       </div>
 
       <div className="text-center mb-4">
