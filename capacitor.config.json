@@ -1,0 +1,17 @@
+{
+  "appId": "com.oussoumane.azkar",
+  "appName": "Mes Azkar",
+  "webDir": "www",
+  "backgroundColor": "#FFFFFF",
+  "android": {
+    "backgroundColor": "#FFFFFF"
+  },
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    }
+  }
+}

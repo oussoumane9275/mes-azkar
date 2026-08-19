@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Mes Azkar</string>
+    <string name="title_activity_main">Mes Azkar</string>
+    <string name="package_name">com.oussoumane.azkar</string>
+    <string name="custom_url_scheme">com.oussoumane.azkar</string>
+</resources>

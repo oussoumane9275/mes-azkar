@@ -1,0 +1,38 @@
+workflows:
+  ios-unsigned:
+    name: Mes Azkar — iOS (non signé, pour AltStore)
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    environment:
+      node: 20
+    scripts:
+      - name: Installer les dépendances npm
+        script: npm ci
+      - name: Construire le web (Vite)
+        script: npm run build
+      - name: Synchroniser le projet iOS
+        script: npx cap sync ios
+      - name: Installer les pods
+        script: |
+          cd ios/App
+          pod install
+      - name: Compiler sans signature (App.app)
+        script: |
+          cd ios/App
+          xcodebuild \
+            -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            build
+      - name: Empaqueter en .ipa non signé
+        script: |
+          cd ios/App/build/Build/Products/Release-iphoneos
+          mkdir -p Payload
+          cp -r App.app Payload/
+          zip -r "$CM_BUILD_DIR/MesAzkar-unsigned.ipa" Payload
+    artifacts:
+      - MesAzkar-unsigned.ipa
