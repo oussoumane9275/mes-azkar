@@ -1508,7 +1508,6 @@ const QURAN_AYAH_AUDIO_ROOT = "https://cdn.islamic.network/quran/audio";
 // Every reciter below was individually verified against the per-ayah CDN —
 // each only serves audio at one specific bitrate, so it's recorded per entry.
 const RECITERS = [
-  { id: "ar.alafasy", name: "Mishary Alafasy", arabicName: "مشاري العفاسي", bitrate: 128 },
   { id: "ar.abdulbasitmurattal", name: "Abdul Basit", arabicName: "عبد الباسط عبد الصمد", bitrate: 64 },
   { id: "ar.abdulsamad", name: "Abdul Samad", arabicName: "عبدالباسط عبدالصمد", bitrate: 64 },
   { id: "ar.abdurrahmaansudais", name: "As-Sudais", arabicName: "عبدالرحمن السديس", bitrate: 64 },
@@ -3752,7 +3751,7 @@ function QiblaScreen({ location, onBack }) {
             className="absolute inset-0 rounded-full"
             style={{ background: COLORS.parchment, border: `1px solid ${COLORS.parchmentDark}` }}
           />
-          {["N", "E", "S", "O"].map((label, i) => (
+          {["Qibla", "E", "S", "O"].map((label, i) => (
             <span
               key={label}
               className="font-ui font-semibold absolute"
@@ -6937,7 +6936,6 @@ function SurahListScreen({ onSelectSurah, onBack }) {
 /* into that reciter's own room to read + listen to any surah           */
 /* ------------------------------------------------------------------ */
 const POPULAR_RECITER_IDS = [
-  "ar.alafasy",
   "ar.abdulbasitmurattal",
   "ar.abdurrahmaansudais",
   "ar.saoodshuraym",
@@ -7020,7 +7018,7 @@ function ReciterCard({ r, active, onOpen }) {
 }
 
 function RecitersScreen({ onBack, onOpenReciterSpace }) {
-  const [currentReciter, setCurrentReciter] = useState("ar.alafasy");
+  const [currentReciter, setCurrentReciter] = useState(RECITERS[0].id);
 
   useEffect(() => {
     (async () => {
@@ -7154,7 +7152,7 @@ function QuranReaderScreen({ surahNumber, arabicSize, onBack, onChangeSurah, onO
   const [status, setStatus] = useState("loading"); // 'loading' | 'ready' | 'error'
   const [progress, setProgress] = useState({ lastSurah: null, lastAyah: null, readAyahs: {} });
   const [progressLoaded, setProgressLoaded] = useState(false);
-  const [reciter, setReciter] = useState("ar.alafasy");
+  const [reciter, setReciter] = useState(RECITERS[0].id);
   const [showSurahList, setShowSurahList] = useState(false);
 
   const surahMeta = QURAN_SURAHS.find((s) => s.number === surahNumber);
