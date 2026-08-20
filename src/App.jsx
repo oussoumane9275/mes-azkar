@@ -153,6 +153,40 @@ function notifyAudioStop() {
   }
 }
 
+// Registers playback with the OS-level Media Session — this is what actually
+// keeps Android/Chrome from silently suspending an <audio> element once the
+// screen locks (the foreground service above keeps the process alive, but a
+// media session is what tells the WebView "this is real, ongoing media
+// playback, don't throttle it"). It also draws the lock-screen playback
+// controls for free.
+function updateMediaSession({ title, artist, playing, onPause, onNext }) {
+  if (typeof navigator === "undefined" || !navigator.mediaSession) return;
+  try {
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: title || "Mes Azkar",
+      artist: artist || "Mes Azkar",
+    });
+    navigator.mediaSession.playbackState = playing ? "playing" : "paused";
+    navigator.mediaSession.setActionHandler("pause", onPause || null);
+    navigator.mediaSession.setActionHandler("stop", onPause || null);
+    navigator.mediaSession.setActionHandler("nexttrack", onNext || null);
+  } catch (e) {
+    // Media Session unsupported on this WebView — non-critical
+  }
+}
+function clearMediaSession() {
+  if (typeof navigator === "undefined" || !navigator.mediaSession) return;
+  try {
+    navigator.mediaSession.playbackState = "none";
+    navigator.mediaSession.setActionHandler("play", null);
+    navigator.mediaSession.setActionHandler("pause", null);
+    navigator.mediaSession.setActionHandler("stop", null);
+    navigator.mediaSession.setActionHandler("nexttrack", null);
+  } catch (e) {
+    // non-critical
+  }
+}
+
 function hexToRgb(hex) {
   const clean = hex.replace("#", "");
   return {
@@ -378,11 +412,11 @@ function usePrayerTimes(location, prayerSettings) {
 }
 
 function formatCountdown(mins) {
-  if (mins < 1) return "moins d'1 min";
+  if (mins < 1) return t("less_than_1_min");
   const h = Math.floor(mins / 60);
   const m = mins % 60;
-  if (h === 0) return `${m} min`;
-  return `${h} h ${String(m).padStart(2, "0")} min`;
+  if (h === 0) return `${m} ${t("min_short")}`;
+  return `${h} ${t("hour_short")} ${String(m).padStart(2, "0")} ${t("min_short")}`;
 }
 
 /* ------------------------------------------------------------------ */
@@ -1977,7 +2011,10 @@ function AudioPlayButton({ src, color, size = 30 }) {
   useEffect(() => {
     return () => {
       if (audioRef.current) audioRef.current.pause();
-      if (playing) notifyAudioStop();
+      if (playing) {
+        notifyAudioStop();
+        clearMediaSession();
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [src]);
@@ -1988,6 +2025,7 @@ function AudioPlayButton({ src, color, size = 30 }) {
       audioRef.current.addEventListener("ended", () => {
         setPlaying(false);
         notifyAudioStop();
+        clearMediaSession();
       });
       audioRef.current.addEventListener("waiting", () => setLoading(true));
       audioRef.current.addEventListener("playing", () => setLoading(false));
@@ -1996,11 +2034,22 @@ function AudioPlayButton({ src, color, size = 30 }) {
       audioRef.current.pause();
       setPlaying(false);
       notifyAudioStop();
+      clearMediaSession();
     } else {
       setLoading(true);
       audioRef.current.play().catch(() => setLoading(false));
       setPlaying(true);
       notifyAudioStart();
+      updateMediaSession({
+        title: "Mes Azkar",
+        playing: true,
+        onPause: () => {
+          if (audioRef.current) audioRef.current.pause();
+          setPlaying(false);
+          notifyAudioStop();
+          clearMediaSession();
+        },
+      });
     }
   };
 
@@ -3334,6 +3383,7 @@ function AzkarApp() {
           onOpenQibla={() => setScreen("qibla")}
           onOpenCalendar={() => setScreen("calendar")}
           onOpenMushaf={() => setScreen("quran-mushaf")}
+          onOpenRamadan={() => setScreen("ramadan")}
           onToggleTheme={() => handleSetThemePreference(currentTheme === "dark" ? "light" : "dark")}
           location={prayerSettings.location || DEFAULT_LOCATION}
           prayerSettings={prayerSettings}
@@ -3346,6 +3396,15 @@ function AzkarApp() {
 
       {screen === "qibla" && (
         <QiblaScreen location={prayerSettings.location || DEFAULT_LOCATION} onBack={() => setScreen("home")} />
+      )}
+
+      {screen === "ramadan" && (
+        <RamadanScreen
+          location={prayerSettings.location || DEFAULT_LOCATION}
+          prayerSettings={prayerSettings}
+          onBack={() => setScreen("home")}
+          arabicSize={arabicSize}
+        />
       )}
 
       {screen === "invocations" && (
@@ -3760,7 +3819,7 @@ function OnboardingOverlay({ onNavigate, onEnableNotifications, onDismiss }) {
 /* ------------------------------------------------------------------ */
 /* Home screen                                                         */
 /* ------------------------------------------------------------------ */
-function HomeScreen({ progress, catCompletion, onOpen, onOpenApresPicker, streak, onOpenHistory, onOpenQibla, onOpenCalendar, onOpenMushaf, onToggleTheme, location, prayerSettings, onToggleNotifyPrayer, onReplayOnboarding, languagePref, onSetLanguage }) {
+function HomeScreen({ progress, catCompletion, onOpen, onOpenApresPicker, streak, onOpenHistory, onOpenQibla, onOpenCalendar, onOpenMushaf, onOpenRamadan, onToggleTheme, location, prayerSettings, onToggleNotifyPrayer, onReplayOnboarding, languagePref, onSetLanguage }) {
   const { times, nextKey, minutesRemaining } = usePrayerTimes(location, prayerSettings);
   const today = new Date();
   const hijriLabel = getHijriLabel(today);
@@ -3919,7 +3978,30 @@ function HomeScreen({ progress, catCompletion, onOpen, onOpenApresPicker, streak
           <QiblaIcon color={COLORS.goldLight} size={20} />
         </div>
         <p className="font-display font-semibold" style={{ color: COLORS.ink, fontSize: 14 }}>
-          Qibla — direction de la Mecque
+          {t("qibla_direction_mecca")}
+        </p>
+      </button>
+
+      <button
+        onClick={onOpenRamadan}
+        className="flex items-center gap-3 active:scale-[0.98] transition mt-2.5"
+        style={{
+          width: "100%",
+          background: COLORS.parchment,
+          borderRadius: 16,
+          padding: "10px 14px",
+          border: `1px solid ${COLORS.parchmentDark}`,
+          textAlign: "left",
+        }}
+      >
+        <div
+          className="flex items-center justify-center flex-shrink-0"
+          style={{ width: 38, height: 38, borderRadius: 12, background: "rgba(139,124,177,0.16)" }}
+        >
+          <CategoryIcon type="moon" color={COLORS.violetLight} size={20} />
+        </div>
+        <p className="font-display font-semibold" style={{ color: COLORS.ink, fontSize: 14 }}>
+          {t("ramadan_mode")}
         </p>
       </button>
 
@@ -4440,6 +4522,137 @@ function QiblaScreen({ location, onBack }) {
           </p>
         )}
       </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Ramadan mode — Suhoor/Iftar countdown, works any day of the year but   */
+/* labels itself against the current Hijri month when it really is       */
+/* Ramadan; the astronomical Fajr/Maghrib countdown is identical either   */
+/* way, so this doubles as a fasting-day timer outside Ramadan too.       */
+/* ------------------------------------------------------------------ */
+function RamadanScreen({ location, prayerSettings, onBack, arabicSize }) {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const loc = location || DEFAULT_LOCATION;
+  const calc = resolveCalcConfig(prayerSettings);
+  const times = computePrayerTimesDecimal(now, loc, calc);
+  const nowDecimal = now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
+  const hijri = gregorianToHijri(now);
+  const isRamadan = hijri.month === 9;
+
+  let phase, minutesRemaining;
+  if (nowDecimal < times.fajr) {
+    phase = "before-fajr";
+    minutesRemaining = Math.max(0, Math.round((times.fajr - nowDecimal) * 60));
+  } else if (nowDecimal < times.maghrib) {
+    phase = "fasting";
+    minutesRemaining = Math.max(0, Math.round((times.maghrib - nowDecimal) * 60));
+  } else {
+    phase = "after-iftar";
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tTimes = computePrayerTimesDecimal(tomorrow, loc, calc);
+    minutesRemaining = Math.max(0, Math.round((tTimes.fajr + 24 - nowDecimal) * 60));
+  }
+
+  const phaseMessage =
+    phase === "before-fajr" ? t("ramadan_before_fajr") : phase === "fasting" ? t("ramadan_fasting") : t("ramadan_after_iftar");
+  const ramadanItems = (INVOCATION_TOPICS.ramadan && INVOCATION_TOPICS.ramadan.items) || [];
+
+  return (
+    <div className="min-h-screen flex flex-col px-5 pt-6 pb-10 fade-in">
+      <div className="flex items-center justify-between mb-6">
+        <button onClick={onBack} className="p-2.5 -ml-2 active:opacity-60" aria-label={t("back")}>
+          <BackIcon color={COLORS.ink} />
+        </button>
+        <p className="font-display" style={{ color: COLORS.ink, fontSize: 15 }}>
+          {t("ramadan_mode")}
+        </p>
+        <div className="w-9" />
+      </div>
+
+      <p className="font-ui text-center mb-1" style={{ color: COLORS.inkSoft, fontSize: 11.5 }}>
+        {isRamadan ? `${t("ramadan_day")} ${hijri.day}` : getHijriMonthYearLabel(now)}
+      </p>
+
+      <div
+        className="text-center mt-3"
+        style={{ background: inkA(0.07), border: `1px solid ${inkA(0.14)}`, borderRadius: 18, padding: "20px 16px" }}
+      >
+        <p className="font-ui font-semibold" style={{ color: COLORS.violetLight, fontSize: 11.5, letterSpacing: 0.4, textTransform: "uppercase" }}>
+          {phaseMessage}
+        </p>
+        <p className="font-display font-semibold mt-1.5" style={{ color: COLORS.ink, fontSize: 28 }}>
+          {formatCountdown(minutesRemaining)}
+        </p>
+      </div>
+
+      <div className="flex gap-2.5 mt-4">
+        <div
+          className="flex-1 text-center"
+          style={{ background: COLORS.parchment, border: `1px solid ${COLORS.parchmentDark}`, borderRadius: 16, padding: "12px 8px" }}
+        >
+          <p className="font-ui font-semibold" style={{ color: COLORS.inkSoft, fontSize: 10.5, letterSpacing: 0.3, textTransform: "uppercase" }}>
+            {t("ramadan_suhoor_end")}
+          </p>
+          <p className="font-display font-semibold mt-1" style={{ color: COLORS.ink, fontSize: 17 }}>
+            {_fmtHour(times.fajr)}
+          </p>
+        </div>
+        <div
+          className="flex-1 text-center"
+          style={{ background: COLORS.parchment, border: `1px solid ${COLORS.parchmentDark}`, borderRadius: 16, padding: "12px 8px" }}
+        >
+          <p className="font-ui font-semibold" style={{ color: COLORS.inkSoft, fontSize: 10.5, letterSpacing: 0.3, textTransform: "uppercase" }}>
+            {t("ramadan_iftar")}
+          </p>
+          <p className="font-display font-semibold mt-1" style={{ color: COLORS.ink, fontSize: 17 }}>
+            {_fmtHour(times.maghrib)}
+          </p>
+        </div>
+      </div>
+
+      {!isRamadan && (
+        <p className="font-ui text-center mt-3" style={{ color: COLORS.inkSoft, fontSize: 10.5, lineHeight: 1.5 }}>
+          {t("ramadan_outside_hint")}
+        </p>
+      )}
+
+      {ramadanItems.length > 0 && (
+        <div className="flex flex-col gap-3 mt-6">
+          {ramadanItems.map((it, i) => (
+            <div
+              key={i}
+              style={{ background: COLORS.parchment, borderRadius: 20, padding: "18px 20px", border: `1px solid ${COLORS.parchmentDark}` }}
+            >
+              <p className="font-ui font-semibold" style={{ color: COLORS.clay, fontSize: 12, letterSpacing: 0.3, textTransform: "uppercase" }}>
+                {trField(it, "title")}
+              </p>
+              <p
+                dir="rtl"
+                className="font-arabic text-right mt-3"
+                style={{ color: COLORS.ink, fontSize: arabicSize || ARABIC_SIZES.md, lineHeight: 1.8 }}
+              >
+                {it.arabic}
+              </p>
+              {currentLanguage !== "ar" && (
+                <>
+                  <div style={{ height: 1, background: COLORS.parchmentDark, margin: "12px 0" }} />
+                  <p className="font-display" style={{ color: COLORS.inkSoft, fontSize: 13.5, fontStyle: "italic" }}>
+                    {trField(it, "translation")}
+                  </p>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -7322,7 +7535,11 @@ function PersonalInvocationsScreen({ onBack }) {
         <p className="font-display" style={{ color: COLORS.ink, fontSize: 15 }}>
           {t("title_my_invocations")}
         </p>
-        <button onClick={() => setShowForm((s) => !s)} className="p-2.5 -mr-2 active:opacity-60">
+        <button
+          onClick={() => setShowForm((s) => !s)}
+          className="p-2.5 -mr-2 active:opacity-60"
+          aria-label={showForm ? t("close") : t("add_invocation")}
+        >
           <span style={{ color: COLORS.goldLight, fontSize: 22, lineHeight: 1 }}>{showForm ? "×" : "+"}</span>
         </button>
       </div>
@@ -7974,6 +8191,7 @@ function QuranReaderScreen({ surahNumber, arabicSize, onBack, onChangeSurah, onO
       notifyAudioStop();
     }
     setPlayingAyah(null);
+    clearMediaSession();
   }, []);
 
   const playAyah = (ayah) => {
@@ -7985,6 +8203,16 @@ function QuranReaderScreen({ surahNumber, arabicSize, onBack, onChangeSurah, onO
     playerAudioRef.current = audio;
     setPlayingAyah(ayah.n);
     notifyAudioStart();
+    const list = ayahsRef.current || [];
+    const idx = list.findIndex((x) => x.n === ayah.n);
+    const nextForSession = list[idx + 1];
+    updateMediaSession({
+      title: `${surahMeta ? surahMeta.translit : ""} — ${t("verse_label")} ${ayah.n}`,
+      artist: currentReciterMeta.name,
+      playing: true,
+      onPause: stopPlayback,
+      onNext: nextForSession ? () => playAyah(nextForSession) : null,
+    });
     markQuranAyahRead(surahNumber, ayah.n).then(setProgress);
     const node = ayahNodesRef.current.get(ayah.n);
     if (node) node.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -8146,7 +8374,7 @@ function QuranReaderScreen({ surahNumber, arabicSize, onBack, onChangeSurah, onO
         </button>
         <button onClick={() => setShowSurahList(true)} className="flex items-center gap-1 active:opacity-70">
           <span className="font-ui font-semibold" style={{ color: COLORS.ink, fontSize: 12 }}>
-            Sourate {surahNumber} / 114
+            {t("surah_label")} {surahNumber} / 114
           </span>
           <ChevronIcon dir="right" color={COLORS.inkSoft} size={11} />
         </button>
@@ -8267,7 +8495,11 @@ function QuranReaderScreen({ surahNumber, arabicSize, onBack, onChangeSurah, onO
                       )}
                     </button>
                   </div>
-                  <button onClick={() => markAyah(a.n)} className="active:opacity-60 flex items-center gap-1">
+                  <button
+                    onClick={() => markAyah(a.n)}
+                    className="active:opacity-60 flex items-center gap-1"
+                    aria-label={isBookmark ? t("remove_bookmark") : t("add_bookmark")}
+                  >
                     <BookmarkIcon color={isBookmark ? COLORS.gold : COLORS.parchmentDark} filled={isBookmark} />
                   </button>
                 </div>
