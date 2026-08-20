@@ -76,9 +76,14 @@ function accentLabels() {
 // (item.label_ar) for UI-chrome labels — unlike scripture/azkar content,
 // category names like "Sommeil" or "Mariage" should read in Arabic too when
 // the app is in Arabic mode, not fall back to French.
+function localField(item, field) {
+  const arKey = `${field}_ar`;
+  if (currentLanguage === "ar" && item[arKey]) return item[arKey];
+  return trField(item, field);
+}
+
 function localLabel(item) {
-  if (currentLanguage === "ar" && item.label_ar) return item.label_ar;
-  return trField(item, "label");
+  return localField(item, "label");
 }
 
 // A mutable, shared object — components read `COLORS.xxx` at render time, so
@@ -365,12 +370,12 @@ const _fmtHour = (t) => {
 };
 
 const PRAYER_LABELS = [
-  { key: "fajr", label: "Fajr" },
+  { key: "fajr", label: "Fajr", label_ar: "الفجر" },
   { key: "sunrise", label: "Chourouk", label_en: "Sunrise", label_ar: "الشروق" },
-  { key: "dhuhr", label: "Dohr" },
-  { key: "asr", label: "Asr" },
-  { key: "maghrib", label: "Maghrib" },
-  { key: "isha", label: "Isha" },
+  { key: "dhuhr", label: "Dohr", label_en: "Dhuhr", label_ar: "الظهر" },
+  { key: "asr", label: "Asr", label_ar: "العصر" },
+  { key: "maghrib", label: "Maghrib", label_ar: "المغرب" },
+  { key: "isha", label: "Isha", label_ar: "العشاء" },
 ];
 function prayerLabel(p) {
   if (currentLanguage === "ar" && p.label_ar) return p.label_ar;
@@ -985,11 +990,11 @@ function buildApresItems(enhanced) {
 
 // Fajr and Maghrib carry the enhanced repetitions (3x for the protective sourates, 10x for the tahlīl)
 const APRES_PRAYERS = [
-  { id: "fajr", label: "Fajr", enhanced: true },
-  { id: "dhuhr", label: "Dohr", enhanced: false },
-  { id: "asr", label: "Asr", enhanced: false },
-  { id: "maghrib", label: "Maghrib", enhanced: true },
-  { id: "isha", label: "Isha", enhanced: false },
+  { id: "fajr", label: "Fajr", label_ar: "الفجر", enhanced: true },
+  { id: "dhuhr", label: "Dohr", label_en: "Dhuhr", label_ar: "الظهر", enhanced: false },
+  { id: "asr", label: "Asr", label_ar: "العصر", enhanced: false },
+  { id: "maghrib", label: "Maghrib", label_ar: "المغرب", enhanced: true },
+  { id: "isha", label: "Isha", label_ar: "العشاء", enhanced: false },
 ];
 
 const APRES_BY_PRAYER = Object.fromEntries(APRES_PRAYERS.map((p) => [p.id, buildApresItems(p.enhanced)]));
@@ -2511,6 +2516,41 @@ const HIJRI_MONTHS = [
   "Dhou al-Qi'da",
   "Dhou al-Hijja",
 ];
+const HIJRI_MONTHS_EN = [
+  "Muharram",
+  "Safar",
+  "Rabi' al-awwal",
+  "Rabi' al-thani",
+  "Jumada al-awwal",
+  "Jumada al-thani",
+  "Rajab",
+  "Sha'ban",
+  "Ramadan",
+  "Shawwal",
+  "Dhu al-Qi'dah",
+  "Dhu al-Hijjah",
+];
+const HIJRI_MONTHS_AR = [
+  "محرم",
+  "صفر",
+  "ربيع الأول",
+  "ربيع الآخر",
+  "جمادى الأولى",
+  "جمادى الآخرة",
+  "رجب",
+  "شعبان",
+  "رمضان",
+  "شوال",
+  "ذو القعدة",
+  "ذو الحجة",
+];
+function hijriMonthName(month) {
+  const list = currentLanguage === "en" ? HIJRI_MONTHS_EN : currentLanguage === "ar" ? HIJRI_MONTHS_AR : HIJRI_MONTHS;
+  return list[month - 1];
+}
+function hijriEraSuffix() {
+  return currentLanguage === "en" ? "AH" : currentLanguage === "ar" ? "هـ" : "H";
+}
 
 function gregorianToHijri(date) {
   const y = date.getFullYear();
@@ -2536,7 +2576,7 @@ function gregorianToHijri(date) {
 
 function getHijriLabel(date) {
   const { day, month, year } = gregorianToHijri(date);
-  return `${day} ${HIJRI_MONTHS[month - 1]} ${year} AH`;
+  return `${day} ${hijriMonthName(month)} ${year} ${hijriEraSuffix()}`;
 }
 
 // Returns just the Hijri day-of-month number (e.g. "14") for a given Gregorian date.
@@ -2546,29 +2586,36 @@ function getHijriDay(date) {
 
 function getHijriMonthYearLabel(date) {
   const { month, year } = gregorianToHijri(date);
-  return `${HIJRI_MONTHS[month - 1]} ${year}`;
+  return `${hijriMonthName(month)} ${year}`;
 }
 
-let gregorianFormatter = null;
+const GREGORIAN_LOCALES = { fr: "fr-FR", en: "en-US", ar: "ar-EG" };
+function gregorianLocale() {
+  return GREGORIAN_LOCALES[currentLanguage] || GREGORIAN_LOCALES.fr;
+}
+
+const gregorianFormatters = {};
 function getGregorianLabel(date) {
   try {
-    if (!gregorianFormatter) {
-      gregorianFormatter = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+    const locale = gregorianLocale();
+    if (!gregorianFormatters[locale]) {
+      gregorianFormatters[locale] = new Intl.DateTimeFormat(locale, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
     }
-    const label = gregorianFormatter.format(date);
+    const label = gregorianFormatters[locale].format(date);
     return label.charAt(0).toUpperCase() + label.slice(1);
   } catch (e) {
     return null;
   }
 }
 
-let gregorianMonthYearFormatter = null;
+const gregorianMonthYearFormatters = {};
 function getGregorianMonthYearLabel(date) {
   try {
-    if (!gregorianMonthYearFormatter) {
-      gregorianMonthYearFormatter = new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric" });
+    const locale = gregorianLocale();
+    if (!gregorianMonthYearFormatters[locale]) {
+      gregorianMonthYearFormatters[locale] = new Intl.DateTimeFormat(locale, { month: "long", year: "numeric" });
     }
-    const label = gregorianMonthYearFormatter.format(date);
+    const label = gregorianMonthYearFormatters[locale].format(date);
     return label.charAt(0).toUpperCase() + label.slice(1);
   } catch (e) {
     return "";
@@ -3297,7 +3344,8 @@ function AzkarApp() {
       syncPrayerNotifications(
         (date) => computePrayerTimesDecimal(date, location, calc),
         prayerSettings.notifyPrayers,
-        prayerSettings.muezzinByPrayer
+        prayerSettings.muezzinByPrayer,
+        language
       ).catch(() => {});
     })();
   }, [
@@ -3310,6 +3358,7 @@ function AzkarApp() {
     prayerSettings.customIshaAngle,
     prayerSettings.customOffsets,
     prayerSettings.location,
+    language,
   ]);
 
   // Push prayer-calc inputs to the native home-screen widget whenever they
@@ -3401,7 +3450,8 @@ function AzkarApp() {
   const index = catProgress ? Math.min(catProgress.index, items.length - 1) : 0;
   const item = items[index];
   const current = item && catProgress ? catProgress.counts[item.id] || 0 : 0;
-  const activePrayerLabel = activeCatId === "apres" ? (APRES_PRAYERS.find((p) => p.id === activeSubId) || {}).label : null;
+  const activeApresPrayer = activeCatId === "apres" ? APRES_PRAYERS.find((p) => p.id === activeSubId) : null;
+  const activePrayerLabel = activeApresPrayer ? localLabel(activeApresPrayer) : null;
 
   const goToIndex = (i) => {
     updateCategory(activeCatId, activeSubId, (cat) => ({ ...cat, index: i }));
@@ -3478,7 +3528,7 @@ function AzkarApp() {
       <div style={{ background: COLORS.bg, minHeight: "100vh" }} className="flex items-center justify-center">
         <style>{FONT_STYLE}</style>
         <span className="font-ui" style={{ color: COLORS.ink, opacity: 0.7 }}>
-          Chargement…
+          {t("loading")}
         </span>
       </div>
     );
@@ -3706,8 +3756,10 @@ const TOUR_SLIDES = [
     icon: "🕌",
     title: "Bienvenue dans Mes Azkar",
     title_en: "Welcome to Mes Azkar",
+    title_ar: "مرحبًا بك في أذكاري",
     body: "Un compagnon complet pour tes azkar, ton tasbih, ta lecture du Coran et tes invocations — visite rapide de ce qui t'attend.",
     body_en: "A complete companion for your azkar, your tasbih, your Quran reading and your invocations — a quick tour of what's ahead.",
+    body_ar: "رفيق شامل لأذكارك، تسبيحك، قراءتك للقرآن وأدعيتك — جولة سريعة على ما ينتظرك.",
   },
   {
     screen: "home",
@@ -3715,8 +3767,10 @@ const TOUR_SLIDES = [
     icon: "🕐",
     title: "Horaires calés sur ta mosquée",
     title_en: "Prayer times matched to your mosque",
+    title_ar: "أوقات مضبوطة على مسجدك",
     body: "Ajuste chaque prière minute par minute pour coller aux horaires réels, règle l'iqama et la voix du muezzin, et active un rappel prière par prière d'un tap sur la cloche. Ajoute même un widget sur ton écran d'accueil.",
     body_en: "Adjust each prayer minute by minute to match the real times, set the iqama and the muezzin's voice, and turn on a reminder prayer by prayer with a tap on the bell. You can even add a widget to your home screen.",
+    body_ar: "اضبط كل صلاة دقيقة بدقيقة لتطابق الأوقات الحقيقية، اضبط الإقامة وصوت المؤذن، وفعّل تذكيرًا لكل صلاة بلمسة على الجرس. يمكنك حتى إضافة أداة على شاشتك الرئيسية.",
   },
   {
     screen: "quran-list",
@@ -3724,8 +3778,10 @@ const TOUR_SLIDES = [
     icon: "📖",
     title: "Le Coran, deux espaces distincts",
     title_en: "The Quran, two distinct spaces",
+    title_ar: "القرآن، في مساحتين مختلفتين",
     body: "Récitation pour écouter en suivant le texte avec le récitateur de ton choix, et Mushaf pour la lecture page par page fidèle à l'imprimé.",
     body_en: "Recitation to listen while following the text with the reciter of your choice, and Mushaf for page-by-page reading true to the printed copy.",
+    body_ar: "التلاوة للاستماع مع متابعة النص بصوت القارئ الذي تختاره، والمصحف للقراءة صفحة بصفحة مطابقة للنسخة المطبوعة.",
   },
   {
     screen: "quran-mushaf",
@@ -3733,8 +3789,10 @@ const TOUR_SLIDES = [
     icon: "🔖",
     title: "Le Mushaf, en détail",
     title_en: "The Mushaf, in detail",
+    title_ar: "المصحف، بالتفصيل",
     body: "Saute directement à un juz ou une sourate, pose des signets, et télécharge tout le Coran pour le lire hors connexion.",
     body_en: "Jump straight to a juz or a surah, place bookmarks, and download the whole Quran to read it offline.",
+    body_ar: "انتقل مباشرة إلى جزء أو سورة، ضع إشارات مرجعية، وحمّل القرآن كاملاً لقراءته دون اتصال بالإنترنت.",
   },
   {
     screen: "tasbih",
@@ -3742,8 +3800,10 @@ const TOUR_SLIDES = [
     icon: "📿",
     title: "Tasbih",
     title_en: "Tasbih",
+    title_ar: "التسبيح",
     body: "Un compteur de dhikr libre et sans limite. Le mieux reste de compter sur les phalanges, comme l'a enseigné le Prophète ﷺ — l'appli le rappelle à l'ouverture.",
     body_en: "A free, unlimited dhikr counter. It's still best to count on your finger joints, as the Prophet ﷺ taught — the app reminds you of this when you open it.",
+    body_ar: "عداد ذكر حر وبلا حدود. يبقى الأفضل هو العد على عُقد الأصابع، كما علّم النبي ﷺ — يذكّرك التطبيق بذلك عند فتحه.",
   },
   {
     screen: "invocations",
@@ -3751,8 +3811,10 @@ const TOUR_SLIDES = [
     icon: "🤲",
     title: "Invocations",
     title_en: "Invocations",
+    title_ar: "الأدعية",
     body: "Une invocation authentique pour chaque moment de la vie, classée par thème, plus un espace pour garder les tiennes.",
     body_en: "An authentic invocation for every moment of life, organized by topic, plus a space to keep your own.",
+    body_ar: "دعاء صحيح لكل لحظة من لحظات الحياة، مصنّف حسب الموضوع، بالإضافة إلى مساحة لحفظ أدعيتك الخاصة.",
   },
   {
     screen: "dashboard",
@@ -3760,8 +3822,10 @@ const TOUR_SLIDES = [
     icon: "📊",
     title: "Bilan",
     title_en: "Summary",
+    title_ar: "الملخص",
     body: "Le résumé de ta journée — et tu peux remonter jour par jour dans l'historique pour voir ce qui a été fait la veille.",
     body_en: "Your day's summary — and you can go back day by day through the history to see what was done the day before.",
+    body_ar: "ملخص يومك — ويمكنك التنقل يومًا بيوم في السجل لمعرفة ما تم إنجازه في الأيام السابقة.",
   },
   {
     screen: "settings",
@@ -3769,8 +3833,10 @@ const TOUR_SLIDES = [
     icon: "⚙️",
     title: "Réglages",
     title_en: "Settings",
+    title_ar: "الإعدادات",
     body: "Thèmes de couleur, méthode de calcul, iqama, muezzin, sauvegarde de tes données — tout se personnalise ici.",
     body_en: "Color themes, calculation method, iqama, muezzin, backing up your data — everything is customized here.",
+    body_ar: "الألوان، طريقة الحساب، الإقامة، المؤذن، نسخ بياناتك احتياطيًا — كل شيء قابل للتخصيص من هنا.",
   },
 ];
 
@@ -3870,10 +3936,10 @@ function OnboardingOverlay({ onNavigate, onEnableNotifications, onDismiss }) {
             <span style={{ fontSize: 34 }}>{slide.icon}</span>
           </div>
           <h2 className="font-display font-semibold" style={{ color: COLORS.ink, fontSize: 19, marginTop: 16 }}>
-            {trField(slide, "title")}
+            {localField(slide, "title")}
           </h2>
           <p className="font-ui mt-2.5" style={{ color: COLORS.inkSoft, fontSize: 13, lineHeight: 1.65, padding: "0 4px" }}>
-            {trField(slide, "body")}
+            {localField(slide, "body")}
           </p>
         </div>
 
@@ -4369,7 +4435,7 @@ function PrayerTimesCard({ times, nextKey, minutesRemaining, locationLabel, iqam
       </div>
       {minutesRemaining != null && (
         <p className="font-display font-semibold text-center" style={{ color: COLORS.goldLight, fontSize: 13.5, marginBottom: 8 }}>
-          {nextLabel} dans {formatCountdown(minutesRemaining)}
+          {nextLabel} {t("countdown_in")} {formatCountdown(minutesRemaining)}
         </p>
       )}
       <div className="flex items-stretch justify-between px-2">
@@ -4434,7 +4500,7 @@ function PrayerTimesCard({ times, nextKey, minutesRemaining, locationLabel, iqam
             className="font-ui"
             style={{ fontSize: 10.5, color: sunrise.key === nextKey ? COLORS.goldLight : inkA(0.55), fontWeight: sunrise.key === nextKey ? 700 : 500 }}
           >
-            Chourouk {sunrise.time}
+            {sunrise.label} {sunrise.time}
           </span>
         </div>
       )}
@@ -4853,7 +4919,7 @@ function ApresPickerScreen({ prayerCompletion, onBack, onSelectPrayer }) {
                   </div>
                   <div>
                     <p className="font-display font-semibold" style={{ color: COLORS.ink, fontSize: 15 }}>
-                      {p.label}
+                      {localLabel(p)}
                     </p>
                     {p.enhanced && (
                       <p className="font-ui" style={{ color: COLORS.inkSoft, fontSize: 11, marginTop: 1 }}>
@@ -5241,7 +5307,7 @@ function DashboardScreen({ history, streak }) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <span className="font-ui" style={{ color: COLORS.ink, opacity: 0.7 }}>
-          Chargement…
+          {t("loading")}
         </span>
       </div>
     );
@@ -5495,7 +5561,7 @@ function HijriCalendarScreen({ onBack }) {
       </div>
 
       <p className="font-ui text-center mt-6" style={{ color: COLORS.inkSoft, fontSize: 11, lineHeight: 1.6 }}>
-        Petit chiffre sous chaque date : le jour correspondant du mois hégirien (calendrier Umm al-Qura).
+        {t("hijri_footnote")}
       </p>
     </div>
   );
@@ -5584,6 +5650,8 @@ const TASBIH_PHRASES = [
   {
     id: "salawat",
     short: "Salawat sur le Prophète",
+    short_en: "Salawat upon the Prophet",
+    short_ar: "الصلاة على النبي",
     arabic: "اللَّهُمَّ صَلِّ عَلَىٰ مُحَمَّدٍ",
     translation: "Ô Allah, prie sur Muhammad.",
     translation_en: "O Allah, send prayers upon Muhammad.",
@@ -5619,6 +5687,8 @@ const TASBIH_PHRASES = [
   {
     id: "dhunnun",
     short: "Invocation de Yūnus",
+    short_en: "Invocation of Yunus",
+    short_ar: "دعاء يونس",
     arabic: "لَا إِلَٰهَ إِلَّا أَنْتَ سُبْحَانَكَ إِنِّي كُنْتُ مِنَ الظَّالِمِينَ",
     translation: "Il n'y a de divinité que Toi, gloire à Toi, j'ai été du nombre des injustes.",
     translation_en: "There is no deity except You; exalted are You. Indeed, I have been of the wrongdoers.",
@@ -5803,7 +5873,7 @@ function TasbihScreen({ arabicSize }) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <span className="font-ui" style={{ color: COLORS.ink, opacity: 0.7 }}>
-          Chargement…
+          {t("loading")}
         </span>
       </div>
     );
@@ -5833,7 +5903,11 @@ function TasbihScreen({ arabicSize }) {
         </div>
         {total > 0 && (
           <p className="font-ui mt-1" style={{ color: COLORS.inkSoft, fontSize: 11.5 }}>
-            {total} dhikr récité{total > 1 ? "s" : ""} au total
+            {currentLanguage === "en"
+              ? `${total} dhikr recited in total`
+              : currentLanguage === "ar"
+              ? `${total} ذكر تم ترديده بالإجمال`
+              : `${total} dhikr récité${total > 1 ? "s" : ""} au total`}
           </p>
         )}
       </div>
@@ -5857,7 +5931,7 @@ function TasbihScreen({ arabicSize }) {
               }}
             >
               <span className="font-ui font-semibold" style={{ fontSize: 12.5, color: COLORS.ink, whiteSpace: "nowrap" }}>
-                {p.short}
+                {localField(p, "short")}
               </span>
               {pCount > 0 && (
                 <span
@@ -5890,7 +5964,7 @@ function TasbihScreen({ arabicSize }) {
           }}
         >
           <p className="font-ui font-semibold text-center" style={{ color: COLORS.goldLight, fontSize: 12, letterSpacing: 0.5, textTransform: "uppercase" }}>
-            {phrase.short}
+            {localField(phrase, "short")}
           </p>
           <p dir="rtl" className="font-arabic text-right mt-3" style={{ color: COLORS.ink, fontSize: arabicSize || ARABIC_SIZES.md, lineHeight: 1.7 }}>
             {phrase.arabic}
@@ -6001,7 +6075,7 @@ function TasbihButton({ count, pulse }) {
           {count}
         </span>
         <span className="font-ui" style={{ fontSize: 11.5, color: COLORS.inkSoft, marginTop: 6 }}>
-          récité{count > 1 ? "s" : ""}
+          {count > 1 ? t("recited_word_plural") : t("recited_word")}
         </span>
       </div>
     </div>
@@ -6999,62 +7073,82 @@ const PRIVACY_SECTIONS = [
   {
     title: "Aucune inscription, aucun compte",
     title_en: "No sign-up, no account",
+    title_ar: "بدون تسجيل ولا حساب",
     body: "Mes Azkar ne demande ni compte ni inscription. Aucune information permettant de t'identifier (nom, e-mail, numéro de téléphone) n'est jamais collectée par l'application.",
     body_en: "Mes Azkar never asks for an account or sign-up. No information that could identify you (name, email, phone number) is ever collected by the app.",
+    body_ar: "لا يطلب تطبيق أذكاري أي حساب أو تسجيل. لا يتم أبدًا جمع أي معلومة قد تحدد هويتك (الاسم، البريد الإلكتروني، رقم الهاتف) من طرف التطبيق.",
   },
   {
     title: "Tes données restent sur ton téléphone",
     title_en: "Your data stays on your phone",
+    title_ar: "بياناتك تبقى على هاتفك",
     body: "Ta progression dans les azkar, ton tasbih, tes invocations personnelles, ta progression de lecture du Coran, ta langue choisie et tes réglages (y compris la personnalisation pour ta mosquée) sont stockés uniquement sur ton appareil, dans la mémoire locale de l'application. Rien n'est envoyé vers un serveur : l'application n'a pas de serveur ni de base de données à elle.",
     body_en: "Your azkar progress, your tasbih count, your personal invocations, your Quran reading progress, your chosen language, and your settings (including your mosque's custom prayer-time calibration) are stored only on your device, in the app's local storage. Nothing is sent to a server: the app has no server or database of its own.",
+    body_ar: "تقدمك في الأذكار، عداد التسبيح، أدعيتك الشخصية، تقدمك في قراءة القرآن، لغتك المختارة، وإعداداتك (بما في ذلك ضبط أوقات مسجدك) تُخزَّن فقط على جهازك، في الذاكرة المحلية للتطبيق. لا يُرسَل أي شيء إلى خادم: فالتطبيق لا يملك خادمًا ولا قاعدة بيانات خاصة به.",
   },
   {
     title: "Localisation",
     title_en: "Location",
+    title_ar: "الموقع الجغرافي",
     body: "Si tu autorises l'accès à ta position, elle sert uniquement à calculer les horaires de prière et la direction de la Qibla directement sur ton téléphone. Cette position n'est transmise à aucun service extérieur et n'est pas conservée au-delà du calcul.",
     body_en: "If you allow access to your location, it is used only to calculate prayer times and the Qibla direction directly on your phone. This location is never sent to any external service and is not kept beyond the calculation.",
+    body_ar: "إذا سمحت بالوصول إلى موقعك، فإنه يُستخدم فقط لحساب أوقات الصلاة واتجاه القبلة مباشرة على هاتفك. لا يُرسَل هذا الموقع إلى أي خدمة خارجية ولا يُحفظ بعد إتمام الحساب.",
   },
   {
     title: "Notifications et rappels de prière",
     title_en: "Notifications and prayer reminders",
+    title_ar: "الإشعارات وتذكيرات الصلاة",
     body: "Les rappels de prière (et le choix du muezzin pour chacun) sont programmés localement sur ton téléphone, à partir des horaires calculés sur l'appareil. Aucune notification ne transite par un serveur externe.",
     body_en: "Prayer reminders (and the muezzin voice chosen for each) are scheduled locally on your phone, from the times calculated on the device. No notification passes through an external server.",
+    body_ar: "تُبرمَج تذكيرات الصلاة (واختيار صوت المؤذن لكل منها) محليًا على هاتفك، انطلاقًا من الأوقات المحسوبة على الجهاز. لا يمر أي إشعار عبر خادم خارجي.",
   },
   {
     title: "Widget d'écran d'accueil",
     title_en: "Home screen widget",
+    title_ar: "أداة الشاشة الرئيسية",
     body: "Le widget affiche les horaires de prière directement sur ton écran d'accueil. Il réutilise les mêmes réglages (position, méthode de calcul, personnalisation) stockés localement sur ton appareil, et ne communique avec aucun serveur.",
     body_en: "The widget shows prayer times directly on your home screen. It reuses the same settings (location, calculation method, customization) stored locally on your device, and does not communicate with any server.",
+    body_ar: "تعرض هذه الأداة أوقات الصلاة مباشرة على شاشتك الرئيسية. تستخدم نفس الإعدادات (الموقع، طريقة الحساب، التخصيص) المخزنة محليًا على جهازك، ولا تتواصل مع أي خادم.",
   },
   {
     title: "Lecture audio en arrière-plan",
     title_en: "Background audio playback",
+    title_ar: "تشغيل الصوت في الخلفية",
     body: "Lorsque tu écoutes une récitation du Coran ou un adhan, la lecture peut continuer même après avoir quitté l'application, via un service audio du système. Aucune donnée n'est collectée à cette occasion.",
     body_en: "When you listen to a Quran recitation or an adhan, playback can continue even after leaving the app, via a system audio service. No data is collected during this.",
+    body_ar: "عند الاستماع إلى تلاوة قرآنية أو أذان، يمكن أن يستمر التشغيل حتى بعد مغادرة التطبيق، عبر خدمة صوتية تابعة للنظام. لا تُجمع أي بيانات خلال ذلك.",
   },
   {
     title: "Contenus chargés depuis Internet",
     title_en: "Content loaded from the internet",
+    title_ar: "محتوى محمّل من الإنترنت",
     body: "Le texte du Coran, ses traductions et les récitations audio sont récupérés directement depuis des services publics (Quran.com / Quran Foundation, alquran.cloud). Comme pour toute requête Internet, ces services voient l'adresse IP de ton appareil au moment du chargement — l'application elle-même ne leur transmet aucune information sur toi.",
     body_en: "The Quran text, its translations and audio recitations are fetched directly from public services (Quran.com / Quran Foundation, alquran.cloud). As with any internet request, these services see your device's IP address at the moment of loading — the app itself never sends them any information about you.",
+    body_ar: "يُسترجَع نص القرآن وترجماته والتلاوات الصوتية مباشرة من خدمات عامة (Quran.com / Quran Foundation، alquran.cloud). كما هو الحال مع أي طلب عبر الإنترنت، تطّلع هذه الخدمات على عنوان IP الخاص بجهازك عند التحميل — لكن التطبيق نفسه لا يرسل إليها أي معلومة عنك.",
   },
   {
     title: "Aucune publicité, aucun traqueur",
     title_en: "No ads, no tracker",
+    title_ar: "بدون إعلانات ولا متتبعات",
     body: "L'application ne contient ni publicité ni outil d'analyse ou de suivi (analytics, statistiques d'usage envoyées à un tiers).",
     body_en: "The app contains no advertising and no analytics or tracking tool (no usage statistics are sent to a third party).",
+    body_ar: "لا يحتوي التطبيق على أي إعلانات ولا أي أداة تحليل أو تتبع (لا تُرسَل أي إحصائيات استخدام إلى طرف ثالث).",
   },
   {
     title: "Export de tes données",
     title_en: "Exporting your data",
+    title_ar: "تصدير بياناتك",
     body: "Tu peux à tout moment exporter une copie de tes données dans un fichier que tu contrôles entièrement, ou tout supprimer depuis Réglages > Données.",
     body_en: "You can export a copy of your data at any time into a file you fully control, or delete everything from Settings > Data.",
+    body_ar: "يمكنك في أي وقت تصدير نسخة من بياناتك إلى ملف تتحكم فيه بالكامل، أو حذف كل شيء من الإعدادات > البيانات.",
   },
   {
     title: "Contact",
     title_en: "Contact",
+    title_ar: "التواصل",
     body: `Pour toute question sur cette politique de confidentialité, écris à ${CONTACT_EMAIL}.`,
     body_en: `For any question about this privacy policy, write to ${CONTACT_EMAIL}.`,
+    body_ar: `لأي سؤال حول سياسة الخصوصية هذه، راسلنا على ${CONTACT_EMAIL}.`,
   },
 ];
 
@@ -7082,10 +7176,10 @@ function PrivacyPolicyScreen({ onBack }) {
             style={{ background: COLORS.parchment, borderRadius: 18, border: `1px solid ${COLORS.parchmentDark}`, padding: "16px 16px" }}
           >
             <p className="font-display font-semibold" style={{ color: COLORS.ink, fontSize: 14 }}>
-              {trField(s, "title")}
+              {localField(s, "title")}
             </p>
             <p className="font-ui mt-2" style={{ color: COLORS.inkSoft, fontSize: 12.5, lineHeight: 1.6 }}>
-              {trField(s, "body")}
+              {localField(s, "body")}
             </p>
           </div>
         ))}
@@ -7286,6 +7380,8 @@ const QURAN_DUA_THEMES = [
   {
     id: "guidance",
     label: "Guidance et droiture du cœur",
+    label_en: "Guidance and righteousness of the heart",
+    label_ar: "الهداية واستقامة القلب",
     refs: [
       { surah: 2, ayah: 127 },
       { surah: 3, ayah: 8 },
@@ -7295,6 +7391,8 @@ const QURAN_DUA_THEMES = [
   {
     id: "pardon",
     label: "Pardon et repentir",
+    label_en: "Forgiveness and repentance",
+    label_ar: "المغفرة والتوبة",
     refs: [
       { surah: 3, ayah: 16 },
       { surah: 3, ayah: 147 },
@@ -7308,6 +7406,8 @@ const QURAN_DUA_THEMES = [
   {
     id: "protection",
     label: "Protection et secours",
+    label_en: "Protection and help",
+    label_ar: "الحماية والعون",
     refs: [
       { surah: 7, ayah: 89 },
       { surah: 10, ayah: 85 },
@@ -7318,6 +7418,8 @@ const QURAN_DUA_THEMES = [
   {
     id: "famille",
     label: "Famille et descendance",
+    label_en: "Family and offspring",
+    label_ar: "الأسرة والذرية",
     refs: [
       { surah: 21, ayah: 89 },
       { surah: 25, ayah: 74 },
@@ -7328,6 +7430,8 @@ const QURAN_DUA_THEMES = [
   {
     id: "biens",
     label: "Bien ici-bas et dans l'au-delà",
+    label_en: "Good in this life and the hereafter",
+    label_ar: "خير الدنيا والآخرة",
     refs: [
       { surah: 2, ayah: 201 },
       { surah: 2, ayah: 250 },
@@ -7339,16 +7443,22 @@ const QURAN_DUA_THEMES = [
   {
     id: "science",
     label: "Science et sagesse",
+    label_en: "Knowledge and wisdom",
+    label_ar: "العلم والحكمة",
     refs: [{ surah: 20, ayah: 114 }],
   },
   {
     id: "epreuve",
     label: "Face à l'épreuve",
+    label_en: "Facing hardship",
+    label_ar: "عند الشدة والابتلاء",
     refs: [{ surah: 21, ayah: 83 }],
   },
   {
     id: "jugement",
     label: "Le Jour du Jugement",
+    label_en: "The Day of Judgment",
+    label_ar: "يوم القيامة",
     refs: [
       { surah: 3, ayah: 9 },
       { surah: 3, ayah: 191 },
@@ -7361,6 +7471,8 @@ const QURAN_DUA_THEMES = [
   {
     id: "divers",
     label: "Autres invocations coraniques",
+    label_en: "Other Quranic supplications",
+    label_ar: "أدعية قرآنية أخرى",
     refs: [
       { surah: 2, ayah: 128 },
       { surah: 2, ayah: 286 },
@@ -7427,7 +7539,7 @@ function RabbanaContent({ arabicSize }) {
           const arabic = Array.isArray(data) ? data[0]?.text : data?.text;
           const translation = Array.isArray(data) ? data[1]?.text : "";
           const surahMeta = QURAN_SURAHS.find((s) => s.number === r.surah);
-          const label = lang === "en" ? "verse" : "verset";
+          const label = lang === "en" ? "verse" : lang === "ar" ? "آية" : "verset";
           map[refKey(r)] = {
             title: surahMeta ? `${surahMeta.translit} — ${label} ${r.ayah}` : `${label} ${r.ayah}`,
             arabic,
@@ -7470,7 +7582,7 @@ function RabbanaContent({ arabicSize }) {
             className="font-ui font-semibold mb-2.5"
             style={{ color: COLORS.goldLight, fontSize: 11.5, letterSpacing: 0.5, textTransform: "uppercase" }}
           >
-            {theme.label}
+            {localLabel(theme)}
           </p>
           <div className="flex flex-col gap-4">
             {theme.refs.map((r) => {
@@ -7938,9 +8050,11 @@ function QuranHomeScreen({ onOpenSurahs, onOpenMushaf, onOpenReciters, onResumeR
             <p className="font-display font-semibold mt-0.5" style={{ color: COLORS.ink, fontSize: 14 }}>
               {recommendedMeta.translit} <span dir="rtl" className="font-arabic">{recommendedMeta.arabic}</span>
             </p>
-            <p className="font-ui mt-1" style={{ color: COLORS.inkSoft, fontSize: 11, lineHeight: 1.5 }}>
-              {trField(recommended, "reason")}
-            </p>
+            {currentLanguage !== "ar" && (
+              <p className="font-ui mt-1" style={{ color: COLORS.inkSoft, fontSize: 11, lineHeight: 1.5 }}>
+                {trField(recommended, "reason")}
+              </p>
+            )}
           </div>
         </button>
       )}

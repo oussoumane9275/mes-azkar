@@ -6,12 +6,22 @@ import { LocalNotifications } from "@capacitor/local-notifications";
 // Covers a week so reminders don't silently stop if the app isn't reopened daily.
 const REMINDER_DAYS_AHEAD = 7;
 const PRAYERS_FOR_REMINDERS = [
-  { key: "fajr", label: "Fajr" },
-  { key: "dhuhr", label: "Dohr" },
-  { key: "asr", label: "Asr" },
-  { key: "maghrib", label: "Maghrib" },
-  { key: "isha", label: "Isha" },
+  { key: "fajr", label: "Fajr", label_ar: "الفجر" },
+  { key: "dhuhr", label: "Dohr", label_en: "Dhuhr", label_ar: "الظهر" },
+  { key: "asr", label: "Asr", label_ar: "العصر" },
+  { key: "maghrib", label: "Maghrib", label_ar: "المغرب" },
+  { key: "isha", label: "Isha", label_ar: "العشاء" },
 ];
+function prayerReminderLabel(p, lang) {
+  if (lang === "ar" && p.label_ar) return p.label_ar;
+  if (lang === "en" && p.label_en) return p.label_en;
+  return p.label;
+}
+function prayerReminderBody(label, lang) {
+  if (lang === "en") return `It's time for ${label} prayer.`;
+  if (lang === "ar") return `حان الآن وقت صلاة ${label}.`;
+  return `C'est l'heure de la prière de ${label}.`;
+}
 const DAY_OFFSETS = Array.from({ length: REMINDER_DAYS_AHEAD }, (_, i) => i);
 const ALL_NOTIFICATION_IDS = DAY_OFFSETS.flatMap((dayOffset) =>
   PRAYERS_FOR_REMINDERS.map((_, i) => dayOffset * 10 + i + 1)
@@ -84,7 +94,7 @@ export async function cancelPrayerNotifications() {
 // picks which bundled adhan voice/channel plays for each prayer. Call this on
 // app load and whenever the location, calculation method, or per-prayer
 // toggles change, so times and the active set stay accurate.
-export async function syncPrayerNotifications(computeTimesForDate, enabledPrayers, muezzinByPrayer) {
+export async function syncPrayerNotifications(computeTimesForDate, enabledPrayers, muezzinByPrayer, lang = "fr") {
   await ensureAdhanChannels();
   await cancelPrayerNotifications();
   const now = new Date();
@@ -100,10 +110,11 @@ export async function syncPrayerNotifications(computeTimesForDate, enabledPrayer
       const at = decimalHourToDate(day, decimals[p.key]);
       if (at <= now) return;
       const voice = (muezzinByPrayer && muezzinByPrayer[p.key]) || DEFAULT_MUEZZIN;
+      const label = prayerReminderLabel(p, lang);
       notifications.push({
         id: dayOffset * 10 + i + 1,
-        title: p.label,
-        body: `C'est l'heure de la prière de ${p.label}.`,
+        title: label,
+        body: prayerReminderBody(label, lang),
         schedule: { at },
         sound: `${voice}.mp3`,
         channelId: `${voice}_channel`,
