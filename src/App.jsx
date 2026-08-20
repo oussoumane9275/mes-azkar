@@ -419,6 +419,123 @@ function formatCountdown(mins) {
   return `${h} ${t("hour_short")} ${String(m).padStart(2, "0")} ${t("min_short")}`;
 }
 
+// Wraps text to fit maxWidth on the given 2D context, splitting on spaces —
+// works for both Latin and Arabic since both scripts use spaces between words.
+function wrapCanvasText(ctx, text, maxWidth) {
+  const words = (text || "").split(" ").filter(Boolean);
+  const lines = [];
+  let current = "";
+  for (const word of words) {
+    const test = current ? `${current} ${word}` : word;
+    if (current && ctx.measureText(test).width > maxWidth) {
+      lines.push(current);
+      current = word;
+    } else {
+      current = test;
+    }
+  }
+  if (current) lines.push(current);
+  return lines;
+}
+
+// Renders an azkar/verse card to a PNG and hands it to the OS share sheet —
+// lets someone send a verse straight to WhatsApp/Instagram instead of just
+// copying text. Falls back to opening the image in a new tab (savable via
+// long-press) on WebViews that don't support navigator.share with files.
+async function shareAzkarAsImage({ title, arabic, translation }) {
+  try {
+    await document.fonts.ready;
+  } catch (e) {
+    // proceed anyway with whatever fonts are already available
+  }
+
+  const W = 1080;
+  const PAD = 90;
+  const contentWidth = W - PAD * 2;
+
+  // Measurement pass on a throwaway canvas to know how tall the real one needs to be.
+  const measure = document.createElement("canvas").getContext("2d");
+  measure.font = "52px Amiri, serif";
+  const arabicLines = wrapCanvasText(measure, arabic, contentWidth);
+  let translationLines = [];
+  if (translation) {
+    measure.font = "italic 30px Lora, serif";
+    translationLines = wrapCanvasText(measure, translation, contentWidth - 40);
+  }
+
+  const titleY = 150;
+  const arabicStartY = titleY + 110;
+  const arabicLineHeight = 92;
+  const afterArabicY = arabicStartY + arabicLines.length * arabicLineHeight;
+  const translationLineHeight = 46;
+  const translationBlockHeight = translationLines.length ? 50 + translationLines.length * translationLineHeight : 0;
+  const H = Math.max(720, afterArabicY + translationBlockHeight + 160);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext("2d");
+
+  ctx.fillStyle = "#FCFAF5";
+  ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = "#D9A94A";
+  ctx.lineWidth = 4;
+  ctx.strokeRect(28, 28, W - 56, H - 56);
+
+  if (title) {
+    ctx.fillStyle = "#B8863A";
+    ctx.font = "600 32px Inter, sans-serif";
+    ctx.textAlign = "center";
+    ctx.direction = "ltr";
+    ctx.fillText(title.toUpperCase(), W / 2, titleY);
+  }
+
+  ctx.fillStyle = "#23291F";
+  ctx.font = "52px Amiri, serif";
+  ctx.direction = "rtl";
+  ctx.textAlign = "center";
+  let y = arabicStartY;
+  arabicLines.forEach((line) => {
+    ctx.fillText(line, W / 2, y);
+    y += arabicLineHeight;
+  });
+
+  if (translationLines.length) {
+    y = afterArabicY + 50;
+    ctx.fillStyle = "#6B6558";
+    ctx.font = "italic 30px Lora, serif";
+    ctx.direction = "ltr";
+    translationLines.forEach((line) => {
+      ctx.fillText(line, W / 2, y);
+      y += translationLineHeight;
+    });
+  }
+
+  ctx.fillStyle = "#D9A94A";
+  ctx.font = "600 26px Inter, sans-serif";
+  ctx.direction = "ltr";
+  ctx.fillText("أذكاري · Mes Azkar", W / 2, H - 55);
+
+  const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+  if (!blob) return false;
+
+  if (navigator.share) {
+    try {
+      const file = new File([blob], "azkar.png", { type: "image/png" });
+      if (!navigator.canShare || navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: title || "Mes Azkar" });
+        return true;
+      }
+    } catch (e) {
+      if (e && e.name === "AbortError") return false; // user cancelled the share sheet
+      // fall through to the new-tab fallback below
+    }
+  }
+  const url = URL.createObjectURL(blob);
+  window.open(url, "_blank");
+  return false;
+}
+
 /* ------------------------------------------------------------------ */
 /* Content — Hisnul Muslim style azkar (morning / evening / after prayer) */
 /* ------------------------------------------------------------------ */
@@ -1824,11 +1941,15 @@ async function markQuranAyahRead(surahNumber, ayahNumber) {
 
 const QURAN_READ_PAGES_KEY = "azkar-quran-read-pages-v1";
 const QURAN_PAGES_DAILY_KEY = "azkar-quran-pages-daily-v1";
+const QURAN_PAGES_DAILY_MARKED_KEY = "azkar-quran-pages-daily-marked-v1";
 
 // The Bilan counts Mushaf pages, not verses — simpler to picture and it only
 // moves when the reader deliberately taps "Marquer comme lue" at the bottom
-// of a page, not just from having it on screen. Each page only ever counts
-// once, whichever day it first gets marked on.
+// of a page, not just from having it on screen. QURAN_READ_PAGES_KEY (the
+// lifetime list) only drives the "already visited" checkmark in the page
+// view — it must never gate the daily counter, or re-reading a page on a
+// later day would leave that day's Bilan stuck at 0. So today's count is
+// deduped separately, against only what was marked today.
 async function markMushafPageRead(pageNumber) {
   let readPages = [];
   try {
@@ -1837,15 +1958,26 @@ async function markMushafPageRead(pageNumber) {
   } catch (e) {
     // none read yet
   }
-  if (readPages.includes(pageNumber)) return false;
-  readPages.push(pageNumber);
+  if (!readPages.includes(pageNumber)) {
+    readPages.push(pageNumber);
+    try {
+      await window.storage.set(QURAN_READ_PAGES_KEY, JSON.stringify(readPages), false);
+    } catch (e) {
+      // ignore storage failures
+    }
+  }
+  const today = todayKey();
   try {
-    await window.storage.set(QURAN_READ_PAGES_KEY, JSON.stringify(readPages), false);
+    const markedRes = await window.storage.get(QURAN_PAGES_DAILY_MARKED_KEY, false);
+    const markedLog = markedRes && markedRes.value ? JSON.parse(markedRes.value) : {};
+    const markedToday = markedLog[today] || [];
+    if (markedToday.includes(pageNumber)) return true;
+    markedLog[today] = [...markedToday, pageNumber];
+    await window.storage.set(QURAN_PAGES_DAILY_MARKED_KEY, JSON.stringify(markedLog), false);
   } catch (e) {
     // ignore storage failures
   }
   try {
-    const today = todayKey();
     const res = await window.storage.get(QURAN_PAGES_DAILY_KEY, false);
     const log = res && res.value ? JSON.parse(res.value) : {};
     log[today] = (log[today] || 0) + 1;
@@ -2333,30 +2465,21 @@ function BeadRing({ current, target, color, colorLight, pulse }) {
 /* ------------------------------------------------------------------ */
 /* Storage helpers                                                     */
 /* ------------------------------------------------------------------ */
-// todayKey() is used all over the app — including plain helper functions with
-// no access to React state — to decide "which day" a piece of progress
-// belongs to. Since the Islamic day rolls over at Maghrib rather than
-// midnight, it needs the user's location/calculation method, which live in
-// AzkarApp's React state; setPrayerLocationCache mirrors them into this
-// module-level cache (kept in sync by an effect in AzkarApp) so todayKey()
-// can compute the real Maghrib time for "now" wherever it's called from.
-let cachedPrayerLocation = null;
-let cachedPrayerCalc = null;
-function setPrayerLocationCache(location, prayerSettings) {
-  cachedPrayerLocation = location || null;
-  cachedPrayerCalc = prayerSettings ? resolveCalcConfig(prayerSettings) : null;
-}
-// Adhkar said before Maghrib ("adhkar al-masa") still belong to the day
-// that's ending; anything after Maghrib enters — night azkar, tasbih, Quran
-// reading — already belongs to the new Islamic day, so every counter starts
-// fresh right when Maghrib comes in, not at midnight.
+// todayKey() decides "which day" a piece of progress (azkar taps, Quran
+// pages, tasbih count, history) belongs to. This used to roll over at
+// Maghrib instead of midnight to mirror the Islamic calendar day — but that
+// meant azkar/tasbih/Quran reading done the same evening, after Maghrib,
+// silently got filed under what the app considered a brand-new "day", so the
+// Bilan looked like it hadn't moved even though it had, and re-foregrounding
+// the app after Maghrib could wipe the evening's in-progress taps entirely.
+// Using the plain calendar day (local midnight) matches what "today" means
+// everywhere else in the app (the history grid, the day-by-day Bilan
+// browser) and is what a user checking "did I finish today" actually expects.
 const todayKey = (d = new Date()) => {
-  const loc = cachedPrayerLocation || DEFAULT_LOCATION;
-  const calc = cachedPrayerCalc || CALC_METHODS[DEFAULT_PRAYER_METHOD];
-  const decimals = computePrayerTimesDecimal(d, loc, calc);
-  const nowDecimal = d.getHours() + d.getMinutes() / 60 + d.getSeconds() / 3600;
-  const dayDate = nowDecimal >= decimals.maghrib ? new Date(d.getTime() + 86400000) : d;
-  return dayDate.toISOString().slice(0, 10);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 };
 const dateKey = (d) => d.toISOString().slice(0, 10);
 // A plain Date anchored at noon on the current Islamic day (see todayKey) —
@@ -2632,13 +2755,6 @@ function AzkarApp() {
   const [pulseId, setPulseId] = useState(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const advanceTimer = useRef(null);
-
-  // Keep the module-level Maghrib cache in sync so todayKey() — used all over
-  // the app, including outside React — can roll the day over at Maghrib
-  // instead of calendar midnight, wherever the location/method end up being.
-  useEffect(() => {
-    setPrayerLocationCache(prayerSettings.location, prayerSettings);
-  }, [prayerSettings]);
 
   const replayOnboarding = useCallback(() => {
     setScreen("home");
