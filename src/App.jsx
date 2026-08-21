@@ -21,15 +21,15 @@ import {
 /* Design tokens — light/dark themes                                   */
 /* ------------------------------------------------------------------ */
 const LIGHT_COLORS = {
-  bg: "#FFFFFF",
-  bgMid: "#F7F5F0",
-  bgLine: "#EDE9E0",
-  parchment: "#FCFAF5",
-  parchmentDark: "#E7E0D0",
-  ink: "#23291F",
-  inkSoft: "#6B6558",
-  gold: "#B8863A",
-  goldLight: "#D9A94A",
+  bg: "#FBF7EC",
+  surfaceTint: "#F1E6CC",
+  parchment: "#FFFDF7",
+  parchmentDark: "#E7DABB",
+  ink: "#2B2314",
+  inkSoft: "#7C6F55",
+  inkFaint: "#AFA48A",
+  gold: "#8C6329",
+  goldLight: "#B3813A",
   indigo: "#3B4B6B",
   indigoLight: "#7A8CB0",
   clay: "#B5654A",
@@ -38,15 +38,15 @@ const LIGHT_COLORS = {
   violetLight: "#8574A3",
 };
 const DARK_COLORS = {
-  bg: "#171613",
-  bgMid: "#1D1B17",
-  bgLine: "#2B2822",
-  parchment: "#211F1A",
-  parchmentDark: "#3A362C",
-  ink: "#EDE7DA",
-  inkSoft: "#B0A996",
-  gold: "#D9A94A",
-  goldLight: "#EBC978",
+  bg: "#17140F",
+  surfaceTint: "#2B251C",
+  parchment: "#221D16",
+  parchmentDark: "#3A3226",
+  ink: "#F4EDDD",
+  inkSoft: "#B4A996",
+  inkFaint: "#75695A",
+  gold: "#DDB46A",
+  goldLight: "#F0CE8C",
   indigo: "#8C9DC2",
   indigoLight: "#B0BEDD",
   clay: "#DC9575",
@@ -215,8 +215,8 @@ function inkA(opacity) {
 
 const FONT_STYLE = `
 .font-arabic { font-family: 'Amiri', serif; }
-.font-display { font-family: 'Lora', serif; }
-.font-ui { font-family: 'Inter', sans-serif; }
+.font-display { font-family: 'Manrope', sans-serif; }
+.font-ui { font-family: 'Manrope', sans-serif; }
 @keyframes beadPulse { 0% { transform: scale(1); } 40% { transform: scale(1.08); } 100% { transform: scale(1); } }
 .bead-pulse { animation: beadPulse 0.28s ease; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
@@ -2429,6 +2429,27 @@ function TasbihIcon({ color, size = 24 }) {
 /* ------------------------------------------------------------------ */
 /* Bead ring — the signature interaction                               */
 /* ------------------------------------------------------------------ */
+// The warm parchment "disc" behind every tap-to-count ring (azkar reps,
+// free tasbih) — a wood-like radial gradient with soft inset/outer shadows,
+// theme-aware but not accent-tinted (the ring stroke itself carries the
+// accent color, the disc is just the neutral surface it sits on).
+function discSurfaceStyle() {
+  const isDark = currentTheme === "dark";
+  return {
+    background: isDark
+      ? "radial-gradient(circle at 34% 28%, #35301F 0%, #211C15 72%)"
+      : "radial-gradient(circle at 34% 28%, #FFFDF7 0%, #F1E6CC 78%)",
+    boxShadow: isDark
+      ? "inset 0 1px 0 rgba(255,255,255,0.04), inset 0 -14px 26px rgba(0,0,0,0.35), 0 16px 34px rgba(0,0,0,0.45)"
+      : "inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -12px 22px rgba(80,60,20,0.08), 0 16px 32px rgba(80,60,20,0.15)",
+    border: `1px solid ${COLORS.parchmentDark}`,
+  };
+}
+// Soft ambient glow just outside the disc, tinted with the active accent.
+function discGlowBackground() {
+  return `radial-gradient(circle, ${COLORS.goldLight}24 0%, transparent 70%)`;
+}
+
 function BeadRing({ current, target, color, colorLight, pulse }) {
   const size = 176;
   const stroke = 11;
@@ -2439,7 +2460,9 @@ function BeadRing({ current, target, color, colorLight, pulse }) {
   const complete = current >= target;
 
   return (
-    <div className={`relative ${pulse ? "bead-pulse" : ""}`} style={{ width: size, height: size }}>
+    <div className={`relative ${pulse ? "bead-pulse" : ""}`} style={{ width: size, height: size, position: "relative" }}>
+      <div style={{ position: "absolute", inset: -12, borderRadius: "50%", background: discGlowBackground() }} />
+      <div style={{ position: "absolute", inset: 0, borderRadius: "50%", ...discSurfaceStyle() }} />
       <svg width={size} height={size}>
         <circle cx={size / 2} cy={size / 2} r={r} stroke={COLORS.parchmentDark} strokeWidth={stroke} fill="none" />
         <circle
@@ -4130,15 +4153,10 @@ function HomeScreen({ progress, catCompletion, onOpen, onOpenApresPicker, streak
                 textAlign: "center",
               }}
             >
-              <div className="relative">
-                <div
-                  className="flex items-center justify-center"
-                  style={{ width: 36, height: 36, borderRadius: 11, background: "rgba(0,0,0,0.03)" }}
-                >
-                  <CategoryIcon type={cat.icon} color={cat.accent} size={18} />
-                </div>
-                <div style={{ position: "absolute", top: -4, right: -4 }}>
-                  <MiniRing pct={pct} color={cat.accent} done={done} size={14} />
+              <div className="flex items-center justify-center" style={{ width: 38, height: 38, position: "relative" }}>
+                <MiniRing pct={pct} color={cat.accent} done={false} size={38} />
+                <div className="flex items-center justify-center" style={{ position: "absolute", inset: 0 }}>
+                  {done ? <CheckIcon color={cat.accent} size={16} /> : <CategoryIcon type={cat.icon} color={cat.accent} size={16} />}
                 </div>
               </div>
               <p className="font-display font-semibold mt-1.5" style={{ color: COLORS.ink, fontSize: 9.5, lineHeight: 1.2 }}>
@@ -4966,9 +4984,9 @@ function CategoryScreen({
   const complete = current >= item.count;
 
   return (
-    <div className="min-h-screen flex flex-col px-5 pt-6 pb-8 fade-in">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-3">
+    <div className="flex flex-col px-5 pt-6 fade-in" style={{ height: "100vh" }}>
+      {/* Header — stays put */}
+      <div className="flex items-center justify-between mb-3" style={{ flexShrink: 0 }}>
         <button onClick={onBack} className="p-2.5 -ml-2 active:opacity-60" aria-label={t("back")}>
           <BackIcon color={COLORS.ink} />
         </button>
@@ -4986,29 +5004,30 @@ function CategoryScreen({
         </button>
       </div>
 
-      {/* Progress dots */}
-      <div className="flex items-center justify-center gap-1.5 mb-6 flex-wrap px-4">
-        {items.map((it, i) => {
-          const done = (catProgress.counts[it.id] || 0) >= it.count;
-          const isCurrent = i === index;
-          return (
-            <button
-              key={it.id}
-              onClick={() => onGoto(i)}
-              style={{
-                width: isCurrent ? 9 : 6,
-                height: isCurrent ? 9 : 6,
-                borderRadius: 99,
-                background: done ? category.accent : isCurrent ? COLORS.ink : inkA(0.3),
-                transition: "all 0.2s ease",
-              }}
-            />
-          );
-        })}
-      </div>
+      {/* Scrollable: progress dots + the azkar text — this is the part that
+          can grow or shrink with content length. The counter below it never
+          moves, no matter how long the Arabic/translation text is. */}
+      <div className="flex-1 overflow-y-auto" style={{ minHeight: 0 }}>
+        <div className="flex items-center justify-center gap-1.5 mb-6 flex-wrap px-4">
+          {items.map((it, i) => {
+            const done = (catProgress.counts[it.id] || 0) >= it.count;
+            const isCurrent = i === index;
+            return (
+              <button
+                key={it.id}
+                onClick={() => onGoto(i)}
+                style={{
+                  width: isCurrent ? 9 : 6,
+                  height: isCurrent ? 9 : 6,
+                  borderRadius: 99,
+                  background: done ? category.accent : isCurrent ? COLORS.ink : inkA(0.3),
+                  transition: "all 0.2s ease",
+                }}
+              />
+            );
+          })}
+        </div>
 
-      {/* Main card */}
-      <div className="flex-1 flex flex-col items-center justify-center">
         <div
           style={{
             background: COLORS.parchment,
@@ -5042,12 +5061,15 @@ function CategoryScreen({
             </>
           )}
         </div>
+      </div>
 
-        {/* Bead ring — tap to count */}
+      {/* Fixed footer — the counter and its label always sit here, in the
+          exact same spot on screen, regardless of how the content above scrolls. */}
+      <div className="flex flex-col items-center pt-5 pb-6" style={{ flexShrink: 0 }}>
         <button
           onClick={onTap}
           disabled={complete}
-          className="mt-7 flex flex-col items-center gap-3"
+          className="flex flex-col items-center gap-3"
           style={{ touchAction: "manipulation" }}
         >
           <BeadRing
@@ -5061,31 +5083,30 @@ function CategoryScreen({
             {complete ? t("label_completed") : t("tap_to_count")}
           </span>
         </button>
-      </div>
 
-      {/* Nav */}
-      <div className="flex items-center justify-between mt-8 px-2">
-        <button
-          onClick={onPrev}
-          disabled={index === 0}
-          className="p-3 rounded-full active:opacity-60"
-          style={{ opacity: index === 0 ? 0.25 : 1 }}
-          aria-label={t("prev_dhikr")}
-        >
-          <ChevronIcon dir="left" color={COLORS.ink} />
-        </button>
-        <p className="font-ui" style={{ color: COLORS.ink, fontSize: 12, opacity: 0.7 }}>
-          {index + 1} / {items.length}
-        </p>
-        <button
-          onClick={onNext}
-          disabled={index === items.length - 1}
-          className="p-3 rounded-full active:opacity-60"
-          style={{ opacity: index === items.length - 1 ? 0.25 : 1 }}
-          aria-label={t("next_dhikr")}
-        >
-          <ChevronIcon dir="right" color={COLORS.ink} />
-        </button>
+        <div className="flex items-center justify-between w-full mt-6 px-2">
+          <button
+            onClick={onPrev}
+            disabled={index === 0}
+            className="p-3 rounded-full active:opacity-60"
+            style={{ opacity: index === 0 ? 0.25 : 1 }}
+            aria-label={t("prev_dhikr")}
+          >
+            <ChevronIcon dir="left" color={COLORS.ink} />
+          </button>
+          <p className="font-ui" style={{ color: COLORS.ink, fontSize: 12, opacity: 0.7 }}>
+            {index + 1} / {items.length}
+          </p>
+          <button
+            onClick={onNext}
+            disabled={index === items.length - 1}
+            className="p-3 rounded-full active:opacity-60"
+            style={{ opacity: index === items.length - 1 ? 0.25 : 1 }}
+            aria-label={t("next_dhikr")}
+          >
+            <ChevronIcon dir="right" color={COLORS.ink} />
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -6051,13 +6072,10 @@ function TasbihButton({ count, pulse }) {
   return (
     <div
       className={`relative flex items-center justify-center ${pulse ? "bead-pulse" : ""}`}
-      style={{
-        width: size,
-        height: size,
-        borderRadius: "50%",
-        background: "radial-gradient(circle, rgba(217,169,74,0.1), transparent 70%)",
-      }}
+      style={{ width: size, height: size, position: "relative" }}
     >
+      <div style={{ position: "absolute", inset: -14, borderRadius: "50%", background: discGlowBackground() }} />
+      <div style={{ position: "absolute", inset: 0, borderRadius: "50%", ...discSurfaceStyle() }} />
       <svg width={size} height={size} style={{ position: "absolute", top: 0, left: 0 }}>
         {Array.from({ length: beadCount }).map((_, i) => {
           const angle = (i / beadCount) * 2 * Math.PI - Math.PI / 2;

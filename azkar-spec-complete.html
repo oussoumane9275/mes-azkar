@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mes Azkar — Spec complete</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --l-bg:#FBF7EC; --l-surface:#FFFDF7; --l-surface2:#F1E6CC; --l-ink:#2B2314;
+    --l-ink-soft:#7C6F55; --l-ink-faint:#AFA48A; --l-gold:#B3813A; --l-gold-deep:#8C6329;
+    --l-gold-soft:#E9D8AF; --l-line:#E7DABB;
+
+    --d-bg:#17140F; --d-surface:#221D16; --d-surface2:#2B251C; --d-ink:#F4EDDD;
+    --d-ink-soft:#B4A996; --d-ink-faint:#75695A; --d-gold:#DDB46A; --d-gold-deep:#F0CE8C;
+    --d-gold-soft:rgba(221,180,106,0.14); --d-line:#3A3226;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; background:#EFE7D3; font-family:'Manrope', sans-serif; }
+
+  .stage{ display:flex; flex-wrap:wrap; gap:36px; justify-content:center; padding:40px 20px 80px 20px; }
+  .phone-wrap{ display:flex; flex-direction:column; align-items:center; }
+  .stage-label{ font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:#7A6E56; font-weight:800; margin-bottom:10px; }
+  .phone{
+    width:375px; height:812px; border-radius:44px; border:8px solid #000; overflow:hidden;
+    box-shadow:0 26px 60px rgba(0,0,0,0.35); display:flex; flex-direction:column; position:relative;
+  }
+  .scroll{ flex:1; overflow-y:auto; } .scroll::-webkit-scrollbar{ display:none; }
+  .statusbar{ height:40px; flex-shrink:0; display:flex; align-items:center; justify-content:space-between; padding:0 24px; font-size:12.5px; font-weight:700; }
+  .icon-btn{ width:36px; height:36px; border-radius:11px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .navbar{ flex-shrink:0; display:flex; justify-content:space-around; align-items:center; padding:9px 4px 20px 4px; border-top:1px solid; }
+  .navitem{ display:flex; flex-direction:column; align-items:center; gap:3px; }
+  .navitem span{ font-size:10px; font-weight:700; }
+
+  .light{ background:var(--l-bg); color:var(--l-ink); }
+  .light .statusbar{ color:var(--l-ink); }
+  .light .icon-btn{ background:var(--l-surface); border:1px solid var(--l-line); box-shadow:0 6px 18px rgba(80,60,20,0.07); }
+  .light .navbar{ background:var(--l-surface); border-color:var(--l-line); }
+  .light .navitem span{ color:var(--l-ink-faint); }
+  .light .navitem.active span{ color:var(--l-gold-deep); }
+  .light .navitem svg{ stroke:var(--l-ink-faint); }
+  .light .navitem.active svg{ stroke:var(--l-gold-deep); }
+  .light .card{ background:var(--l-surface); border:1px solid var(--l-line); box-shadow:0 6px 18px rgba(80,60,20,0.07); }
+  .light .card-tint{ background:var(--l-surface2); border:1px solid var(--l-line); }
+  .light .muted{ color:var(--l-ink-soft); }
+  .light .faint{ color:var(--l-ink-faint); }
+  .light .gold{ color:var(--l-gold-deep); }
+  .light .chip{ background:var(--l-gold-soft); color:var(--l-gold-deep); }
+  .light .hair{ border-color:var(--l-line); }
+  .light .badge{ background:var(--l-gold-soft); }
+  .light .ring-bg{ stroke:var(--l-line); } .light .ring-fg{ stroke:var(--l-gold); }
+  .light .thumb-disc{ background:radial-gradient(circle at 34% 28%, #FFFDF7 0%, #F1E6CC 78%); box-shadow: inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -12px 22px rgba(80,60,20,0.08), 0 16px 32px rgba(80,60,20,0.15); border:1px solid var(--l-line); }
+
+  .dark{ background:var(--d-bg); color:var(--d-ink); }
+  .dark .statusbar{ color:var(--d-ink); }
+  .dark .icon-btn{ background:var(--d-surface); border:1px solid var(--d-line); }
+  .dark .navbar{ background:var(--d-surface); border-color:var(--d-line); }
+  .dark .navitem span{ color:var(--d-ink-faint); }
+  .dark .navitem.active span{ color:var(--d-gold); }
+  .dark .navitem svg{ stroke:var(--d-ink-faint); }
+  .dark .navitem.active svg{ stroke:var(--d-gold); }
+  .dark .card{ background:var(--d-surface); border:1px solid var(--d-line); box-shadow:0 10px 28px rgba(0,0,0,0.35); }
+  .dark .card-tint{ background:var(--d-surface2); border:1px solid var(--d-line); }
+  .dark .muted{ color:var(--d-ink-soft); }
+  .dark .faint{ color:var(--d-ink-faint); }
+  .dark .gold{ color:var(--d-gold-deep); }
+  .dark .chip{ background:var(--d-gold-soft); color:var(--d-gold-deep); border:1px solid rgba(221,180,106,0.3); }
+  .dark .hair{ border-color:var(--d-line); }
+  .dark .badge{ background:var(--d-gold-soft); }
+  .dark .ring-bg{ stroke:rgba(255,255,255,0.06); } .dark .ring-fg{ stroke:var(--d-gold); }
+  .dark .thumb-disc{ background:radial-gradient(circle at 34% 28%, #35301F 0%, #211C15 72%); box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), inset 0 -14px 26px rgba(0,0,0,0.35), 0 16px 34px rgba(0,0,0,0.45); }
+
+  .topbar{ display:flex; align-items:center; justify-content:space-between; padding:6px 16px; }
+  .icon-group{ display:flex; gap:8px; }
+  .brand{ text-align:center; padding:8px 0 16px 0; }
+  .brand .title{ font-size:19px; font-weight:800; }
+  .back-row{ display:flex; align-items:center; gap:12px; padding:8px 16px 4px 16px; }
+  .back-row h1{ margin:0; font-size:16px; font-weight:800; flex:1; text-align:center; margin-right:34px; }
+  .section-title{ display:flex; align-items:center; justify-content:space-between; margin:22px 16px 10px 16px; }
+  .section-title h2{ margin:0; font-size:15px; font-weight:800; }
+  .section-title span{ font-size:11.5px; font-weight:700; }
+  .row{ margin:10px 16px 0 16px; border-radius:16px; padding:13px 15px; display:flex; align-items:center; gap:12px; }
+  .row h4{ margin:0 0 2px 0; font-size:13px; font-weight:800; }
+  .row p{ margin:0; font-size:11px; font-weight:600; }
+  .icb{ width:38px; height:38px; border-radius:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .cat3{ display:grid; grid-template-columns:repeat(3,1fr); gap:9px; margin:0 16px; }
+  .cat-tile{ border-radius:15px; padding:14px 4px; text-align:center; }
+  .cat-tile .ic{ width:34px;height:34px;margin:0 auto 8px auto; border-radius:10px; display:flex; align-items:center; justify-content:center; }
+  .cat-tile h3{ margin:0; font-size:11px; font-weight:700; }
+</style>
+</head>
+<body>
+<div class="stage">
+<div class="phone-wrap">
+  <div class="stage-label">Accueil — Clair</div>
+  <div class="phone light">
+    <div class="statusbar"><span>9:41</span>
+      <div style="display:flex; gap:5px;"><svg width="16" height="11" viewBox="0 0 16 11"><rect x="0" y="7" width="3" height="4" fill="currentColor"/><rect x="4.5" y="4.5" width="3" height="6.5" fill="currentColor"/><rect x="9" y="2" width="3" height="9" fill="currentColor"/><rect x="13.5" y="0" width="3" height="11" fill="currentColor"/></svg></div>
+    </div>
+    <div class="scroll">
+      <div class="topbar">
+        <div class="icon-group">
+          <div class="icon-btn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div>
+          <div class="icon-btn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 16v-5M12 8h.01"/></svg></div>
+        </div>
+        <div class="icon-group">
+          <div class="icon-btn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></div>
+          <div class="icon-btn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/></svg></div>
+        </div>
+      </div>
+      <div class="brand"><div class="title">Mes Azkar</div></div>
+
+      <div class="card" style="margin:0 16px; border-radius:22px; padding:16px 16px 4px 16px;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+          <span class="faint" style="font-size:10.5px; font-weight:700; letter-spacing:1.2px;">PARIS</span>
+          <span style="font-size:18px; font-weight:800;">06:53:01</span>
+        </div>
+        <div style="display:flex; justify-content:center; margin-bottom:14px;">
+          <div class="chip" style="padding:6px 14px; border-radius:30px; font-size:12px; font-weight:700;">Dohr dans 7 h 06 min</div>
+        </div>
+        <div class="hair" style="display:flex; justify-content:space-between; border-top:1px solid; padding-top:14px; padding-bottom:12px;">
+          <div style="text-align:center; flex:1;"><div class="faint" style="font-size:10.5px; font-weight:700;">Fajr</div><div style="font-size:14px; font-weight:800;">05:27</div></div>
+          <div class="badge" style="text-align:center; flex:1; border-radius:12px; margin:-4px 0;"><div class="gold" style="font-size:10.5px; font-weight:700; padding-top:4px;">Dohr</div><div class="gold" style="font-size:14px; font-weight:800; padding-bottom:4px;">13:59</div></div>
+          <div style="text-align:center; flex:1;"><div class="faint" style="font-size:10.5px; font-weight:700;">Asr</div><div style="font-size:14px; font-weight:800;">17:46</div></div>
+          <div style="text-align:center; flex:1;"><div class="faint" style="font-size:10.5px; font-weight:700;">Maghrib</div><div style="font-size:14px; font-weight:800;">20:57</div></div>
+          <div style="text-align:center; flex:1;"><div class="faint" style="font-size:10.5px; font-weight:700;">Isha</div><div style="font-size:14px; font-weight:800;">22:27</div></div>
+        </div>
+        <div class="hair muted" style="border-top:1px solid; text-align:center; padding:10px 0; font-size:12px; font-weight:700;">Chourouk 06:51</div>
+      </div>
+
+      <div class="section-title"><h2>Mes azkar</h2><span class="gold">Voir tout</span></div>
+      <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:9px; margin:0 16px;">
+        <div class="card" style="border-radius:15px; padding:12px 4px; text-align:center;">
+          <div style="width:38px;height:38px;margin:0 auto 6px auto; position:relative;">
+            <svg viewBox="0 0 38 38" style="transform:rotate(-90deg);"><circle cx="19" cy="19" r="16" stroke="var(--l-line)" stroke-width="4" fill="none"/><circle cx="19" cy="19" r="16" stroke="var(--l-gold)" stroke-width="4" fill="none" stroke-linecap="round" stroke-dasharray="100" stroke-dashoffset="88"/></svg>
+            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--l-gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></div>
+          </div>
+          <h3 style="margin:0; font-size:11px; font-weight:700;">Matin</h3>
+        </div>
+        <div class="card" style="border-radius:15px; padding:12px 4px; text-align:center;">
+          <div style="width:38px;height:38px;margin:0 auto 6px auto; position:relative;">
+            <svg viewBox="0 0 38 38" style="transform:rotate(-90deg);"><circle cx="19" cy="19" r="16" stroke="var(--l-line)" stroke-width="4" fill="none"/></svg>
+            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--l-gold)" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2"/></svg></div>
+          </div>
+          <h3 style="margin:0; font-size:11px; font-weight:700;">Soir</h3>
+        </div>
+        <div class="card" style="border-radius:15px; padding:12px 4px; text-align:center;">
+          <div style="width:38px;height:38px;margin:0 auto 6px auto; position:relative;">
+            <svg viewBox="0 0 38 38" style="transform:rotate(-90deg);"><circle cx="19" cy="19" r="16" stroke="var(--l-line)" stroke-width="4" fill="none"/></svg>
+            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--l-gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6L15 12L9 18"/></svg></div>
+          </div>
+          <h3 style="margin:0; font-size:11px; font-weight:700;">Après prière</h3>
+        </div>
+        <div class="card" style="border-radius:15px; padding:12px 4px; text-align:center;">
+          <div style="width:38px;height:38px;margin:0 auto 6px auto; position:relative;">
+            <svg viewBox="0 0 38 38" style="transform:rotate(-90deg);"><circle cx="19" cy="19" r="16" stroke="var(--l-line)" stroke-width="4" fill="none"/></svg>
+            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--l-gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16M6 19V9l6-5 6 5v10"/></svg></div>
+          </div>
+          <h3 style="margin:0; font-size:11px; font-weight:700;">Coucher</h3>
+        </div>
+      </div>
+
+      <div class="row card"><div class="icb badge"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--l-gold-deep)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 12l4-6-6 2z" fill="var(--l-gold-deep)" stroke="none"/></svg></div><div style="text-align:left; flex:1;"><h4>Qibla</h4><p class="muted">Direction de la Mecque</p></div></div>
+      <div class="row card"><div class="icb" style="background:#E4DEF0;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5B4E8C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></div><div style="text-align:left; flex:1;"><h4>Mode Ramadan</h4><p class="muted">À activer si besoin</p></div></div>
+      <div class="row card"><div class="icb badge"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--l-gold-deep)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div><div style="text-align:left; flex:1;"><h4>Sourate Al-Kahf — verset 4</h4><p class="muted">Reprendre la lecture</p></div></div>
+
+      <div class="card-tint" style="margin:10px 16px 20px 16px; border-radius:16px; padding:13px 15px; display:flex; align-items:center; gap:12px;">
+        <div class="card" style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--l-gold-deep)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></div>
+        <div style="text-align:left;"><div style="font-size:13px; font-weight:800;">9 Rabî' al-awwal 1448 H</div><div class="muted" style="font-size:11px; font-weight:600;">Vendredi 21 août 2026</div></div>
+      </div>
+    </div>
+    <div class="navbar">
+      <div class="navitem active"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg><span>Accueil</span></div>
+      <div class="navitem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v18H6.5A2.5 2.5 0 0 0 4 22.5v-18z"/></svg><span>Coran</span></div>
+      <div class="navitem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" stroke-dasharray="2 3.4"/></svg><span>Tasbih</span></div>
+      <div class="navitem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6M8 8h8l2 12H6z"/></svg><span>Invocations</span></div>
+      <div class="navitem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V6a2 2 0 0 1 2-2h8l6 6v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/></svg><span>Bilan</span></div>
+      <div class="navitem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/></svg><span>Réglages</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ACCUEIL — SOMBRE ============ -->
+
+<div class="phone-wrap">
+  <div class="stage-label">Accueil — Sombre</div>
+  <div class="phone dark">
+    <div class="statusbar"><span>9:41</span>
+      <div style="display:flex; gap:5px;"><svg width="16" height="11" viewBox="0 0 16 11"><rect x="0" y="7" width="3" height="4" fill="currentColor"/><rect x="4.5" y="4.5" width="3" height="6.5" fill="currentColor"/><rect x="9" y="2" width="3" height="9" fill="currentColor"/><rect x="13.5" y="0" width="3" height="11" fill="currentColor"/></svg></div>
+    </div>
+    <div class="scroll">
+      <div class="topbar">
+        <div class="icon-group">
+          <div class="icon-btn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div>
+          <div class="icon-btn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 16v-5M12 8h.01"/></svg></div>
+        </div>
+        <div class="icon-group">
+          <div class="icon-btn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></div>
+          <div class="icon-btn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--d-gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" fill="var(--d-gold)"/></svg></div>
+        </div>
+      </div>
+      <div class="brand"><div class="title">Mes Azkar</div></div>
+
+      <div class="card" style="margin:0 16px; border-radius:22px; padding:16px 16px 4px 16px;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+          <span class="faint" style="font-size:10.5px; font-weight:700; letter-spacing:1.2px;">PARIS</span>
+          <span style="font-size:18px; font-weight:800;">06:53:01</span>
+        </div>
+        <div style="display:flex; justify-content:center; margin-bottom:14px;">
+          <div class="chip" style="padding:6px 14px; border-radius:30px; font-size:12px; font-weight:700;">Dohr dans 7 h 06 min</div>
+        </div>
+        <div class="hair" style="display:flex; justify-content:space-between; border-top:1px solid; padding-top:14px; padding-bottom:12px;">
+          <div style="text-align:center; flex:1;"><div class="faint" style="font-size:10.5px; font-weight:700;">Fajr</div><div style="font-size:14px; font-weight:800;">05:27</div></div>
+          <div class="badge" style="text-align:center; flex:1; border-radius:12px; margin:-4px 0;"><div class="gold" style="font-size:10.5px; font-weight:700; padding-top:4px;">Dohr</div><div class="gold" style="font-size:14px; font-weight:800; padding-bottom:4px;">13:59</div></div>
+          <div style="text-align:center; flex:1;"><div class="faint" style="font-size:10.5px; font-weight:700;">Asr</div><div style="font-size:14px; font-weight:800;">17:46</div></div>
+          <div style="text-align:center; flex:1;"><div class="faint" style="font-size:10.5px; font-weight:700;">Maghrib</div><div style="font-size:14px; font-weight:800;">20:57</div></div>
+          <div style="text-align:center; flex:1;"><div class="faint" style="font-size:10.5px; font-weight:700;">Isha</div><div style="font-size:14px; font-weight:800;">22:27</div></div>
+        </div>
+        <div class="hair muted" style="border-top:1px solid; text-align:center; padding:10px 0; font-size:12px; font-weight:700;">Chourouk 06:51</div>
+      </div>
+
+      <div class="section-title"><h2>Mes azkar</h2><span class="gold">Voir tout</span></div>
+      <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:9px; margin:0 16px;">
+        <div class="card" style="border-radius:15px; padding:12px 4px; text-align:center;">
+          <div style="width:38px;height:38px;margin:0 auto 6px auto; position:relative;">
+            <svg viewBox="0 0 38 38" style="transform:rotate(-90deg);"><circle cx="19" cy="19" r="16" stroke="var(--d-line)" stroke-width="4" fill="none"/><circle cx="19" cy="19" r="16" stroke="var(--d-gold)" stroke-width="4" fill="none" stroke-linecap="round" stroke-dasharray="100" stroke-dashoffset="88"/></svg>
+            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--d-gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></div>
+          </div>
+          <h3 style="margin:0; font-size:11px; font-weight:700;">Matin</h3>
+        </div>
+        <div class="card" style="border-radius:15px; padding:12px 4px; text-align:center;">
+          <div style="width:38px;height:38px;margin:0 auto 6px auto; position:relative;">
+            <svg viewBox="0 0 38 38" style="transform:rotate(-90deg);"><circle cx="19" cy="19" r="16" stroke="var(--d-line)" stroke-width="4" fill="none"/></svg>
+            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--d-gold)" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2"/></svg></div>
+          </div>
+          <h3 style="margin:0; font-size:11px; font-weight:700;">Soir</h3>
+        </div>
+        <div class="card" style="border-radius:15px; padding:12px 4px; text-align:center;">
+          <div style="width:38px;height:38px;margin:0 auto 6px auto; position:relative;">
+            <svg viewBox="0 0 38 38" style="transform:rotate(-90deg);"><circle cx="19" cy="19" r="16" stroke="var(--d-line)" stroke-width="4" fill="none"/></svg>
+            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--d-gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6L15 12L9 18"/></svg></div>
+          </div>
+          <h3 style="margin:0; font-size:11px; font-weight:700;">Après prière</h3>
+        </div>
+        <div class="card" style="border-radius:15px; padding:12px 4px; text-align:center;">
+          <div style="width:38px;height:38px;margin:0 auto 6px auto; position:relative;">
+            <svg viewBox="0 0 38 38" style="transform:rotate(-90deg);"><circle cx="19" cy="19" r="16" stroke="var(--d-line)" stroke-width="4" fill="none"/></svg>
+            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--d-gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16M6 19V9l6-5 6 5v10"/></svg></div>
+          </div>
+          <h3 style="margin:0; font-size:11px; font-weight:700;">Coucher</h3>
+        </div>
+      </div>
+
+      <div class="row card"><div class="icb badge"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--d-gold-deep)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 12l4-6-6 2z" fill="var(--d-gold-deep)" stroke="none"/></svg></div><div style="text-align:left; flex:1;"><h4>Qibla</h4><p class="muted">Direction de la Mecque</p></div></div>
+      <div class="row card"><div class="icb" style="background:rgba(150,130,220,0.16);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#B7A6E8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></div><div style="text-align:left; flex:1;"><h4>Mode Ramadan</h4><p class="muted">À activer si besoin</p></div></div>
+      <div class="row card"><div class="icb badge"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--d-gold-deep)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div><div style="text-align:left; flex:1;"><h4>Sourate Al-Kahf — verset 4</h4><p class="muted">Reprendre la lecture</p></div></div>
+
+      <div class="card-tint" style="margin:10px 16px 20px 16px; border-radius:16px; padding:13px 15px; display:flex; align-items:center; gap:12px;">
+        <div class="card" style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--d-gold-deep)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></div>
+        <div style="text-align:left;"><div style="font-size:13px; font-weight:800;">9 Rabî' al-awwal 1448 H</div><div class="muted" style="font-size:11px; font-weight:600;">Vendredi 21 août 2026</div></div>
+      </div>
+    </div>
+    <div class="navbar">
+      <div class="navitem active"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg><span>Accueil</span></div>
+      <div class="navitem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v18H6.5A2.5 2.5 0 0 0 4 22.5v-18z"/></svg><span>Coran</span></div>
+      <div class="navitem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" stroke-dasharray="2 3.4"/></svg><span>Tasbih</span></div>
+      <div class="navitem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6M8 8h8l2 12H6z"/></svg><span>Invocations</span></div>
+      <div class="navitem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V6a2 2 0 0 1 2-2h8l6 6v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/></svg><span>Bilan</span></div>
+      <div class="navitem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/></svg><span>Réglages</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ AZKAR — LECTURE CLAIR ============ -->
+
+<div class="phone-wrap">
+  <div class="stage-label">Azkar du matin — Clair</div>
+  <div class="phone light">
+    <div class="statusbar"><span>9:41</span></div>
+    <div class="topbar">
+      <div class="icon-btn card"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--l-gold)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg></div>
+      <h1 style="font-size:16px; margin:0; font-weight:800;">Azkar du matin</h1>
+      <div class="icon-btn card"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></div>
+    </div>
+    <div style="padding:12px 20px 4px 20px;">
+      <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+        <span class="gold" style="font-size:11.5px; font-weight:700;">Pardon et protection</span>
+        <span class="muted" style="font-size:11.5px; font-weight:700;">6 sur 16</span>
+      </div>
+      <div style="display:flex; gap:5px;">
+        <div style="height:5px;flex:1;border-radius:4px;background:var(--l-gold);"></div><div style="height:5px;flex:1;border-radius:4px;background:var(--l-gold);"></div><div style="height:5px;flex:1;border-radius:4px;background:var(--l-gold);"></div><div style="height:5px;flex:1;border-radius:4px;background:var(--l-gold);"></div><div style="height:5px;flex:1;border-radius:4px;background:var(--l-gold);"></div><div style="height:5px;flex:1;border-radius:4px;background:var(--l-gold-deep);"></div>
+        <div style="height:5px;flex:1;border-radius:4px;background:var(--l-line);"></div><div style="height:5px;flex:1;border-radius:4px;background:var(--l-line);"></div><div style="height:5px;flex:1;border-radius:4px;background:var(--l-line);"></div><div style="height:5px;flex:1;border-radius:4px;background:var(--l-line);"></div>
+      </div>
+    </div>
+    <div class="card" style="margin:16px 18px 0 18px; border-radius:22px; padding:18px 18px 14px 18px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+        <div class="chip" style="display:flex; align-items:center; gap:8px; padding:6px 12px; border-radius:30px;">
+          <div style="width:15px;height:15px;border-radius:50%;background:var(--l-gold);display:flex;align-items:center;justify-content:center;"><svg width="7" height="7" viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg></div>
+          <span style="font-size:11.5px; font-weight:700;">PARDON ET PROTECTION</span>
+        </div>
+        <div class="card-tint" style="width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--l-gold-deep)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></div>
+      </div>
+      <div style="font-family:'Amiri',serif; font-size:23px; line-height:2.1; text-align:center;">
+        اللَّهُمَّ إِنِّي أَسْأَلُكَ الْعَفْوَ وَالْعَافِيَةَ فِي الدُّنْيَا وَالْآخِرَةِ، اللَّهُمَّ إِنِّي أَسْأَلُكَ الْعَفْوَ وَالْعَافِيَةَ فِي دِينِي وَدُنْيَايَ وَأَهْلِي وَمَالِي
+      </div>
+      <p class="muted" style="text-align:center; font-size:12px; font-style:italic; margin:12px 0 0 0;">« Ô Allah, je Te demande le pardon et la préservation dans ce bas monde et l'au-delà... »</p>
+      <div class="hair" style="margin-top:14px; padding-top:12px; border-top:1px solid; display:flex; justify-content:space-between;">
+        <span class="faint" style="font-size:11px; font-weight:600;">Répéter une fois</span>
+        <span class="gold" style="font-size:11px; font-weight:700;">Masquer la traduction</span>
+      </div>
+    </div>
+
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px;">
+      <div style="width:220px; height:220px; position:relative;">
+        <div style="position:absolute; inset:-14px; border-radius:50%; background:radial-gradient(circle, rgba(179,129,58,0.14) 0%, transparent 70%);"></div>
+        <div style="position:absolute; inset:0; border-radius:50%; background:radial-gradient(circle at 34% 28%, #FFFDF7 0%, #F1E6CC 78%); box-shadow: inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -12px 22px rgba(80,60,20,0.08), 0 16px 32px rgba(80,60,20,0.15); border:1px solid var(--l-line);"></div>
+        <svg viewBox="0 0 220 220" style="position:absolute; inset:0; transform:rotate(-90deg);">
+          <circle cx="110" cy="110" r="102" stroke="var(--l-line)" stroke-width="7" fill="none"/>
+          <circle cx="110" cy="110" r="102" stroke="var(--l-gold)" stroke-width="7" fill="none" stroke-linecap="round" stroke-dasharray="640" stroke-dashoffset="640"/>
+        </svg>
+        <div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+          <svg width="22" height="10" viewBox="0 0 22 10" fill="none" style="margin-bottom:8px;"><path d="M1 5c3-5 6-5 10-5s7 0 10 5" stroke="var(--l-gold)" stroke-width="1.2" stroke-linecap="round"/><circle cx="11" cy="5" r="1.4" fill="var(--l-gold)"/></svg>
+          <div style="font-size:46px; font-weight:800;">0</div>
+          <div class="faint" style="margin-top:8px; font-size:12px; font-weight:600;">sur 1</div>
+        </div>
+      </div>
+      <div class="faint" style="font-size:12px; font-weight:600;">Touchez pour compter</div>
+    </div>
+
+    <div style="padding:8px 18px 22px 18px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+        <div class="icon-btn card" style="width:40px;height:40px; border-radius:13px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div>
+        <div style="font-size:13px; font-weight:800;">6 <span class="faint">/ 16</span></div>
+        <div class="icon-btn card" style="width:40px;height:40px; border-radius:13px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></div>
+      </div>
+      <div style="height:4px; border-radius:4px; background:var(--l-line); overflow:hidden;"><div style="height:100%; width:37%; background:var(--l-gold);"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ AZKAR — LECTURE SOMBRE ============ -->
+
+<div class="phone-wrap">
+  <div class="stage-label">Azkar du matin — Sombre</div>
+  <div class="phone dark">
+    <div class="statusbar"><span>9:41</span></div>
+    <div class="topbar">
+      <div class="icon-btn card"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--d-gold)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg></div>
+      <h1 style="font-size:16px; margin:0; font-weight:800;">Azkar du matin</h1>
+      <div class="icon-btn card"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></div>
+    </div>
+    <div style="padding:12px 20px 4px 20px;">
+      <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+        <span class="gold" style="font-size:11.5px; font-weight:700;">Pardon et protection</span>
+        <span class="muted" style="font-size:11.5px; font-weight:700;">6 sur 16</span>
+      </div>
+      <div style="display:flex; gap:5px;">
+        <div style="height:5px;flex:1;border-radius:4px;background:var(--d-gold-deep);"></div><div style="height:5px;flex:1;border-radius:4px;background:var(--d-gold-deep);"></div><div style="height:5px;flex:1;border-radius:4px;background:var(--d-gold-deep);"></div><div style="height:5px;flex:1;border-radius:4px;background:var(--d-gold-deep);"></div><div style="height:5px;flex:1;border-radius:4px;background:var(--d-gold-deep);"></div><div style="height:5px;flex:1;border-radius:4px;background:var(--d-gold);"></div>
+        <div style="height:5px;flex:1;border-radius:4px;background:var(--d-line);"></div><div style="height:5px;flex:1;border-radius:4px;background:var(--d-line);"></div><div style="height:5px;flex:1;border-radius:4px;background:var(--d-line);"></div><div style="height:5px;flex:1;border-radius:4px;background:var(--d-line);"></div>
+      </div>
+    </div>
+    <div class="card" style="margin:16px 18px 0 18px; border-radius:22px; padding:18px 18px 14px 18px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+        <div class="chip" style="display:flex; align-items:center; gap:8px; padding:6px 12px; border-radius:30px;">
+          <div style="width:15px;height:15px;border-radius:50%;background:var(--d-gold);display:flex;align-items:center;justify-content:center;"><svg width="7" height="7" viewBox="0 0 24 24" fill="#17140F"><path d="M8 5v14l11-7z"/></svg></div>
+          <span style="font-size:11.5px; font-weight:700;">PARDON ET PROTECTION</span>
+        </div>
+        <div class="card-tint" style="width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--d-gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></div>
+      </div>
+      <div style="font-family:'Amiri',serif; font-size:23px; line-height:2.1; text-align:center;">
+        اللَّهُمَّ إِنِّي أَسْأَلُكَ الْعَفْوَ وَالْعَافِيَةَ فِي الدُّنْيَا وَالْآخِرَةِ، اللَّهُمَّ إِنِّي أَسْأَلُكَ الْعَفْوَ وَالْعَافِيَةَ فِي دِينِي وَدُنْيَايَ وَأَهْلِي وَمَالِي
+      </div>
+      <p class="muted" style="text-align:center; font-size:12px; font-style:italic; margin:12px 0 0 0;">« Ô Allah, je Te demande le pardon et la préservation dans ce bas monde et l'au-delà... »</p>
+      <div class="hair" style="margin-top:14px; padding-top:12px; border-top:1px solid; display:flex; justify-content:space-between;">
+        <span class="faint" style="font-size:11px; font-weight:600;">Répéter une fois</span>
+        <span class="gold" style="font-size:11px; font-weight:700;">Masquer la traduction</span>
+      </div>
+    </div>
+
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px;">
+      <div style="width:220px; height:220px; position:relative;">
+        <div style="position:absolute; inset:-14px; border-radius:50%; background:radial-gradient(circle, rgba(221,180,106,0.14) 0%, transparent 70%);"></div>
+        <div style="position:absolute; inset:0; border-radius:50%; background:radial-gradient(circle at 34% 28%, #35301F 0%, #211C15 72%); box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), inset 0 -14px 26px rgba(0,0,0,0.35), 0 16px 34px rgba(0,0,0,0.45);"></div>
+        <svg viewBox="0 0 220 220" style="position:absolute; inset:0; transform:rotate(-90deg);">
+          <circle cx="110" cy="110" r="102" stroke="rgba(255,255,255,0.05)" stroke-width="7" fill="none"/>
+          <circle cx="110" cy="110" r="102" stroke="var(--d-gold)" stroke-width="7" fill="none" stroke-linecap="round" stroke-dasharray="640" stroke-dashoffset="640" style="filter:drop-shadow(0 0 5px rgba(221,180,106,0.5));"/>
+        </svg>
+        <div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+          <svg width="22" height="10" viewBox="0 0 22 10" fill="none" style="margin-bottom:8px;"><path d="M1 5c3-5 6-5 10-5s7 0 10 5" stroke="var(--d-gold)" stroke-width="1.2" stroke-linecap="round"/><circle cx="11" cy="5" r="1.4" fill="var(--d-gold)"/></svg>
+          <div style="font-size:46px; font-weight:800;">0</div>
+          <div class="faint" style="margin-top:8px; font-size:12px; font-weight:600;">sur 1</div>
+        </div>
+      </div>
+      <div class="faint" style="font-size:12px; font-weight:600;">Touchez pour compter</div>
+    </div>
+
+    <div style="padding:8px 18px 22px 18px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+        <div class="icon-btn card" style="width:40px;height:40px; border-radius:13px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div>
+        <div style="font-size:13px; font-weight:800;">6 <span class="faint">/ 16</span></div>
+        <div class="icon-btn card" style="width:40px;height:40px; border-radius:13px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></div>
+      </div>
+      <div style="height:4px; border-radius:4px; background:var(--d-line); overflow:hidden;"><div style="height:100%; width:37%; background:var(--d-gold);"></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="phone-wrap">
+  <div class="stage-label">Coran — Clair</div>
+  <div class="phone light">
+    <div class="statusbar"><span>9:41</span></div>
+    <div class="scroll">
+      <div class="brand" style="padding-top:14px;"><div class="title">Le Coran</div></div>
+
+      <div class="card-tint" style="margin:0 16px; border-radius:18px; padding:15px; display:flex; align-items:center; gap:12px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="muted" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        <div style="flex:1;">
+          <div class="gold" style="font-size:11px; font-weight:700; letter-spacing:0.5px;">REPRENDRE LA LECTURE</div>
+          <div style="font-size:14.5px; font-weight:800; margin-top:2px;">Al-Kahf — verset 4</div>
+        </div>
+        <div style="width:42px;height:42px; position:relative;">
+          <svg viewBox="0 0 42 42" style="transform:rotate(-90deg);"><circle class="ring-bg" cx="21" cy="21" r="17" stroke-width="4" fill="none"/><circle class="ring-fg" cx="21" cy="21" r="17" stroke-width="4" fill="none" stroke-linecap="round" stroke-dasharray="107" stroke-dashoffset="98"/></svg>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:14px 16px 0 16px;">
+        <div class="card" style="border-radius:15px; padding:14px 6px; text-align:center;">
+          <div class="card-tint" style="width:36px;height:36px;margin:0 auto 8px auto; border-radius:11px; display:flex; align-items:center; justify-content:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--l-gold-deep)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v18H6.5A2.5 2.5 0 0 0 4 22.5v-18z"/></svg></div>
+          <h3 style="margin:0; font-size:12px; font-weight:700;">Sourates</h3>
+        </div>
+        <div class="card" style="border-radius:15px; padding:14px 6px; text-align:center;">
+          <div class="card-tint" style="width:36px;height:36px;margin:0 auto 8px auto; border-radius:11px; display:flex; align-items:center; justify-content:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--l-gold-deep)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></div>
+          <h3 style="margin:0; font-size:12px; font-weight:700;">Mushaf</h3>
+        </div>
+        <div class="card" style="border-radius:15px; padding:14px 6px; text-align:center;">
+          <div class="card-tint" style="width:36px;height:36px;margin:0 auto 8px auto; border-radius:11px; display:flex; align-items:center; justify-content:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--l-gold-deep)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3z"/><path d="M19 11a7 7 0 0 1-14 0M12 18v4"/></svg></div>
+          <h3 style="margin:0; font-size:12px; font-weight:700;">Récitateurs</h3>
+        </div>
+      </div>
+
+      <div class="card" style="margin:16px 16px 20px 16px; border-radius:18px; padding:16px;">
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+          <div style="width:38px;height:38px; border-radius:12px; background:#E4DEF0; display:flex; align-items:center; justify-content:center; flex-shrink:0;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#5B4E8C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16M6 19V9l6-5 6 5v10"/></svg></div>
+          <span style="font-size:11px; font-weight:700; color:#5B4E8C; letter-spacing:0.3px;">SOURATE RECOMMANDÉE AVANT DE DORMIR</span>
+        </div>
+        <div style="font-family:'Amiri',serif; font-size:19px; font-weight:700; margin-bottom:8px;">Al-Mulk الملك</div>
+        <p class="muted" style="margin:0; font-size:12.5px; line-height:1.6;">Le Prophète ﷺ la récitait chaque soir avant de dormir (rapporté par At-Tirmidhi).</p>
+      </div>
+    </div>
+    <div class="navbar">
+      <div class="navitem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg><span>Accueil</span></div>
+      <div class="navitem active"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v18H6.5A2.5 2.5 0 0 0 4 22.5v-18z"/></svg><span>Coran</span></div>
+      <div class="navitem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" stroke-dasharray="2 3.4"/></svg><span>Tasbih</span></div>
+      <div class="navitem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6M8 8h8l2 12H6z"/></svg><span>Invocations</span></div>
+      <div class="navitem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V6a2 2 0 0 1 2-2h8l6 6v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/></svg><span>Bilan</span></div>
+      <div class="navitem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/></svg><span>Réglages</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ CORAN — ACCUEIL — SOMBRE ============ -->
+
+<div class="phone-wrap">
+  <div class="stage-label">Coran — Sombre</div>
+  <div class="phone dark">
+    <div class="statusbar"><span>9:41</span></div>
+    <div class="scroll">
+      <div class="brand" style="padding-top:14px;"><div class="title">Le Coran</div></div>
+
+      <div class="card-tint" style="margin:0 16px; border-radius:18px; padding:15px; display:flex; align-items:center; gap:12px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="muted" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        <div style="flex:1;">
+          <div class="gold" style="font-size:11px; font-weight:700; letter-spacing:0.5px;">REPRENDRE LA LECTURE</div>
+          <div style="font-size:14.5px; font-weight:800; margin-top:2px;">Al-Kahf — verset 4</div>
+        </div>
+        <div style="width:42px;height:42px; position:relative;">
+          <svg viewBox="0 0 42 42" style="transform:rotate(-90deg);"><circle class="ring-bg" cx="21" cy="21" r="17" stroke-width="4" fill="none"/><circle class="ring-fg" cx="21" cy="21" r="17" stroke-width="4" fill="none" stroke-linecap="round" stroke-dasharray="107" stroke-dashoffset="98"/></svg>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:14px 16px 0 16px;">
+        <div class="card" style="border-radius:15px; padding:14px 6px; text-align:center;">
+          <div class="card-tint" style="width:36px;height:36px;margin:0 auto 8px auto; border-radius:11px; display:flex; align-items:center; justify-content:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--d-gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v18H6.5A2.5 2.5 0 0 0 4 22.5v-18z"/></svg></div>
+          <h3 style="margin:0; font-size:12px; font-weight:700;">Sourates</h3>
+        </div>
+        <div class="card" style="border-radius:15px; padding:14px 6px; text-align:center;">
+          <div class="card-tint" style="width:36px;height:36px;margin:0 auto 8px auto; border-radius:11px; display:flex; align-items:center; justify-content:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--d-gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></div>
+          <h3 style="margin:0; font-size:12px; font-weight:700;">Mushaf</h3>
+        </div>
+        <div class="card" style="border-radius:15px; padding:14px 6px; text-align:center;">
+          <div class="card-tint" style="width:36px;height:36px;margin:0 auto 8px auto; border-radius:11px; display:flex; align-items:center; justify-content:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--d-gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3z"/><path d="M19 11a7 7 0 0 1-14 0M12 18v4"/></svg></div>
+          <h3 style="margin:0; font-size:12px; font-weight:700;">Récitateurs</h3>
+        </div>
+      </div>
+
+      <div class="card" style="margin:16px 16px 20px 16px; border-radius:18px; padding:16px;">
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+          <div style="width:38px;height:38px; border-radius:12px; background:rgba(150,130,220,0.16); display:flex; align-items:center; justify-content:center; flex-shrink:0;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#B7A6E8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16M6 19V9l6-5 6 5v10"/></svg></div>
+          <span style="font-size:11px; font-weight:700; color:#B7A6E8; letter-spacing:0.3px;">SOURATE RECOMMANDÉE AVANT DE DORMIR</span>
+        </div>
+        <div style="font-family:'Amiri',serif; font-size:19px; font-weight:700; margin-bottom:8px;">Al-Mulk الملك</div>
+        <p class="muted" style="margin:0; font-size:12.5px; line-height:1.6;">Le Prophète ﷺ la récitait chaque soir avant de dormir (rapporté par At-Tirmidhi).</p>
+      </div>
+    </div>
+    <div class="navbar">
+      <div class="navitem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg><span>Accueil</span></div>
+      <div class="navitem active"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v18H6.5A2.5 2.5 0 0 0 4 22.5v-18z"/></svg><span>Coran</span></div>
+      <div class="navitem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" stroke-dasharray="2 3.4"/></svg><span>Tasbih</span></div>
+      <div class="navitem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6M8 8h8l2 12H6z"/></svg><span>Invocations</span></div>
+      <div class="navitem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V6a2 2 0 0 1 2-2h8l6 6v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/></svg><span>Bilan</span></div>
+      <div class="navitem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/></svg><span>Réglages</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TASBIH — CLAIR ============ -->
+
+<div class="phone-wrap">
+  <div class="stage-label">Tasbih — Clair</div>
+  <div class="phone light">
+    <div class="statusbar"><span>9:41</span></div>
+    <div class="topbar">
+      <div class="icon-btn card"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 16v-5M12 8h.01"/></svg></div>
+      <div class="icon-btn card"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg></div>
+    </div>
+    <div class="brand" style="padding-bottom:6px;"><div class="title">Tasbih libre</div></div>
+    <div class="muted" style="text-align:center; font-size:11.5px; font-weight:600; margin-bottom:14px;">365 dhikr récités au total</div>
+
+    <div style="display:flex; gap:8px; padding:0 16px 14px 16px; overflow-x:auto;">
+      <div class="card-tint" style="border-radius:24px; padding:8px 16px; font-size:12px; font-weight:700; white-space:nowrap; flex-shrink:0;">Subhanallahi wa bihamdihi</div>
+      <div class="card" style="border-radius:24px; padding:8px 16px; font-size:12px; font-weight:700; white-space:nowrap; flex-shrink:0;">Subhanallah</div>
+      <div class="card" style="border-radius:24px; padding:8px 16px; font-size:12px; font-weight:700; white-space:nowrap; flex-shrink:0;">Alhamdulillah</div>
+    </div>
+
+    <div class="card" style="margin:0 16px; border-radius:18px; padding:16px;">
+      <div class="gold" style="font-size:11px; font-weight:800; letter-spacing:0.5px; text-align:center; margin-bottom:10px;">LĀ ILĀHA ILLALLĀH WAHDAHU...</div>
+      <div style="font-family:'Amiri',serif; font-size:20px; line-height:1.9; text-align:center;">لَا إِلَٰهَ إِلَّا اللَّٰهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ، وَهُوَ عَلَىٰ كُلِّ شَيْءٍ قَدِيرٌ</div>
+      <p class="muted" style="margin:10px 0 0 0; font-size:11.5px; text-align:center; font-style:italic; line-height:1.5;">« Il n'y a de divinité qu'Allah, Seul, sans associé. À Lui le règne, à Lui la louange, et Il est capable de toute chose. »</p>
+    </div>
+
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px;">
+      <div style="width:190px; height:190px; position:relative;">
+        <div style="position:absolute; inset:-10px; border-radius:50%; background:radial-gradient(circle, rgba(179,129,58,0.12) 0%, transparent 70%);"></div>
+        <div class="thumb-disc" style="position:absolute; inset:0; border-radius:50%;"></div>
+        <svg viewBox="0 0 190 190" style="position:absolute; inset:0; transform:rotate(-90deg);">
+          <circle class="ring-bg" cx="95" cy="95" r="86" stroke-width="6" fill="none"/>
+          <circle class="ring-fg" cx="95" cy="95" r="86" stroke-width="6" fill="none" stroke-linecap="round" stroke-dasharray="540" stroke-dashoffset="530"/>
+        </svg>
+        <div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+          <div style="font-size:40px; font-weight:800;">2</div>
+          <div class="muted" style="margin-top:6px; font-size:11.5px; font-weight:600;">récités</div>
+        </div>
+      </div>
+    </div>
+    <div class="navbar">
+      <div class="navitem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg><span>Accueil</span></div>
+      <div class="navitem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v18H6.5A2.5 2.5 0 0 0 4 22.5v-18z"/></svg><span>Coran</span></div>
+      <div class="navitem active"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" stroke-dasharray="2 3.4"/></svg><span>Tasbih</span></div>
+      <div class="navitem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6M8 8h8l2 12H6z"/></svg><span>Invocations</span></div>
+      <div class="navitem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V6a2 2 0 0 1 2-2h8l6 6v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/></svg><span>Bilan</span></div>
+      <div class="navitem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/></svg><span>Réglages</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TASBIH — SOMBRE ============ -->
+
+<div class="phone-wrap">
+  <div class="stage-label">Tasbih — Sombre</div>
+  <div class="phone dark">
+    <div class="statusbar"><span>9:41</span></div>
+    <div class="topbar">
+      <div class="icon-btn card"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 16v-5M12 8h.01"/></svg></div>
+      <div class="icon-btn card"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg></div>
+    </div>
+    <div class="brand" style="padding-bottom:6px;"><div class="title">Tasbih libre</div></div>
+    <div class="muted" style="text-align:center; font-size:11.5px; font-weight:600; margin-bottom:14px;">365 dhikr récités au total</div>
+
+    <div style="display:flex; gap:8px; padding:0 16px 14px 16px; overflow-x:auto;">
+      <div class="card-tint" style="border-radius:24px; padding:8px 16px; font-size:12px; font-weight:700; white-space:nowrap; flex-shrink:0;">Subhanallahi wa bihamdihi</div>
+      <div class="card" style="border-radius:24px; padding:8px 16px; font-size:12px; font-weight:700; white-space:nowrap; flex-shrink:0;">Subhanallah</div>
+      <div class="card" style="border-radius:24px; padding:8px 16px; font-size:12px; font-weight:700; white-space:nowrap; flex-shrink:0;">Alhamdulillah</div>
+    </div>
+
+    <div class="card" style="margin:0 16px; border-radius:18px; padding:16px;">
+      <div class="gold" style="font-size:11px; font-weight:800; letter-spacing:0.5px; text-align:center; margin-bottom:10px;">LĀ ILĀHA ILLALLĀH WAHDAHU...</div>
+      <div style="font-family:'Amiri',serif; font-size:20px; line-height:1.9; text-align:center;">لَا إِلَٰهَ إِلَّا اللَّٰهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ، وَهُوَ عَلَىٰ كُلِّ شَيْءٍ قَدِيرٌ</div>
+      <p class="muted" style="margin:10px 0 0 0; font-size:11.5px; text-align:center; font-style:italic; line-height:1.5;">« Il n'y a de divinité qu'Allah, Seul, sans associé. À Lui le règne, à Lui la louange, et Il est capable de toute chose. »</p>
+    </div>
+
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px;">
+      <div style="width:190px; height:190px; position:relative;">
+        <div style="position:absolute; inset:-10px; border-radius:50%; background:radial-gradient(circle, rgba(221,180,106,0.14) 0%, transparent 70%);"></div>
+        <div class="thumb-disc" style="position:absolute; inset:0; border-radius:50%;"></div>
+        <svg viewBox="0 0 190 190" style="position:absolute; inset:0; transform:rotate(-90deg);">
+          <circle class="ring-bg" cx="95" cy="95" r="86" stroke-width="6" fill="none"/>
+          <circle class="ring-fg" cx="95" cy="95" r="86" stroke-width="6" fill="none" stroke-linecap="round" stroke-dasharray="540" stroke-dashoffset="530"/>
+        </svg>
+        <div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+          <div style="font-size:40px; font-weight:800;">2</div>
+          <div class="muted" style="margin-top:6px; font-size:11.5px; font-weight:600;">récités</div>
+        </div>
+      </div>
+    </div>
+    <div class="navbar">
+      <div class="navitem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg><span>Accueil</span></div>
+      <div class="navitem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v18H6.5A2.5 2.5 0 0 0 4 22.5v-18z"/></svg><span>Coran</span></div>
+      <div class="navitem active"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" stroke-dasharray="2 3.4"/></svg><span>Tasbih</span></div>
+      <div class="navitem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6M8 8h8l2 12H6z"/></svg><span>Invocations</span></div>
+      <div class="navitem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V6a2 2 0 0 1 2-2h8l6 6v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/></svg><span>Bilan</span></div>
+      <div class="navitem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/></svg><span>Réglages</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ INVOCATIONS — CLAIR ============ -->
+
+<div class="phone-wrap">
+  <div class="stage-label">Invocations — Clair</div>
+  <div class="phone light">
+    <div class="statusbar"><span>9:41</span></div>
+    <div class="scroll">
+      <div class="card" style="margin:14px 16px 0 16px; border:1.5px dashed var(--l-gold-soft); border-radius:18px; padding:16px; display:flex; align-items:center; gap:12px;">
+        <div class="badge" style="width:38px;height:38px;border-radius:12px; display:flex;align-items:center;justify-content:center; flex-shrink:0;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--l-gold-deep)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></div>
+        <div><h4 style="margin:0 0 2px 0; font-size:13px; font-weight:800;">Mes invocations personnelles</h4><p class="muted" style="margin:0; font-size:11px; font-weight:600;">Ajoute et garde tes propres duas</p></div>
+      </div>
+
+      <div class="section-title"><h2>Moments du quotidien</h2></div>
+      <div class="cat3">
+        <div class="card cat-tile"><div class="ic card-tint"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--l-gold-deep)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16M6 19V9l6-5 6 5v10"/></svg></div><h3>Sommeil</h3></div>
+        <div class="card cat-tile"><div class="ic card-tint"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--l-gold-deep)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v6M8 5l4 3 4-3M6 12a6 6 0 0 0 12 0"/></svg></div><h3>Ablutions</h3></div>
+        <div class="card cat-tile"><div class="ic card-tint"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--l-gold-deep)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12l9-9 9 9M5 10v10h14V10"/></svg></div><h3>Maison</h3></div>
+        <div class="card cat-tile"><div class="ic card-tint"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--l-gold-deep)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l-1 5H7z"/><path d="M8 8v13M16 8v13"/></svg></div><h3>Habits</h3></div>
+        <div class="card cat-tile"><div class="ic card-tint"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--l-gold-deep)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><circle cx="15" cy="12" r="0.8" fill="var(--l-gold-deep)"/></svg></div><h3>Toilettes</h3></div>
+        <div class="card cat-tile"><div class="ic card-tint"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--l-gold-deep)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M6 21c0-4 3-6 6-6s6 2 6 6"/></svg></div><h3>Nourriture</h3></div>
+      </div>
+
+      <div class="section-title"><h2>Actes d'adoration</h2></div>
+      <div class="cat3" style="margin-bottom:20px;">
+        <div class="card cat-tile"><div class="ic card-tint"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--l-gold-deep)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V10l7-6 7 6v11M9 21v-6h6v6"/></svg></div><h3>Mosquée</h3></div>
+        <div class="card cat-tile"><div class="ic card-tint"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--l-gold-deep)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21c-4-3-8-6-8-11a5 5 0 0 1 8-4 5 5 0 0 1 8 4c0 5-4 8-8 11z"/></svg></div><h3>Avant la prière</h3></div>
+        <div class="card cat-tile"><div class="ic card-tint"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--l-gold-deep)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3v3M12 18v3"/></svg></div><h3>Istikhâra</h3></div>
+      </div>
+    </div>
+    <div class="navbar">
+      <div class="navitem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg><span>Accueil</span></div>
+      <div class="navitem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v18H6.5A2.5 2.5 0 0 0 4 22.5v-18z"/></svg><span>Coran</span></div>
+      <div class="navitem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" stroke-dasharray="2 3.4"/></svg><span>Tasbih</span></div>
+      <div class="navitem active"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6M8 8h8l2 12H6z"/></svg><span>Invocations</span></div>
+      <div class="navitem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V6a2 2 0 0 1 2-2h8l6 6v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/></svg><span>Bilan</span></div>
+      <div class="navitem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/></svg><span>Réglages</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ INVOCATIONS — SOMBRE ============ -->
+
+<div class="phone-wrap">
+  <div class="stage-label">Invocations — Sombre</div>
+  <div class="phone dark">
+    <div class="statusbar"><span>9:41</span></div>
+    <div class="scroll">
+      <div class="card" style="margin:14px 16px 0 16px; border:1.5px dashed rgba(221,180,106,0.35); border-radius:18px; padding:16px; display:flex; align-items:center; gap:12px;">
+        <div class="badge" style="width:38px;height:38px;border-radius:12px; display:flex;align-items:center;justify-content:center; flex-shrink:0;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--d-gold-deep)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></div>
+        <div><h4 style="margin:0 0 2px 0; font-size:13px; font-weight:800;">Mes invocations personnelles</h4><p class="muted" style="margin:0; font-size:11px; font-weight:600;">Ajoute et garde tes propres duas</p></div>
+      </div>
+
+      <div class="section-title"><h2>Moments du quotidien</h2></div>
+      <div class="cat3">
+        <div class="card cat-tile"><div class="ic card-tint"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--d-gold-deep)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16M6 19V9l6-5 6 5v10"/></svg></div><h3>Sommeil</h3></div>
+        <div class="card cat-tile"><div class="ic card-tint"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--d-gold-deep)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v6M8 5l4 3 4-3M6 12a6 6 0 0 0 12 0"/></svg></div><h3>Ablutions</h3></div>
+        <div class="card cat-tile"><div class="ic card-tint"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--d-gold-deep)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12l9-9 9 9M5 10v10h14V10"/></svg></div><h3>Maison</h3></div>
+        <div class="card cat-tile"><div class="ic card-tint"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--d-gold-deep)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l-1 5H7z"/><path d="M8 8v13M16 8v13"/></svg></div><h3>Habits</h3></div>
+        <div class="card cat-tile"><div class="ic card-tint"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--d-gold-deep)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><circle cx="15" cy="12" r="0.8" fill="var(--d-gold-deep)"/></svg></div><h3>Toilettes</h3></div>
+        <div class="card cat-tile"><div class="ic card-tint"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--d-gold-deep)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M6 21c0-4 3-6 6-6s6 2 6 6"/></svg></div><h3>Nourriture</h3></div>
+      </div>
+
+      <div class="section-title"><h2>Actes d'adoration</h2></div>
+      <div class="cat3" style="margin-bottom:20px;">
+        <div class="card cat-tile"><div class="ic card-tint"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--d-gold-deep)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V10l7-6 7 6v11M9 21v-6h6v6"/></svg></div><h3>Mosquée</h3></div>
+        <div class="card cat-tile"><div class="ic card-tint"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--d-gold-deep)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21c-4-3-8-6-8-11a5 5 0 0 1 8-4 5 5 0 0 1 8 4c0 5-4 8-8 11z"/></svg></div><h3>Avant la prière</h3></div>
+        <div class="card cat-tile"><div class="ic card-tint"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--d-gold-deep)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3v3M12 18v3"/></svg></div><h3>Istikhâra</h3></div>
+      </div>
+    </div>
+    <div class="navbar">
+      <div class="navitem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg><span>Accueil</span></div>
+      <div class="navitem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v18H6.5A2.5 2.5 0 0 0 4 22.5v-18z"/></svg><span>Coran</span></div>
+      <div class="navitem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" stroke-dasharray="2 3.4"/></svg><span>Tasbih</span></div>
+      <div class="navitem active"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6M8 8h8l2 12H6z"/></svg><span>Invocations</span></div>
+      <div class="navitem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V6a2 2 0 0 1 2-2h8l6 6v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/></svg><span>Bilan</span></div>
+      <div class="navitem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/></svg><span>Réglages</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ BILAN — CLAIR ============ -->
+
+<div class="phone-wrap">
+  <div class="stage-label">Bilan — Clair</div>
+  <div class="phone light">
+    <div class="statusbar"><span>9:41</span></div>
+    <div class="brand" style="padding-top:12px;"><div class="title">Bilan du jour</div></div>
+    <div style="display:flex; align-items:center; justify-content:center; gap:16px; margin-bottom:14px;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="faint" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      <span class="muted" style="font-size:13px; font-weight:700;">Aujourd'hui</span>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="faint" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+    </div>
+
+    <div class="card-tint" style="margin:0 16px; border-radius:18px; padding:20px; text-align:center;">
+      <div style="font-size:16px; font-weight:800; line-height:1.5;">Un bon début — encore un petit effort aujourd'hui.</div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:9px; margin:18px 16px 0 16px;">
+      <div class="card" style="border-radius:15px; padding:12px 4px; text-align:center; border:2px solid var(--l-gold);">
+        <div class="badge" style="width:32px;height:32px;margin:0 auto 6px auto; border-radius:50%; display:flex; align-items:center; justify-content:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--l-gold-deep)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>
+        <h3 style="margin:0; font-size:10.5px; font-weight:700;">Matin</h3>
+      </div>
+      <div class="card" style="border-radius:15px; padding:12px 4px; text-align:center;">
+        <div class="card-tint" style="width:32px;height:32px;margin:0 auto 6px auto; border-radius:50%; display:flex; align-items:center; justify-content:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="faint" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="5"/></svg></div>
+        <h3 class="faint" style="margin:0; font-size:10.5px; font-weight:700;">Soir</h3>
+      </div>
+      <div class="card" style="border-radius:15px; padding:12px 4px; text-align:center;">
+        <div class="card-tint" style="width:32px;height:32px;margin:0 auto 6px auto; border-radius:50%; display:flex; align-items:center; justify-content:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="faint" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6L15 12L9 18"/></svg></div>
+        <h3 class="faint" style="margin:0; font-size:10.5px; font-weight:700;">Après prière</h3>
+      </div>
+      <div class="card" style="border-radius:15px; padding:12px 4px; text-align:center;">
+        <div class="card-tint" style="width:32px;height:32px;margin:0 auto 6px auto; border-radius:50%; display:flex; align-items:center; justify-content:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="faint" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16M6 19V9l6-5 6 5v10"/></svg></div>
+        <h3 class="faint" style="margin:0; font-size:10.5px; font-weight:700;">Coucher</h3>
+      </div>
+    </div>
+
+    <div class="row card"><div class="icb badge"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--l-gold-deep)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" stroke-dasharray="2 3.4"/></svg></div><div><h4>0 dhikr récité</h4><p class="muted">Toutes formules confondues, aujourd'hui</p></div></div>
+    <div class="row card"><div class="icb badge"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--l-gold-deep)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v18H6.5A2.5 2.5 0 0 0 4 22.5v-18z"/></svg></div><div><h4>0 page lue</h4><p class="muted">Progression dans le Coran, aujourd'hui</p></div></div>
+    <div class="row card" style="margin-bottom:16px;"><div class="icb badge"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--l-gold-deep)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg></div><div><h4>0 jour d'affilée</h4><p class="muted">Azkar matin, soir, coucher et après-prière complétés</p></div></div>
+  </div>
+</div>
+
+<!-- ============ BILAN — SOMBRE ============ -->
+
+<div class="phone-wrap">
+  <div class="stage-label">Bilan — Sombre</div>
+  <div class="phone dark">
+    <div class="statusbar"><span>9:41</span></div>
+    <div class="brand" style="padding-top:12px;"><div class="title">Bilan du jour</div></div>
+    <div style="display:flex; align-items:center; justify-content:center; gap:16px; margin-bottom:14px;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="faint" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      <span class="muted" style="font-size:13px; font-weight:700;">Aujourd'hui</span>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="faint" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+    </div>
+
+    <div class="card-tint" style="margin:0 16px; border-radius:18px; padding:20px; text-align:center;">
+      <div style="font-size:16px; font-weight:800; line-height:1.5;">Un bon début — encore un petit effort aujourd'hui.</div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:9px; margin:18px 16px 0 16px;">
+      <div class="card" style="border-radius:15px; padding:12px 4px; text-align:center; border:2px solid var(--d-gold);">
+        <div class="badge" style="width:32px;height:32px;margin:0 auto 6px auto; border-radius:50%; display:flex; align-items:center; justify-content:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--d-gold-deep)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>
+        <h3 style="margin:0; font-size:10.5px; font-weight:700;">Matin</h3>
+      </div>
+      <div class="card" style="border-radius:15px; padding:12px 4px; text-align:center;">
+        <div class="card-tint" style="width:32px;height:32px;margin:0 auto 6px auto; border-radius:50%; display:flex; align-items:center; justify-content:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="faint" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="5"/></svg></div>
+        <h3 class="faint" style="margin:0; font-size:10.5px; font-weight:700;">Soir</h3>
+      </div>
+      <div class="card" style="border-radius:15px; padding:12px 4px; text-align:center;">
+        <div class="card-tint" style="width:32px;height:32px;margin:0 auto 6px auto; border-radius:50%; display:flex; align-items:center; justify-content:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="faint" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6L15 12L9 18"/></svg></div>
+        <h3 class="faint" style="margin:0; font-size:10.5px; font-weight:700;">Après prière</h3>
+      </div>
+      <div class="card" style="border-radius:15px; padding:12px 4px; text-align:center;">
+        <div class="card-tint" style="width:32px;height:32px;margin:0 auto 6px auto; border-radius:50%; display:flex; align-items:center; justify-content:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="faint" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16M6 19V9l6-5 6 5v10"/></svg></div>
+        <h3 class="faint" style="margin:0; font-size:10.5px; font-weight:700;">Coucher</h3>
+      </div>
+    </div>
+
+    <div class="row card"><div class="icb badge"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--d-gold-deep)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" stroke-dasharray="2 3.4"/></svg></div><div><h4>0 dhikr récité</h4><p class="muted">Toutes formules confondues, aujourd'hui</p></div></div>
+    <div class="row card"><div class="icb badge"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--d-gold-deep)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v18H6.5A2.5 2.5 0 0 0 4 22.5v-18z"/></svg></div><div><h4>0 page lue</h4><p class="muted">Progression dans le Coran, aujourd'hui</p></div></div>
+    <div class="row card" style="margin-bottom:16px;"><div class="icb badge"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--d-gold-deep)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg></div><div><h4>0 jour d'affilée</h4><p class="muted">Azkar matin, soir, coucher et après-prière complétés</p></div></div>
+  </div>
+</div>
+
+<!-- ============ RÉGLAGES — CLAIR ============ -->
+
+<div class="phone-wrap">
+  <div class="stage-label">Réglages — Clair</div>
+  <div class="phone light">
+    <div class="statusbar"><span>9:41</span></div>
+    <div class="brand" style="padding-top:12px;"><div class="title">Réglages</div></div>
+    <div class="scroll">
+      <div class="card" style="margin:0 16px; border-radius:18px; padding:16px;">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
+          <div class="icb badge"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--l-gold-deep)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2"/></svg></div>
+          <h4 style="margin:0; font-size:14px; font-weight:800;">Apparence</h4>
+        </div>
+        <div style="display:flex; gap:8px; margin-bottom:14px;">
+          <div class="card-tint" style="flex:1; text-align:center; padding:10px 0; border-radius:12px; font-size:12.5px; font-weight:700;">Système</div>
+          <div class="badge" style="flex:1; text-align:center; padding:10px 0; border-radius:12px; border:1.5px solid var(--l-gold); font-size:12.5px; font-weight:800; color:var(--l-gold-deep);">Clair</div>
+          <div class="card-tint" style="flex:1; text-align:center; padding:10px 0; border-radius:12px; font-size:12.5px; font-weight:700;">Sombre</div>
+        </div>
+        <div class="faint" style="font-size:10.5px; font-weight:800; letter-spacing:1px; margin-bottom:8px;">COULEUR D'ACCENT</div>
+        <div style="display:flex; gap:8px;">
+          <div class="badge" style="flex:1; text-align:center; padding:10px 4px; border-radius:12px; border:1.5px solid var(--l-gold);"><div style="width:20px;height:20px;border-radius:50%;background:var(--l-gold); margin:0 auto 6px auto;"></div><span style="font-size:10.5px; font-weight:800;">Doré</span></div>
+          <div class="hair" style="flex:1; text-align:center; padding:10px 4px; border-radius:12px; border:1px solid;"><div style="width:20px;height:20px;border-radius:50%;background:#4E8C6B; margin:0 auto 6px auto;"></div><span class="muted" style="font-size:10.5px; font-weight:700;">Émeraude</span></div>
+          <div class="hair" style="flex:1; text-align:center; padding:10px 4px; border-radius:12px; border:1px solid;"><div style="width:20px;height:20px;border-radius:50%;background:#4A6FB5; margin:0 auto 6px auto;"></div><span class="muted" style="font-size:10.5px; font-weight:700;">Saphir</span></div>
+        </div>
+      </div>
+
+      <div class="row card"><div class="icb badge"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--l-gold-deep)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></div><div style="flex:1;"><h4>Langue</h4></div><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="faint" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div>
+      <div class="row card"><div class="icb badge"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--l-gold-deep)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2 6h6l-5 4 2 7-5-4-5 4 2-7-5-4h6z"/></svg></div><div style="flex:1;"><h4>Taille du texte arabe</h4></div><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="faint" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div>
+      <div class="row card"><div class="icb badge"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--l-gold-deep)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></div><div style="flex:1;"><h4>Notifications</h4></div><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="faint" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div>
+      <div class="row card"><div class="icb badge"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--l-gold-deep)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg></div><div style="flex:1;"><h4>Localisation</h4></div><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="faint" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div>
+      <div class="row card" style="margin-bottom:16px;"><div class="icb badge"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--l-gold-deep)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div><div style="flex:1;"><h4>Méthode de calcul</h4></div><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="faint" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div>
+    </div>
+    <div class="navbar">
+      <div class="navitem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg><span>Accueil</span></div>
+      <div class="navitem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v18H6.5A2.5 2.5 0 0 0 4 22.5v-18z"/></svg><span>Coran</span></div>
+      <div class="navitem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" stroke-dasharray="2 3.4"/></svg><span>Tasbih</span></div>
+      <div class="navitem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6M8 8h8l2 12H6z"/></svg><span>Invocations</span></div>
+      <div class="navitem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V6a2 2 0 0 1 2-2h8l6 6v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/></svg><span>Bilan</span></div>
+      <div class="navitem active"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/></svg><span>Réglages</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ RÉGLAGES — SOMBRE ============ -->
+
+<div class="phone-wrap">
+  <div class="stage-label">Réglages — Sombre</div>
+  <div class="phone dark">
+    <div class="statusbar"><span>9:41</span></div>
+    <div class="brand" style="padding-top:12px;"><div class="title">Réglages</div></div>
+    <div class="scroll">
+      <div class="card" style="margin:0 16px; border-radius:18px; padding:16px;">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
+          <div class="icb badge"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--d-gold-deep)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2"/></svg></div>
+          <h4 style="margin:0; font-size:14px; font-weight:800;">Apparence</h4>
+        </div>
+        <div style="display:flex; gap:8px; margin-bottom:14px;">
+          <div class="card-tint" style="flex:1; text-align:center; padding:10px 0; border-radius:12px; font-size:12.5px; font-weight:700;">Système</div>
+          <div class="card-tint" style="flex:1; text-align:center; padding:10px 0; border-radius:12px; font-size:12.5px; font-weight:700;">Clair</div>
+          <div class="badge" style="flex:1; text-align:center; padding:10px 0; border-radius:12px; border:1.5px solid var(--d-gold); font-size:12.5px; font-weight:800; color:var(--d-gold-deep);">Sombre</div>
+        </div>
+        <div class="faint" style="font-size:10.5px; font-weight:800; letter-spacing:1px; margin-bottom:8px;">COULEUR D'ACCENT</div>
+        <div style="display:flex; gap:8px;">
+          <div class="badge" style="flex:1; text-align:center; padding:10px 4px; border-radius:12px; border:1.5px solid var(--d-gold);"><div style="width:20px;height:20px;border-radius:50%;background:var(--d-gold); margin:0 auto 6px auto;"></div><span style="font-size:10.5px; font-weight:800;">Doré</span></div>
+          <div class="hair" style="flex:1; text-align:center; padding:10px 4px; border-radius:12px; border:1px solid;"><div style="width:20px;height:20px;border-radius:50%;background:#4E8C6B; margin:0 auto 6px auto;"></div><span class="muted" style="font-size:10.5px; font-weight:700;">Émeraude</span></div>
+          <div class="hair" style="flex:1; text-align:center; padding:10px 4px; border-radius:12px; border:1px solid;"><div style="width:20px;height:20px;border-radius:50%;background:#4A6FB5; margin:0 auto 6px auto;"></div><span class="muted" style="font-size:10.5px; font-weight:700;">Saphir</span></div>
+        </div>
+      </div>
+
+      <div class="row card"><div class="icb badge"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--d-gold-deep)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></div><div style="flex:1;"><h4>Langue</h4></div><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="faint" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div>
+      <div class="row card"><div class="icb badge"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--d-gold-deep)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2 6h6l-5 4 2 7-5-4-5 4 2-7-5-4h6z"/></svg></div><div style="flex:1;"><h4>Taille du texte arabe</h4></div><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="faint" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div>
+      <div class="row card"><div class="icb badge"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--d-gold-deep)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></div><div style="flex:1;"><h4>Notifications</h4></div><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="faint" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div>
+      <div class="row card"><div class="icb badge"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--d-gold-deep)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg></div><div style="flex:1;"><h4>Localisation</h4></div><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="faint" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div>
+      <div class="row card" style="margin-bottom:16px;"><div class="icb badge"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--d-gold-deep)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div><div style="flex:1;"><h4>Méthode de calcul</h4></div><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="faint" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div>
+    </div>
+    <div class="navbar">
+      <div class="navitem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg><span>Accueil</span></div>
+      <div class="navitem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v18H6.5A2.5 2.5 0 0 0 4 22.5v-18z"/></svg><span>Coran</span></div>
+      <div class="navitem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" stroke-dasharray="2 3.4"/></svg><span>Tasbih</span></div>
+      <div class="navitem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6M8 8h8l2 12H6z"/></svg><span>Invocations</span></div>
+      <div class="navitem"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V6a2 2 0 0 1 2-2h8l6 6v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/></svg><span>Bilan</span></div>
+      <div class="navitem active"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/></svg><span>Réglages</span></div>
+    </div>
+  </div>
+</div>
+</div>
+</body>
+</html>
