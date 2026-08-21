@@ -62,7 +62,7 @@
             <TextView android:id="@+id/tv_time_fajr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="--:--" android:textColor="#23291F" android:textSize="13sp" android:textStyle="bold" />
             <TextView android:id="@+id/tv_iqama_fajr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="" android:textColor="#9A9484" android:textSize="8.5sp" />
             <ImageView android:id="@+id/iv_bell_fajr" android:layout_width="14dp" android:layout_height="14dp" android:layout_marginTop="4dp" android:src="@drawable/ic_widget_bell" />
-            <FrameLayout android:id="@+id/dot_fajr" android:layout_width="5dp" android:layout_height="5dp" android:layout_marginTop="4dp" android:background="@drawable/widget_dot" android:visibility="gone" />
+            <ImageView android:id="@+id/dot_fajr" android:layout_width="5dp" android:layout_height="5dp" android:layout_marginTop="4dp" android:src="@drawable/widget_dot" android:visibility="gone" />
         </LinearLayout>
 
         <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:gravity="center">
@@ -70,7 +70,7 @@
             <TextView android:id="@+id/tv_time_dhuhr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="--:--" android:textColor="#23291F" android:textSize="13sp" android:textStyle="bold" />
             <TextView android:id="@+id/tv_iqama_dhuhr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="" android:textColor="#9A9484" android:textSize="8.5sp" />
             <ImageView android:id="@+id/iv_bell_dhuhr" android:layout_width="14dp" android:layout_height="14dp" android:layout_marginTop="4dp" android:src="@drawable/ic_widget_bell" />
-            <FrameLayout android:id="@+id/dot_dhuhr" android:layout_width="5dp" android:layout_height="5dp" android:layout_marginTop="4dp" android:background="@drawable/widget_dot" android:visibility="gone" />
+            <ImageView android:id="@+id/dot_dhuhr" android:layout_width="5dp" android:layout_height="5dp" android:layout_marginTop="4dp" android:src="@drawable/widget_dot" android:visibility="gone" />
         </LinearLayout>
 
         <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:gravity="center">
@@ -78,7 +78,7 @@
             <TextView android:id="@+id/tv_time_asr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="--:--" android:textColor="#23291F" android:textSize="13sp" android:textStyle="bold" />
             <TextView android:id="@+id/tv_iqama_asr" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="" android:textColor="#9A9484" android:textSize="8.5sp" />
             <ImageView android:id="@+id/iv_bell_asr" android:layout_width="14dp" android:layout_height="14dp" android:layout_marginTop="4dp" android:src="@drawable/ic_widget_bell" />
-            <FrameLayout android:id="@+id/dot_asr" android:layout_width="5dp" android:layout_height="5dp" android:layout_marginTop="4dp" android:background="@drawable/widget_dot" android:visibility="gone" />
+            <ImageView android:id="@+id/dot_asr" android:layout_width="5dp" android:layout_height="5dp" android:layout_marginTop="4dp" android:src="@drawable/widget_dot" android:visibility="gone" />
         </LinearLayout>
 
         <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:gravity="center">
@@ -86,7 +86,7 @@
             <TextView android:id="@+id/tv_time_maghrib" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="--:--" android:textColor="#23291F" android:textSize="13sp" android:textStyle="bold" />
             <TextView android:id="@+id/tv_iqama_maghrib" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="" android:textColor="#9A9484" android:textSize="8.5sp" />
             <ImageView android:id="@+id/iv_bell_maghrib" android:layout_width="14dp" android:layout_height="14dp" android:layout_marginTop="4dp" android:src="@drawable/ic_widget_bell" />
-            <FrameLayout android:id="@+id/dot_maghrib" android:layout_width="5dp" android:layout_height="5dp" android:layout_marginTop="4dp" android:background="@drawable/widget_dot" android:visibility="gone" />
+            <ImageView android:id="@+id/dot_maghrib" android:layout_width="5dp" android:layout_height="5dp" android:layout_marginTop="4dp" android:src="@drawable/widget_dot" android:visibility="gone" />
         </LinearLayout>
 
         <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:gravity="center">
@@ -94,7 +94,7 @@
             <TextView android:id="@+id/tv_time_isha" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="--:--" android:textColor="#23291F" android:textSize="13sp" android:textStyle="bold" />
             <TextView android:id="@+id/tv_iqama_isha" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="" android:textColor="#9A9484" android:textSize="8.5sp" />
             <ImageView android:id="@+id/iv_bell_isha" android:layout_width="14dp" android:layout_height="14dp" android:layout_marginTop="4dp" android:src="@drawable/ic_widget_bell" />
-            <FrameLayout android:id="@+id/dot_isha" android:layout_width="5dp" android:layout_height="5dp" android:layout_marginTop="4dp" android:background="@drawable/widget_dot" android:visibility="gone" />
+            <ImageView android:id="@+id/dot_isha" android:layout_width="5dp" android:layout_height="5dp" android:layout_marginTop="4dp" android:src="@drawable/widget_dot" android:visibility="gone" />
         </LinearLayout>
 
     </LinearLayout>

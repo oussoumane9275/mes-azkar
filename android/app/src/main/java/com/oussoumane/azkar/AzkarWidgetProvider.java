@@ -6,9 +6,12 @@ import android.appwidget.AppWidgetProvider;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.Configuration;
 import android.graphics.Color;
 import android.widget.RemoteViews;
 import java.util.Calendar;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.TimeZone;
 
 // Home-screen widget: today's 6 prayer times, mirroring the prayer-times
@@ -30,13 +33,45 @@ public class AzkarWidgetProvider extends AppWidgetProvider {
         }
     }
 
-    private static final int COLOR_GOLD = Color.parseColor("#D9A94A");
-    private static final int COLOR_INK = Color.parseColor("#23291F");
-    private static final int COLOR_LABEL = Color.parseColor("#6B6558");
+    // The accent's light-mode and dark-mode "active" tone — mirrors
+    // ACCENT_PALETTES' light.goldLight/dark.goldLight in src/App.jsx exactly,
+    // so the widget's highlight color always matches whatever accent the
+    // user picked in Réglages > Thème.
+    private static final Map<String, int[]> ACCENT_COLORS = new HashMap<>();
+    static {
+        ACCENT_COLORS.put("gold", new int[] { Color.parseColor("#B3813A"), Color.parseColor("#F0CE8C") });
+        ACCENT_COLORS.put("rouge", new int[] { Color.parseColor("#C65B52"), Color.parseColor("#F2B0A6") });
+        ACCENT_COLORS.put("rose", new int[] { Color.parseColor("#C15B94"), Color.parseColor("#F2B0D6") });
+        ACCENT_COLORS.put("bleu", new int[] { Color.parseColor("#4A72B5"), Color.parseColor("#A8C2ED") });
+        ACCENT_COLORS.put("vert", new int[] { Color.parseColor("#4E8C6B"), Color.parseColor("#A8DABE") });
+        ACCENT_COLORS.put("lavande", new int[] { Color.parseColor("#8B7BC4"), Color.parseColor("#CFC3ED") });
+        ACCENT_COLORS.put("turquoise", new int[] { Color.parseColor("#3FA8A0"), Color.parseColor("#92DED8") });
+        ACCENT_COLORS.put("corail", new int[] { Color.parseColor("#D97B5C"), Color.parseColor("#F4C2AE") });
+        ACCENT_COLORS.put("miel", new int[] { Color.parseColor("#D9A93F"), Color.parseColor("#F5DB9E") });
+        ACCENT_COLORS.put("taupe", new int[] { Color.parseColor("#8A8377"), Color.parseColor("#CFC9BC") });
+    }
+
+    private static final int COLOR_INK_LIGHT = Color.parseColor("#2B2314");
+    private static final int COLOR_LABEL_LIGHT = Color.parseColor("#AFA48A");
+    private static final int COLOR_INK_DARK = Color.parseColor("#F4EDDD");
+    private static final int COLOR_LABEL_DARK = Color.parseColor("#75695A");
+
+    private static boolean isDarkMode(Context context) {
+        int mode = context.getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
+        return mode == Configuration.UI_MODE_NIGHT_YES;
+    }
 
     private static RemoteViews buildViews(Context context) {
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.widget_azkar);
         SharedPreferences prefs = context.getSharedPreferences(WidgetBridgePlugin.PREFS_NAME, Context.MODE_PRIVATE);
+
+        boolean dark = isDarkMode(context);
+        String accentKey = prefs.getString("accentTheme", "gold");
+        int[] accentTones = ACCENT_COLORS.containsKey(accentKey) ? ACCENT_COLORS.get(accentKey) : ACCENT_COLORS.get("gold");
+        int colorGold = dark ? accentTones[1] : accentTones[0];
+        int colorInk = dark ? COLOR_INK_DARK : COLOR_INK_LIGHT;
+        int colorLabel = dark ? COLOR_LABEL_DARK : COLOR_LABEL_LIGHT;
+        views.setInt(R.id.widget_root, "setBackgroundResource", dark ? R.drawable.widget_background_dark : R.drawable.widget_background);
 
         double lat = prefs.getFloat("lat", 48.8375f);
         double lng = prefs.getFloat("lng", 2.2429f);
@@ -53,6 +88,9 @@ public class AzkarWidgetProvider extends AppWidgetProvider {
         double ishaOffset = prefs.getFloat("ishaOffset", 0f);
 
         views.setTextViewText(R.id.tv_location, locationLabel.toUpperCase());
+        views.setTextColor(R.id.tv_location, colorLabel);
+        views.setTextColor(R.id.tv_clock, colorInk);
+        views.setTextColor(R.id.tv_next, colorGold);
 
         Calendar now = Calendar.getInstance();
         double[] decimals = computeTimes(
@@ -89,22 +127,24 @@ public class AzkarWidgetProvider extends AppWidgetProvider {
         int iqamaAsr = prefs.getInt("iqamaAsr", -1);
         int iqamaMaghrib = prefs.getInt("iqamaMaghrib", -1);
         int iqamaIsha = prefs.getInt("iqamaIsha", -1);
-        views.setTextViewText(R.id.tv_iqama_fajr, iqamaFajr >= 0 ? "+" + iqamaFajr : "");
-        views.setTextViewText(R.id.tv_iqama_dhuhr, iqamaDhuhr >= 0 ? "+" + iqamaDhuhr : "");
-        views.setTextViewText(R.id.tv_iqama_asr, iqamaAsr >= 0 ? "+" + iqamaAsr : "");
-        views.setTextViewText(R.id.tv_iqama_maghrib, iqamaMaghrib >= 0 ? "+" + iqamaMaghrib : "");
-        views.setTextViewText(R.id.tv_iqama_isha, iqamaIsha >= 0 ? "+" + iqamaIsha : "");
+        int[] iqamaViewIds = { R.id.tv_iqama_fajr, R.id.tv_iqama_dhuhr, R.id.tv_iqama_asr, R.id.tv_iqama_maghrib, R.id.tv_iqama_isha };
+        int[] iqamaValues = { iqamaFajr, iqamaDhuhr, iqamaAsr, iqamaMaghrib, iqamaIsha };
+        for (int i = 0; i < iqamaViewIds.length; i++) {
+            views.setTextViewText(iqamaViewIds[i], iqamaValues[i] >= 0 ? "+" + iqamaValues[i] : "");
+            views.setTextColor(iqamaViewIds[i], colorLabel);
+        }
 
         boolean notifyFajr = prefs.getBoolean("notifyFajr", true);
         boolean notifyDhuhr = prefs.getBoolean("notifyDhuhr", true);
         boolean notifyAsr = prefs.getBoolean("notifyAsr", true);
         boolean notifyMaghrib = prefs.getBoolean("notifyMaghrib", true);
         boolean notifyIsha = prefs.getBoolean("notifyIsha", true);
-        views.setImageViewResource(R.id.iv_bell_fajr, notifyFajr ? R.drawable.ic_widget_bell : R.drawable.ic_widget_bell_muted);
-        views.setImageViewResource(R.id.iv_bell_dhuhr, notifyDhuhr ? R.drawable.ic_widget_bell : R.drawable.ic_widget_bell_muted);
-        views.setImageViewResource(R.id.iv_bell_asr, notifyAsr ? R.drawable.ic_widget_bell : R.drawable.ic_widget_bell_muted);
-        views.setImageViewResource(R.id.iv_bell_maghrib, notifyMaghrib ? R.drawable.ic_widget_bell : R.drawable.ic_widget_bell_muted);
-        views.setImageViewResource(R.id.iv_bell_isha, notifyIsha ? R.drawable.ic_widget_bell : R.drawable.ic_widget_bell_muted);
+        int[] bellViewIds = { R.id.iv_bell_fajr, R.id.iv_bell_dhuhr, R.id.iv_bell_asr, R.id.iv_bell_maghrib, R.id.iv_bell_isha };
+        boolean[] notifyValues = { notifyFajr, notifyDhuhr, notifyAsr, notifyMaghrib, notifyIsha };
+        for (int i = 0; i < bellViewIds.length; i++) {
+            views.setImageViewResource(bellViewIds[i], notifyValues[i] ? R.drawable.ic_widget_bell : R.drawable.ic_widget_bell_muted);
+            if (notifyValues[i]) views.setInt(bellViewIds[i], "setColorFilter", colorGold);
+        }
 
         double nowDecimal = now.get(Calendar.HOUR_OF_DAY) + now.get(Calendar.MINUTE) / 60.0 + now.get(Calendar.SECOND) / 3600.0;
         int nextIndex = -1;
@@ -126,7 +166,7 @@ public class AzkarWidgetProvider extends AppWidgetProvider {
         // Sunrise line: highlighted like any other "active" slot when it's the next event
         boolean sunriseActive = nextIndex == 1;
         views.setTextViewText(R.id.tv_sunrise, "🌅 Chourouk " + formatHour(decimals[1]));
-        views.setTextColor(R.id.tv_sunrise, sunriseActive ? COLOR_GOLD : COLOR_LABEL);
+        views.setTextColor(R.id.tv_sunrise, sunriseActive ? colorGold : colorLabel);
 
         // Highlight the next prayer's column (label + time in gold, dot shown)
         // — indices into the 6-slot decimals array that map to the 5-column grid
@@ -136,9 +176,10 @@ public class AzkarWidgetProvider extends AppWidgetProvider {
         int[] dotViewIds = { R.id.dot_fajr, R.id.dot_dhuhr, R.id.dot_asr, R.id.dot_maghrib, R.id.dot_isha };
         for (int col = 0; col < 5; col++) {
             boolean active = gridPrayerIndex[col] == nextIndex;
-            views.setTextColor(labelViewIds[col], active ? COLOR_GOLD : COLOR_LABEL);
-            views.setTextColor(gridTimeViewIds[col], active ? COLOR_GOLD : COLOR_INK);
+            views.setTextColor(labelViewIds[col], active ? colorGold : colorLabel);
+            views.setTextColor(gridTimeViewIds[col], active ? colorGold : colorInk);
             views.setViewVisibility(dotViewIds[col], active ? android.view.View.VISIBLE : android.view.View.GONE);
+            if (active) views.setInt(dotViewIds[col], "setColorFilter", colorGold);
         }
 
         Intent launchIntent = context.getPackageManager().getLaunchIntentForPackage(context.getPackageName());

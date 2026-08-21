@@ -30,6 +30,7 @@ public class WidgetBridgePlugin extends Plugin {
         if (call.hasOption("lat")) editor.putFloat("lat", call.getDouble("lat").floatValue());
         if (call.hasOption("lng")) editor.putFloat("lng", call.getDouble("lng").floatValue());
         if (call.hasOption("locationLabel")) editor.putString("locationLabel", call.getString("locationLabel"));
+        if (call.hasOption("accentTheme")) editor.putString("accentTheme", call.getString("accentTheme"));
         if (call.hasOption("fajrAngle")) editor.putFloat("fajrAngle", call.getDouble("fajrAngle").floatValue());
         if (call.hasOption("ishaAngle")) editor.putFloat("ishaAngle", call.getDouble("ishaAngle").floatValue());
         if (call.hasOption("ishaMinutesAfterMaghrib")) {

@@ -59,15 +59,21 @@ const DARK_COLORS = {
 // light/dark base palette, so the rest of the design (parchment, ink,
 // category colors) stays untouched no matter which one is picked.
 const ACCENT_PALETTES = {
-  gold: { light: { gold: "#B8863A", goldLight: "#D9A94A" }, dark: { gold: "#D9A94A", goldLight: "#EBC978" } },
-  emerald: { light: { gold: "#2F7D5D", goldLight: "#3FA37A" }, dark: { gold: "#3FA37A", goldLight: "#5FC79A" } },
-  sapphire: { light: { gold: "#2E5FA3", goldLight: "#4A7FC4" }, dark: { gold: "#4A7FC4", goldLight: "#79A6DE" } },
-  ruby: { light: { gold: "#9B3A47", goldLight: "#BF5563" }, dark: { gold: "#BF5563", goldLight: "#DE8290" } },
+  gold: { light: { gold: "#8C6329", goldLight: "#B3813A" }, dark: { gold: "#DDB46A", goldLight: "#F0CE8C" } },
+  rouge: { light: { gold: "#A3453A", goldLight: "#C65B52" }, dark: { gold: "#E08478", goldLight: "#F2B0A6" } },
+  rose: { light: { gold: "#A34578", goldLight: "#C15B94" }, dark: { gold: "#E084B8", goldLight: "#F2B0D6" } },
+  bleu: { light: { gold: "#3A5F9A", goldLight: "#4A72B5" }, dark: { gold: "#7CA0DE", goldLight: "#A8C2ED" } },
+  vert: { light: { gold: "#3D7A55", goldLight: "#4E8C6B" }, dark: { gold: "#7BC298", goldLight: "#A8DABE" } },
+  lavande: { light: { gold: "#5E4D9E", goldLight: "#8B7BC4" }, dark: { gold: "#B0A0E0", goldLight: "#CFC3ED" } },
+  turquoise: { light: { gold: "#2A7A73", goldLight: "#3FA8A0" }, dark: { gold: "#5FC9C0", goldLight: "#92DED8" } },
+  corail: { light: { gold: "#A85536", goldLight: "#D97B5C" }, dark: { gold: "#EDA085", goldLight: "#F4C2AE" } },
+  miel: { light: { gold: "#8A6B1A", goldLight: "#D9A93F" }, dark: { gold: "#EFC96A", goldLight: "#F5DB9E" } },
+  taupe: { light: { gold: "#5C574C", goldLight: "#8A8377" }, dark: { gold: "#B0AA9C", goldLight: "#CFC9BC" } },
 };
 const ACCENT_LABELS_BY_LANG = {
-  fr: { gold: "Doré", emerald: "Émeraude", sapphire: "Saphir", ruby: "Rubis" },
-  en: { gold: "Gold", emerald: "Emerald", sapphire: "Sapphire", ruby: "Ruby" },
-  ar: { gold: "ذهبي", emerald: "زمردي", sapphire: "ياقوتي أزرق", ruby: "ياقوتي أحمر" },
+  fr: { gold: "Doré", rouge: "Rouge", rose: "Rose", bleu: "Bleu", vert: "Vert", lavande: "Lavande", turquoise: "Turquoise", corail: "Corail", miel: "Miel", taupe: "Taupe" },
+  en: { gold: "Gold", rouge: "Red", rose: "Pink", bleu: "Blue", vert: "Green", lavande: "Lavender", turquoise: "Turquoise", corail: "Coral", miel: "Honey", taupe: "Taupe" },
+  ar: { gold: "ذهبي", rouge: "أحمر", rose: "وردي", bleu: "أزرق", vert: "أخضر", lavande: "أرجواني", turquoise: "فيروزي", corail: "مرجاني", miel: "عسلي", taupe: "بني رمادي" },
 };
 function accentLabels() {
   return ACCENT_LABELS_BY_LANG[currentLanguage] || ACCENT_LABELS_BY_LANG.fr;
@@ -3375,6 +3381,7 @@ function AzkarApp() {
       lat: location.lat,
       lng: location.lng,
       locationLabel: location.label,
+      accentTheme,
       fajrAngle: calc.fajrAngle,
       ishaAngle: calc.ishaAngle,
       ishaMinutesAfterMaghrib: calc.ishaMinutesAfterMaghrib ?? undefined,
@@ -3404,6 +3411,7 @@ function AzkarApp() {
     prayerSettings.customOffsets,
     prayerSettings.iqamaOffsets,
     prayerSettings.notifyPrayers,
+    accentTheme,
   ]);
 
   const updateCategory = useCallback(
@@ -6424,7 +6432,7 @@ function SettingsScreen({
         <p className="font-ui font-semibold mt-4 mb-2" style={{ color: COLORS.inkSoft, fontSize: 11, letterSpacing: 0.3, textTransform: "uppercase" }}>
           {t("accent_color")}
         </p>
-        <div className="flex gap-2">
+        <div className="grid grid-cols-5 gap-2">
           {Object.keys(ACCENT_PALETTES).map((key) => {
             const active = accentTheme === key;
             const swatch = ACCENT_PALETTES[key][currentTheme === "dark" ? "dark" : "light"].goldLight;
@@ -6435,7 +6443,7 @@ function SettingsScreen({
                   onSetAccentTheme(key);
                   flashToast("✓");
                 }}
-                className="flex-1 flex flex-col items-center gap-1.5 active:opacity-80"
+                className="flex flex-col items-center gap-1.5 active:opacity-80"
                 style={{
                   background: active ? "rgba(231,204,133,0.12)" : inkA(0.05),
                   border: `1px solid ${active ? swatch : inkA(0.14)}`,
