@@ -9527,18 +9527,27 @@ function MushafPageView({ initialPage, persistKey, showHeader = false, onBack })
   // mark it right away — by the time someone taps it, it's usually already
   // ticked, which is exactly the confirmation it's meant to give.
   //
+  // Deliberately NOT gated on pageMarked: that flag reflects the LIFETIME
+  // "ever read this page" list, which drives the checkmark shown below —
+  // but re-reading a page you've visited on some earlier day must still
+  // count toward *today's* Bilan. Gating the timer on pageMarked meant a
+  // familiar page (already checkmarked from a previous day) would never
+  // re-trigger the timer at all, so today's count silently never moved for
+  // any page that wasn't brand new. markCurrentPageRead/markMushafPageRead
+  // already dedupe per day internally, so calling it again here is safe.
+  //
   // Resetting clears pageMarked back to false, which — same as loading a
   // fresh page — re-arms this timer. Without suppressAutoMarkRef it would
   // silently re-mark the very page someone just reset a few seconds later,
   // making the reset button look like it did nothing. The suppression only
   // lasts until the reader actually turns the page.
   useEffect(() => {
-    if (!lastWord || pageMarked) return;
+    if (!lastWord) return;
     const timer = setTimeout(() => {
       if (!suppressAutoMarkRef.current) markCurrentPageRead();
     }, 3000);
     return () => clearTimeout(timer);
-  }, [lastWord?.chapterNumber, lastWord?.verseNumber, pageMarked, markCurrentPageRead]);
+  }, [lastWord?.chapterNumber, lastWord?.verseNumber, markCurrentPageRead]);
 
   useEffect(() => {
     suppressAutoMarkRef.current = false;
@@ -9801,7 +9810,6 @@ function MushafPageView({ initialPage, persistKey, showHeader = false, onBack })
               </button>
               <button
                 onClick={handleMarkPage}
-                disabled={pageMarked}
                 className="flex items-center gap-1.5 active:opacity-70"
                 style={{
                   background: pageMarked ? `${COLORS.goldLight}29` : inkA(0.06),
