@@ -3805,7 +3805,7 @@ function AzkarApp() {
   }
 
   return (
-    <div style={{ background: COLORS.bg, minHeight: "100vh" }} className="font-ui" dir={isRTL(language) ? "rtl" : "ltr"}>
+    <div style={{ background: COLORS.bg, minHeight: "100vh", maxWidth: 560, margin: "0 auto", position: "relative" }} className="font-ui" dir={isRTL(language) ? "rtl" : "ltr"}>
       <style>{FONT_STYLE}</style>
 
       {screen === "home" && (
@@ -9514,6 +9514,17 @@ function MushafPageView({ initialPage, persistKey, showHeader = false, onBack })
       cancelled = true;
     };
   }, [pageNumber, restoredInitial, persistPage]);
+
+  // Each page's data + font are a fresh network round-trip the first time
+  // they're viewed — prefetch the next page (the direction reading actually
+  // goes) in the background so it's already cached by the time the reader
+  // turns to it, instead of making them wait on every single page.
+  useEffect(() => {
+    if (!restoredInitial) return;
+    const next = pageNumber + 1;
+    if (next > QURAN_TOTAL_PAGES) return;
+    Promise.all([fetchMushafPage(next), loadMushafPageFont(next)]).catch(() => {});
+  }, [pageNumber, restoredInitial]);
 
   // The last word on the page marks how far into the Qur'an this page took
   // the reader — that's what "marking the page as read" actually records.
