@@ -8487,17 +8487,12 @@ function reciterInitials(name) {
   const words = name.replace(/\(.*\)/g, "").trim().split(/[\s-]+/);
   return ((words[0]?.[0] || "") + (words[1]?.[0] || "")).toUpperCase();
 }
-// A stable, vivid two-tone gradient derived from the reciter's id — stands
-// in for a portrait (we don't have photo rights) while keeping each card
-// visually distinct and lively rather than a flat, uniform list.
-function reciterHue(id) {
-  let hash = 0;
-  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) % 360;
-  return hash;
-}
-function reciterGradient(id) {
-  const h = reciterHue(id);
-  return `linear-gradient(135deg, hsl(${h}, 62%, 58%), hsl(${(h + 42) % 360}, 68%, 42%))`;
+// Every reciter's avatar shares the same accent-colored gradient — stands in
+// for a portrait (we don't have photo rights) while staying consistent with
+// the rest of the app's single-accent-color design instead of a different
+// random hue per card.
+function reciterGradient() {
+  return `linear-gradient(135deg, ${COLORS.goldLight}, ${COLORS.gold})`;
 }
 
 function ReciterAvatar({ reciter, size = 52, fontSize = 16 }) {
@@ -8508,7 +8503,7 @@ function ReciterAvatar({ reciter, size = 52, fontSize = 16 }) {
         width: size,
         height: size,
         borderRadius: size * 0.32,
-        background: reciterGradient(reciter.id),
+        background: reciterGradient(),
         color: "#fff",
         fontSize,
         boxShadow: "0 3px 8px rgba(0,0,0,0.15)",
@@ -9413,6 +9408,11 @@ function MushafPageView({ initialPage, persistKey, showHeader = false, onBack })
   const pageContainerRef = useRef(null);
   const pageContentRef = useRef(null);
   const touchStartXRef = useRef(null);
+  // Suppresses the belt-and-braces auto-mark timer right after a manual
+  // "reset read pages" so it doesn't immediately re-mark the page the
+  // reader was looking at when they reset — see the timer's own effect
+  // further down for the full explanation.
+  const suppressAutoMarkRef = useRef(false);
 
   // Jump to the surah's first page whenever the caller changes it (e.g. the
   // reader switches surah while the Mushaf tab is active).
@@ -9526,11 +9526,23 @@ function MushafPageView({ initialPage, persistKey, showHeader = false, onBack })
   // unnoticed), but the button still gives an instant, deliberate way to
   // mark it right away — by the time someone taps it, it's usually already
   // ticked, which is exactly the confirmation it's meant to give.
+  //
+  // Resetting clears pageMarked back to false, which — same as loading a
+  // fresh page — re-arms this timer. Without suppressAutoMarkRef it would
+  // silently re-mark the very page someone just reset a few seconds later,
+  // making the reset button look like it did nothing. The suppression only
+  // lasts until the reader actually turns the page.
   useEffect(() => {
     if (!lastWord || pageMarked) return;
-    const timer = setTimeout(markCurrentPageRead, 3000);
+    const timer = setTimeout(() => {
+      if (!suppressAutoMarkRef.current) markCurrentPageRead();
+    }, 3000);
     return () => clearTimeout(timer);
   }, [lastWord?.chapterNumber, lastWord?.verseNumber, pageMarked, markCurrentPageRead]);
+
+  useEffect(() => {
+    suppressAutoMarkRef.current = false;
+  }, [pageNumber]);
 
   const handleMarkPage = () => {
     tapHaptic();
@@ -9544,6 +9556,7 @@ function MushafPageView({ initialPage, persistKey, showHeader = false, onBack })
   // everything else (azkar, tasbih, personal invocations).
   const handleResetReadPages = async () => {
     tapHaptic();
+    suppressAutoMarkRef.current = true;
     try {
       await window.storage.delete(QURAN_READ_PAGES_KEY, false);
     } catch (e) {
