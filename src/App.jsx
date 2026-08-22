@@ -1961,7 +1961,21 @@ const QURAN_PAGES_DAILY_MARKED_KEY = "azkar-quran-pages-daily-marked-v1";
 // view — it must never gate the daily counter, or re-reading a page on a
 // later day would leave that day's Bilan stuck at 0. So today's count is
 // deduped separately, against only what was marked today.
-async function markMushafPageRead(pageNumber) {
+// markCurrentPageRead calls this directly AND indirectly (via markQuranAyahRead,
+// for the same page) — without dedup, both calls race on the daily-count read
+// before either write lands, double-incrementing the Bilan for one page.
+const markMushafPageReadInFlight = new Map();
+function markMushafPageRead(pageNumber) {
+  if (markMushafPageReadInFlight.has(pageNumber)) {
+    return markMushafPageReadInFlight.get(pageNumber);
+  }
+  const promise = markMushafPageReadImpl(pageNumber).finally(() => {
+    markMushafPageReadInFlight.delete(pageNumber);
+  });
+  markMushafPageReadInFlight.set(pageNumber, promise);
+  return promise;
+}
+async function markMushafPageReadImpl(pageNumber) {
   let readPages = [];
   try {
     const res = await window.storage.get(QURAN_READ_PAGES_KEY, false);
@@ -1978,20 +1992,30 @@ async function markMushafPageRead(pageNumber) {
     }
   }
   const today = todayKey();
+  let markedLog = {};
   try {
     const markedRes = await window.storage.get(QURAN_PAGES_DAILY_MARKED_KEY, false);
-    const markedLog = markedRes && markedRes.value ? JSON.parse(markedRes.value) : {};
-    const markedToday = markedLog[today] || [];
-    if (markedToday.includes(pageNumber)) return true;
-    markedLog[today] = [...markedToday, pageNumber];
+    if (markedRes && markedRes.value) markedLog = JSON.parse(markedRes.value);
+  } catch (e) {
+    // none marked yet today
+  }
+  const markedToday = markedLog[today] || [];
+  if (markedToday.includes(pageNumber)) return true;
+  markedLog[today] = [...markedToday, pageNumber];
+  try {
     await window.storage.set(QURAN_PAGES_DAILY_MARKED_KEY, JSON.stringify(markedLog), false);
   } catch (e) {
     // ignore storage failures
   }
+  let log = {};
   try {
     const res = await window.storage.get(QURAN_PAGES_DAILY_KEY, false);
-    const log = res && res.value ? JSON.parse(res.value) : {};
-    log[today] = (log[today] || 0) + 1;
+    if (res && res.value) log = JSON.parse(res.value);
+  } catch (e) {
+    // no count yet today
+  }
+  log[today] = (log[today] || 0) + 1;
+  try {
     await window.storage.set(QURAN_PAGES_DAILY_KEY, JSON.stringify(log), false);
   } catch (e) {
     // ignore storage failures
