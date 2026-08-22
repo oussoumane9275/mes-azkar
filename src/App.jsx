@@ -2052,6 +2052,20 @@ function reciterAudioUrl(reciterId, ayahNumber) {
   const r = RECITERS.find((x) => x.id === reciterId) || RECITERS[0];
   return `${QURAN_AYAH_AUDIO_ROOT}/${r.bitrate}/${r.id}/${ayahNumber}.mp3`;
 }
+
+// A handful of newer/popular reciters (incl. current Haramain imams) that
+// mp3quran.net hosts only as one continuous file per surah, not split by
+// ayah like the CDN above — so they get their own simple "listen straight
+// through" screen instead of the verse-by-verse reader, rather than being
+// mixed into RECITERS where the per-ayah reading flow would 404 on them.
+const FULL_SURAH_RECITERS = [
+  { id: "luhaidan", name: "Muhammad Al-Luhaidan", arabicName: "محمد اللحيدان", server: "https://server8.mp3quran.net/lhdan/" },
+  { id: "dosari", name: "Yasser Al-Dosari", arabicName: "ياسر الدوسري", server: "https://server11.mp3quran.net/yasser/" },
+  { id: "baleela", name: "Bandar Baleela", arabicName: "بندر بليلة", server: "https://server6.mp3quran.net/balilah/" },
+];
+function fullSurahAudioUrl(reciter, surahNumber) {
+  return `${reciter.server}${String(surahNumber).padStart(3, "0")}.mp3`;
+}
 const QURAN_TOTAL_PAGES = 604;
 // Standard Madani Mushaf (604 pages) — printed page each of the 30 Juz starts on.
 const JUZ_START_PAGES = [
@@ -2650,9 +2664,9 @@ function discGlowBackground() {
   return `radial-gradient(circle, ${COLORS.goldLight}24 0%, transparent 70%)`;
 }
 
-function BeadRing({ current, target, color, colorLight, pulse }) {
-  const size = 176;
-  const stroke = 11;
+function BeadRing({ current, target, color, colorLight, pulse, size = 176 }) {
+  const scale = size / 176;
+  const stroke = 11 * scale;
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
   const pct = Math.min(current / target, 1);
@@ -2661,7 +2675,7 @@ function BeadRing({ current, target, color, colorLight, pulse }) {
 
   return (
     <div className={`relative ${pulse ? "bead-pulse" : ""}`} style={{ width: size, height: size, position: "relative" }}>
-      <div style={{ position: "absolute", inset: -12, borderRadius: "50%", background: discGlowBackground() }} />
+      <div style={{ position: "absolute", inset: -12 * scale, borderRadius: "50%", background: discGlowBackground() }} />
       <div style={{ position: "absolute", inset: 0, borderRadius: "50%", ...discSurfaceStyle() }} />
       <svg width={size} height={size}>
         <circle cx={size / 2} cy={size / 2} r={r} stroke={COLORS.parchmentDark} strokeWidth={stroke} fill="none" />
@@ -2680,13 +2694,13 @@ function BeadRing({ current, target, color, colorLight, pulse }) {
       </svg>
       <div className="flex flex-col items-center justify-center" style={{ position: "absolute", inset: 0 }}>
         {complete ? (
-          <CheckIcon color={colorLight} />
+          <CheckIcon color={colorLight} size={46 * scale} />
         ) : (
           <>
-            <span className="font-ui font-semibold" style={{ fontSize: 34, color: COLORS.ink, lineHeight: 1 }}>
+            <span className="font-ui font-semibold" style={{ fontSize: 34 * scale, color: COLORS.ink, lineHeight: 1 }}>
               {current}
             </span>
-            <span className="font-ui" style={{ fontSize: 13, color: COLORS.inkSoft, marginTop: 2 }}>
+            <span className="font-ui" style={{ fontSize: Math.max(11, 13 * scale), color: COLORS.inkSoft, marginTop: 2 * scale }}>
               {t("label_of")} {target}
             </span>
           </>
@@ -3011,6 +3025,7 @@ function AzkarApp() {
   const [activeTopicId, setActiveTopicId] = useState(null);
   const [activeSurahNumber, setActiveSurahNumber] = useState(null);
   const [activeReciterId, setActiveReciterId] = useState(null);
+  const [activeFullReciterId, setActiveFullReciterId] = useState(null);
   const [progress, setProgress] = useState(emptyProgress());
   const [history, setHistory] = useState({});
   const [arabicSize, setArabicSize] = useState(DEFAULT_ARABIC_SIZE);
@@ -3857,6 +3872,10 @@ function AzkarApp() {
             setActiveReciterId(id);
             setScreen("quran-reciter-space");
           }}
+          onOpenFullSurahReciter={(id) => {
+            setActiveFullReciterId(id);
+            setScreen("quran-full-reciter");
+          }}
         />
       )}
 
@@ -3869,6 +3888,10 @@ function AzkarApp() {
             setScreen("quran-reader");
           }}
         />
+      )}
+
+      {screen === "quran-full-reciter" && (
+        <FullSurahReciterScreen reciterId={activeFullReciterId} onBack={() => setScreen("quran-reciters")} />
       )}
 
       {screen === "quran-reader" && (
@@ -5212,40 +5235,43 @@ function CategoryScreen({
         </button>
       </div>
 
-      {/* Scrollable: progress dots + the azkar text — this is the part that
-          can grow or shrink with content length. The counter below it never
-          moves, no matter how long the Arabic/translation text is. */}
-      <div className="flex-1 overflow-y-auto" style={{ minHeight: 0 }}>
-        <div style={{ marginBottom: 20, paddingLeft: 4, paddingRight: 4 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-            <span className="font-ui font-semibold" style={{ color: category.accent, fontSize: 11.5 }}>
-              {trField(item, "title")}
-            </span>
-            <span className="font-ui font-semibold" style={{ color: COLORS.inkSoft, fontSize: 11.5 }}>
-              {index + 1} {t("label_of")} {items.length}
-            </span>
-          </div>
-          <div style={{ display: "flex", gap: 4 }}>
-            {items.map((it, i) => {
-              const done = (catProgress.counts[it.id] || 0) >= it.count;
-              const isCurrent = i === index;
-              return (
-                <button
-                  key={it.id}
-                  onClick={() => onGoto(i)}
-                  style={{
-                    height: 5,
-                    flex: 1,
-                    borderRadius: 4,
-                    background: isCurrent ? category.accent : done ? category.accentLight : COLORS.parchmentDark,
-                    transition: "background 0.2s ease",
-                  }}
-                />
-              );
-            })}
-          </div>
+      {/* Progress bar — fixed alongside the header, same reasoning as the
+          counter below: it shouldn't shift position depending on how long
+          the current item's text happens to be. */}
+      <div style={{ marginBottom: 14, paddingLeft: 4, paddingRight: 4, flexShrink: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+          <span className="font-ui font-semibold" style={{ color: category.accent, fontSize: 11.5 }}>
+            {trField(item, "title")}
+          </span>
+          <span className="font-ui font-semibold" style={{ color: COLORS.inkSoft, fontSize: 11.5 }}>
+            {index + 1} {t("label_of")} {items.length}
+          </span>
         </div>
+        <div style={{ display: "flex", gap: 4 }}>
+          {items.map((it, i) => {
+            const done = (catProgress.counts[it.id] || 0) >= it.count;
+            const isCurrent = i === index;
+            return (
+              <button
+                key={it.id}
+                onClick={() => onGoto(i)}
+                style={{
+                  height: 5,
+                  flex: 1,
+                  borderRadius: 4,
+                  background: isCurrent ? category.accent : done ? category.accentLight : COLORS.parchmentDark,
+                  transition: "background 0.2s ease",
+                }}
+              />
+            );
+          })}
+        </div>
+      </div>
 
+      {/* Scrollable: just the azkar text — this is the part that can grow
+          or shrink with content length. The header/progress bar above and
+          the counter below never move, no matter how long the text is. */}
+      <div className="flex-1 overflow-y-auto" style={{ minHeight: 0 }}>
         <div
           style={{
             background: COLORS.parchment,
@@ -5301,6 +5327,7 @@ function CategoryScreen({
             color={category.accent}
             colorLight={category.accentLight}
             pulse={pulseId === item.id}
+            size={106}
           />
           <span className="font-ui" style={{ color: COLORS.ink, fontSize: 12, opacity: 0.75 }}>
             {complete ? t("label_completed") : t("tap_to_count")}
@@ -6037,17 +6064,24 @@ function TasbihScreen({ arabicSize }) {
     })();
   }, []);
 
+  // The counter shown here is today's tally, not a lifetime total (that's
+  // what the Bilan's running streak is for) — so a stored count only loads
+  // if it was saved today; anything from a previous day starts back at 0,
+  // both on a fresh app launch and when the app is resumed after midnight
+  // without ever having been closed.
   useEffect(() => {
     (async () => {
       try {
         const res = await window.storage.get(TASBIH_KEY, false);
         if (res && res.value) {
           const parsed = JSON.parse(res.value);
-          // Migrate the old single-counter shape ({count, phraseId}) transparently
-          if (parsed.counts) {
-            setCounts(parsed.counts);
-          } else if (typeof parsed.count === "number" && parsed.phraseId) {
-            setCounts({ [parsed.phraseId]: parsed.count });
+          if (parsed.date === todayKey()) {
+            // Migrate the old single-counter shape ({count, phraseId}) transparently
+            if (parsed.counts) {
+              setCounts(parsed.counts);
+            } else if (typeof parsed.count === "number" && parsed.phraseId) {
+              setCounts({ [parsed.phraseId]: parsed.count });
+            }
           }
           setPhraseId(parsed.phraseId || TASBIH_PHRASES[0].id);
         }
@@ -6059,9 +6093,26 @@ function TasbihScreen({ arabicSize }) {
     })();
   }, []);
 
+  useEffect(() => {
+    const sub = CapacitorApp.addListener("appStateChange", ({ isActive }) => {
+      if (!isActive) return;
+      window.storage
+        .get(TASBIH_KEY, false)
+        .then((res) => {
+          if (!res || !res.value) return;
+          const parsed = JSON.parse(res.value);
+          if (parsed.date !== todayKey()) setCounts({});
+        })
+        .catch(() => {});
+    });
+    return () => {
+      sub.then((h) => h.remove()).catch(() => {});
+    };
+  }, []);
+
   const persistTasbih = useCallback(async (nextCounts, nextPhraseId) => {
     try {
-      await window.storage.set(TASBIH_KEY, JSON.stringify({ counts: nextCounts, phraseId: nextPhraseId }), false);
+      await window.storage.set(TASBIH_KEY, JSON.stringify({ date: todayKey(), counts: nextCounts, phraseId: nextPhraseId }), false);
     } catch (e) {
       // ignore storage failures — counter still works in-memory
     }
@@ -8468,7 +8519,7 @@ function ReciterAvatar({ reciter, size = 52, fontSize = 16 }) {
   );
 }
 
-function ReciterCard({ r, active, onOpen }) {
+function ReciterCard({ r, active, onOpen, previewSrc }) {
   return (
     <button
       onClick={() => onOpen(r.id)}
@@ -8495,17 +8546,17 @@ function ReciterCard({ r, active, onOpen }) {
       </p>
       <div className="flex items-center justify-between mt-3" style={{ width: "100%" }}>
         <span className="font-ui font-semibold" style={{ color: COLORS.goldLight, fontSize: 10.5 }}>
-          Écouter le Coran
+          {t("listen_to_quran")}
         </span>
         <div onClick={(e) => e.stopPropagation()}>
-          <AudioPlayButton src={reciterAudioUrl(r.id, 1)} color={COLORS.inkSoft} size={26} />
+          <AudioPlayButton src={previewSrc} color={COLORS.inkSoft} size={26} />
         </div>
       </div>
     </button>
   );
 }
 
-function RecitersScreen({ onBack, onOpenReciterSpace }) {
+function RecitersScreen({ onBack, onOpenReciterSpace, onOpenFullSurahReciter }) {
   const [currentReciter, setCurrentReciter] = useState(RECITERS[0].id);
 
   useEffect(() => {
@@ -8548,16 +8599,34 @@ function RecitersScreen({ onBack, onOpenReciterSpace }) {
       </p>
       <div className="grid grid-cols-2 gap-2.5 mb-6">
         {popular.map((r) => (
-          <ReciterCard key={r.id} r={r} active={r.id === currentReciter} onOpen={openSpace} />
+          <ReciterCard key={r.id} r={r} active={r.id === currentReciter} onOpen={openSpace} previewSrc={reciterAudioUrl(r.id, 1)} />
         ))}
       </div>
 
       <p className="font-ui font-semibold mb-2.5" style={{ color: COLORS.inkSoft, fontSize: 11.5, letterSpacing: 0.4, textTransform: "uppercase" }}>
         {t("other_reciters")}
       </p>
-      <div className="grid grid-cols-2 gap-2.5">
+      <div className="grid grid-cols-2 gap-2.5 mb-6">
         {others.map((r) => (
-          <ReciterCard key={r.id} r={r} active={r.id === currentReciter} onOpen={openSpace} />
+          <ReciterCard key={r.id} r={r} active={r.id === currentReciter} onOpen={openSpace} previewSrc={reciterAudioUrl(r.id, 1)} />
+        ))}
+      </div>
+
+      <p className="font-ui font-semibold mb-1.5" style={{ color: COLORS.inkSoft, fontSize: 11.5, letterSpacing: 0.4, textTransform: "uppercase" }}>
+        {t("full_surah_reciters")}
+      </p>
+      <p className="font-ui mb-2.5" style={{ color: COLORS.inkFaint, fontSize: 10.5, lineHeight: 1.4 }}>
+        {t("full_surah_reciters_hint")}
+      </p>
+      <div className="grid grid-cols-2 gap-2.5">
+        {FULL_SURAH_RECITERS.map((r) => (
+          <ReciterCard
+            key={r.id}
+            r={r}
+            active={false}
+            onOpen={() => onOpenFullSurahReciter(r.id)}
+            previewSrc={fullSurahAudioUrl(r, 1)}
+          />
         ))}
       </div>
     </div>
@@ -8627,6 +8696,126 @@ function ReciterSpaceScreen({ reciterId, onBack, onSelectSurah }) {
             </span>
           </button>
         ))}
+      </div>
+    </div>
+  );
+}
+
+// Simple continuous playback for reciters only available as one file per
+// surah (see FULL_SURAH_RECITERS) — no verse-by-verse sync since there's no
+// per-ayah audio to sync against, just a straight-through listen that
+// auto-advances surah to surah like a playlist, same as the ayah-by-ayah
+// reader does verse to verse.
+function FullSurahReciterScreen({ reciterId, onBack }) {
+  const reciter = FULL_SURAH_RECITERS.find((r) => r.id === reciterId) || FULL_SURAH_RECITERS[0];
+  const [playingSurah, setPlayingSurah] = useState(null);
+  const audioRef = useRef(null);
+
+  const stopPlayback = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+      notifyAudioStop();
+    }
+    setPlayingSurah(null);
+    clearMediaSession();
+  }, []);
+
+  const playSurah = (surahNumber, { continuing = false } = {}) => {
+    if (audioRef.current) audioRef.current.pause();
+    const audio = new Audio(fullSurahAudioUrl(reciter, surahNumber));
+    audioRef.current = audio;
+    setPlayingSurah(surahNumber);
+    if (!continuing) notifyAudioStart();
+    const surahMeta = QURAN_SURAHS.find((s) => s.number === surahNumber);
+    const next = surahNumber < 114 ? surahNumber + 1 : null;
+    updateMediaSession({
+      title: surahMeta ? surahMeta.translit : "",
+      artist: reciter.name,
+      playing: true,
+      onPause: stopPlayback,
+      onNext: next ? () => playSurah(next, { continuing: true }) : null,
+    });
+    audio.addEventListener("ended", () => {
+      if (next) playSurah(next, { continuing: true });
+      else stopPlayback();
+    });
+    audio.play().catch(() => {
+      notifyAudioStop();
+      clearMediaSession();
+      setPlayingSurah(null);
+    });
+  };
+
+  useEffect(() => stopPlayback, [stopPlayback]);
+
+  const toggleSurah = (surahNumber) => {
+    if (playingSurah === surahNumber) stopPlayback();
+    else playSurah(surahNumber);
+  };
+
+  return (
+    <div className="min-h-screen flex flex-col px-5 pt-6 pb-10 fade-in">
+      <div className="flex items-center justify-between mb-5">
+        <button onClick={onBack} className="p-2.5 -ml-2 active:opacity-60" aria-label={t("back")}>
+          <BackIcon color={COLORS.ink} />
+        </button>
+        <p className="font-display" style={{ color: COLORS.ink, fontSize: 15 }}>
+          {t("reciter_space")}
+        </p>
+        <div className="w-9" />
+      </div>
+
+      <div className="flex flex-col items-center mb-6">
+        <ReciterAvatar reciter={reciter} size={68} fontSize={22} />
+        <p className="font-display font-semibold mt-3" style={{ color: COLORS.ink, fontSize: 17 }}>
+          {reciter.name}
+        </p>
+        <p dir="rtl" className="font-arabic mt-1" style={{ color: COLORS.inkSoft, fontSize: 14 }}>
+          {reciter.arabicName}
+        </p>
+        <p className="font-ui mt-2" style={{ color: COLORS.inkSoft, fontSize: 11 }}>
+          {t("114_surahs_choose")}
+        </p>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        {QURAN_SURAHS.map((s) => {
+          const playing = playingSurah === s.number;
+          return (
+            <button
+              key={s.number}
+              onClick={() => toggleSurah(s.number)}
+              className="flex items-center justify-between active:scale-[0.98] transition"
+              style={{
+                background: playing ? `${COLORS.goldLight}1F` : COLORS.parchment,
+                borderRadius: 14,
+                padding: "11px 14px",
+                border: `1px solid ${playing ? COLORS.goldLight : COLORS.parchmentDark}`,
+              }}
+            >
+              <div className="flex items-center gap-3">
+                <div
+                  className="flex items-center justify-center flex-shrink-0"
+                  style={{ width: 30, height: 30, borderRadius: 10, background: playing ? `${COLORS.goldLight}29` : "rgba(0,0,0,0.04)" }}
+                >
+                  {playing ? <PauseIcon color={COLORS.gold} size={13} /> : <PlayIcon color={COLORS.inkSoft} size={13} />}
+                </div>
+                <div className="text-left">
+                  <p className="font-display font-semibold" style={{ color: playing ? COLORS.gold : COLORS.ink, fontSize: 14 }}>
+                    {s.translit}
+                  </p>
+                  <p className="font-ui" style={{ color: COLORS.inkSoft, fontSize: 11, marginTop: 1 }}>
+                    {playing ? t("now_playing") : `${trField(s, "meaning")} · ${s.ayahCount} ${t("verses_label")}`}
+                  </p>
+                </div>
+              </div>
+              <span dir="rtl" className="font-arabic flex-shrink-0" style={{ color: COLORS.ink, fontSize: 15 }}>
+                {s.arabic}
+              </span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
