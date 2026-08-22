@@ -8678,15 +8678,20 @@ function QuranReaderScreen({ surahNumber, arabicSize, onBack, onChangeSurah, onO
     clearMediaSession();
   }, []);
 
-  const playAyah = (ayah) => {
+  // `continuing` is true when this call is the auto-advance to the next ayah
+  // in the same listening session — it must NOT toggle the background-audio
+  // service off and back on, or the brief gap between disable() and the next
+  // enable() can let Android suspend the WebView (especially with the screen
+  // locked) right as the next ayah is about to start, cutting playback after
+  // a single verse instead of continuing through the surah.
+  const playAyah = (ayah, { continuing = false } = {}) => {
     if (playerAudioRef.current) {
       playerAudioRef.current.pause();
-      notifyAudioStop();
     }
     const audio = new Audio(reciterAudioUrl(reciter, ayah.number));
     playerAudioRef.current = audio;
     setPlayingAyah(ayah.n);
-    notifyAudioStart();
+    if (!continuing) notifyAudioStart();
     const list = ayahsRef.current || [];
     const idx = list.findIndex((x) => x.n === ayah.n);
     const nextForSession = list[idx + 1];
@@ -8695,7 +8700,7 @@ function QuranReaderScreen({ surahNumber, arabicSize, onBack, onChangeSurah, onO
       artist: currentReciterMeta.name,
       playing: true,
       onPause: stopPlayback,
-      onNext: nextForSession ? () => playAyah(nextForSession) : null,
+      onNext: nextForSession ? () => playAyah(nextForSession, { continuing: true }) : null,
     });
     markQuranAyahRead(surahNumber, ayah.n).then(setProgress);
     const node = ayahNodesRef.current.get(ayah.n);
@@ -8705,14 +8710,14 @@ function QuranReaderScreen({ surahNumber, arabicSize, onBack, onChangeSurah, onO
       const idx = list.findIndex((x) => x.n === ayah.n);
       const next = list[idx + 1];
       if (next) {
-        notifyAudioStop();
-        playAyah(next);
+        playAyah(next, { continuing: true });
       } else {
         stopPlayback();
       }
     });
     audio.play().catch(() => {
       notifyAudioStop();
+      clearMediaSession();
       setPlayingAyah(null);
     });
   };
@@ -9343,6 +9348,31 @@ function MushafPageView({ initialPage, persistKey, showHeader = false, onBack })
     markCurrentPageRead();
   };
 
+  // Clears the whole "read pages" trail — both the lifetime list (which
+  // pages you've ever marked, driving the checkmark) and the daily counts
+  // the Bilan reads from — so a misclick or a deliberate restart doesn't
+  // require digging into Réglages > Données, which would also wipe
+  // everything else (azkar, tasbih, personal invocations).
+  const handleResetReadPages = async () => {
+    tapHaptic();
+    try {
+      await window.storage.delete(QURAN_READ_PAGES_KEY, false);
+    } catch (e) {
+      // nothing to delete
+    }
+    try {
+      await window.storage.delete(QURAN_PAGES_DAILY_KEY, false);
+    } catch (e) {
+      // nothing to delete
+    }
+    try {
+      await window.storage.delete(QURAN_PAGES_DAILY_MARKED_KEY, false);
+    } catch (e) {
+      // nothing to delete
+    }
+    setPageMarked(false);
+  };
+
   const isBookmarked = bookmarks.some((b) => b.page === pageNumber);
   const handleToggleBookmark = () => {
     tapHaptic();
@@ -9583,6 +9613,14 @@ function MushafPageView({ initialPage, persistKey, showHeader = false, onBack })
                 <span className="font-ui font-semibold" style={{ color: pageMarked ? COLORS.goldLight : COLORS.inkSoft, fontSize: 11 }}>
                   {pageMarked ? t("page_read") : t("mark_page_read")}
                 </span>
+              </button>
+              <button
+                onClick={handleResetReadPages}
+                className="p-1.5 active:opacity-70"
+                style={{ borderRadius: 99, background: inkA(0.06) }}
+                aria-label={t("reset_read_pages")}
+              >
+                <ResetIcon color={COLORS.inkSoft} />
               </button>
             </div>
           </div>
