@@ -13,6 +13,8 @@ import {
   requestNotificationPermission,
   syncPrayerNotifications,
   cancelPrayerNotifications,
+  syncAzkarNotifications,
+  cancelAzkarNotifications,
   ADHAN_VOICES,
   DEFAULT_MUEZZIN,
 } from "./notifications.js";
@@ -267,6 +269,7 @@ const CUSTOM_ANGLE_MAX = 20;
 // directly from the bell under each prayer time on the home screen, not just
 // a single global on/off switch.
 const NOTIFY_PRAYERS_DEFAULT = { fajr: true, dhuhr: true, asr: true, maghrib: true, isha: true };
+const NOTIFY_AZKAR_DEFAULT = { matin: true, soir: true, coucher: true };
 const MUEZZIN_BY_PRAYER_DEFAULT = {
   fajr: DEFAULT_MUEZZIN,
   dhuhr: DEFAULT_MUEZZIN,
@@ -1063,6 +1066,22 @@ const CATEGORIES = [
     items: SOMMEIL_ITEMS,
   },
 ];
+
+// Nawafil — voluntary prayers, tracked separately from the CATEGORIES/history/
+// streak system since they're a distinct daily checklist, not tap-counted
+// dhikr, and shouldn't silently change what "a complete day" means for the
+// existing azkar streak.
+const NAWAFIL_ITEMS = [
+  { id: "sunnah_fajr", label: "Sunnah avant le Fajr (2 rakât)", label_en: "Sunnah before Fajr (2 rak'ahs)", label_ar: "ركعتا سنة الفجر" },
+  { id: "sunnah_dhuhr_before", label: "Sunnah avant le Dohr (4 rakât)", label_en: "Sunnah before Dhuhr (4 rak'ahs)", label_ar: "أربع ركعات قبل الظهر" },
+  { id: "sunnah_dhuhr_after", label: "Sunnah après le Dohr (2 rakât)", label_en: "Sunnah after Dhuhr (2 rak'ahs)", label_ar: "ركعتان بعد الظهر" },
+  { id: "sunnah_maghrib", label: "Sunnah après le Maghrib (2 rakât)", label_en: "Sunnah after Maghrib (2 rak'ahs)", label_ar: "ركعتان بعد المغرب" },
+  { id: "sunnah_isha", label: "Sunnah après l'Isha (2 rakât)", label_en: "Sunnah after Isha (2 rak'ahs)", label_ar: "ركعتان بعد العشاء" },
+  { id: "witr", label: "Witr", label_en: "Witr", label_ar: "الوتر" },
+  { id: "duha", label: "Doha (prière de la matinée)", label_en: "Duha (forenoon prayer)", label_ar: "صلاة الضحى" },
+  { id: "qiyam", label: "Qiyam al-layl (prière de nuit)", label_en: "Qiyam al-layl (night prayer)", label_ar: "قيام الليل" },
+];
+const NAWAFIL_DAILY_KEY = "azkar-nawafil-daily-v1";
 
 /* ------------------------------------------------------------------ */
 /* Invocations library — situational duas, organized into logical groups */
@@ -3062,6 +3081,7 @@ function AzkarApp() {
     location: null,
     notificationsEnabled: false,
     notifyPrayers: NOTIFY_PRAYERS_DEFAULT,
+    notifyAzkar: NOTIFY_AZKAR_DEFAULT,
     muezzinByPrayer: MUEZZIN_BY_PRAYER_DEFAULT,
   });
   const [locationStatus, setLocationStatus] = useState("idle"); // 'idle' | 'loading' | 'error'
@@ -3228,6 +3248,7 @@ function AzkarApp() {
         location: null,
         notificationsEnabled: false,
         notifyPrayers: NOTIFY_PRAYERS_DEFAULT,
+        notifyAzkar: NOTIFY_AZKAR_DEFAULT,
         muezzinByPrayer: MUEZZIN_BY_PRAYER_DEFAULT,
       };
       try {
@@ -3277,6 +3298,9 @@ function AzkarApp() {
           }
           if (parsed.notifyPrayers && typeof parsed.notifyPrayers === "object") {
             loadedPrayerSettings.notifyPrayers = { ...NOTIFY_PRAYERS_DEFAULT, ...parsed.notifyPrayers };
+          }
+          if (parsed.notifyAzkar && typeof parsed.notifyAzkar === "object") {
+            loadedPrayerSettings.notifyAzkar = { ...NOTIFY_AZKAR_DEFAULT, ...parsed.notifyAzkar };
           }
           if (parsed.muezzinByPrayer && typeof parsed.muezzinByPrayer === "object") {
             loadedPrayerSettings.muezzinByPrayer = { ...MUEZZIN_BY_PRAYER_DEFAULT, ...parsed.muezzinByPrayer };
@@ -3409,6 +3433,7 @@ function AzkarApp() {
           location: ps.location,
           notificationsEnabled: ps.notificationsEnabled,
           notifyPrayers: ps.notifyPrayers,
+          notifyAzkar: ps.notifyAzkar,
           muezzinByPrayer: ps.muezzinByPrayer,
         }),
         false
@@ -3587,6 +3612,34 @@ function AzkarApp() {
     [prayerSettings.notificationsEnabled, persistSettings, arabicSize]
   );
 
+  // Single master switch for all three azkar reminder windows (matin/soir/
+  // coucher) — reuses the same OS notification permission already requested
+  // for prayer reminders, so it only needs to ask if that's somehow not been
+  // granted yet at all.
+  const handleToggleAzkarNotifications = useCallback(
+    async (enabled) => {
+      if (enabled && !prayerSettings.notificationsEnabled) {
+        setNotificationStatus("requesting");
+        const granted = await requestNotificationPermission().catch(() => false);
+        if (!granted) {
+          setNotificationStatus("denied");
+          return;
+        }
+        setNotificationStatus("idle");
+      }
+      if (!enabled) {
+        await cancelAzkarNotifications().catch(() => {});
+      }
+      setPrayerSettings((prev) => {
+        const nextNotify = { matin: enabled, soir: enabled, coucher: enabled };
+        const next = { ...prev, notificationsEnabled: prev.notificationsEnabled || enabled, notifyAzkar: nextNotify };
+        persistSettings(arabicSize, next);
+        return next;
+      });
+    },
+    [prayerSettings.notificationsEnabled, persistSettings, arabicSize]
+  );
+
   const handleSetMuezzin = useCallback(
     (prayerKey, voiceId) => {
       setPrayerSettings((prev) => {
@@ -3621,6 +3674,34 @@ function AzkarApp() {
     prayerSettings.notificationsEnabled,
     prayerSettings.notifyPrayers,
     prayerSettings.muezzinByPrayer,
+    prayerSettings.method,
+    prayerSettings.customFajrAngle,
+    prayerSettings.customIshaAngle,
+    prayerSettings.customOffsets,
+    prayerSettings.location,
+    language,
+  ]);
+
+  // Same idea for azkar reminders — anchored to prayer times (matin: Fajr,
+  // soir: Asr, coucher: Isha), so they need re-syncing on the same triggers.
+  useEffect(() => {
+    if (!loaded) return;
+    if (!prayerSettings.notificationsEnabled) return;
+    (async () => {
+      const granted = await isNotificationPermissionGranted().catch(() => false);
+      if (!granted) return;
+      const location = prayerSettings.location || DEFAULT_LOCATION;
+      const calc = resolveCalcConfig(prayerSettings);
+      syncAzkarNotifications(
+        (date) => computePrayerTimesDecimal(date, location, calc),
+        prayerSettings.notifyAzkar,
+        language
+      ).catch(() => {});
+    })();
+  }, [
+    loaded,
+    prayerSettings.notificationsEnabled,
+    prayerSettings.notifyAzkar,
     prayerSettings.method,
     prayerSettings.customFajrAngle,
     prayerSettings.customIshaAngle,
@@ -3820,6 +3901,7 @@ function AzkarApp() {
           onOpenCalendar={() => setScreen("calendar")}
           onOpenMushaf={() => setScreen("quran-mushaf")}
           onOpenRamadan={() => setScreen("ramadan")}
+          onOpenNawafil={() => setScreen("nawafil")}
           onToggleTheme={() => handleSetThemePreference(currentTheme === "dark" ? "light" : "dark")}
           location={prayerSettings.location || DEFAULT_LOCATION}
           prayerSettings={prayerSettings}
@@ -3842,6 +3924,8 @@ function AzkarApp() {
           arabicSize={arabicSize}
         />
       )}
+
+      {screen === "nawafil" && <NawafilScreen onBack={() => setScreen("home")} />}
 
       {screen === "invocations" && (
         <InvocationsLibraryScreen
@@ -3960,6 +4044,7 @@ function AzkarApp() {
           onResetLocation={handleResetLocation}
           locationStatus={locationStatus}
           onToggleNotifications={handleToggleNotifications}
+          onToggleAzkarNotifications={handleToggleAzkarNotifications}
           notificationStatus={notificationStatus}
           themePreference={themePreference}
           onSetThemePreference={handleSetThemePreference}
@@ -4051,6 +4136,17 @@ const TOUR_SLIDES = [
     body_ar: "اضبط كل صلاة دقيقة بدقيقة لتطابق الأوقات الحقيقية، اضبط الإقامة وصوت المؤذن، وفعّل تذكيرًا لكل صلاة بلمسة على الجرس. يمكنك حتى إضافة أداة على شاشتك الرئيسية.",
   },
   {
+    screen: "home",
+    accent: "gold",
+    icon: "🔔",
+    title: "Des rappels au bon moment",
+    title_en: "Reminders at the right time",
+    title_ar: "تذكيرات في الوقت المناسب",
+    body: "Reçois une notification à l'heure des azkar du matin, du soir et du coucher — à activer dans Réglages > Notifications.",
+    body_en: "Get a notification when it's time for morning, evening and bedtime azkar — turn it on in Settings > Notifications.",
+    body_ar: "استقبل إشعارًا عند حلول وقت أذكار الصباح والمساء والنوم — فعّله من الإعدادات > الإشعارات.",
+  },
+  {
     screen: "quran-list",
     accent: "indigo",
     icon: "📖",
@@ -4093,6 +4189,17 @@ const TOUR_SLIDES = [
     body: "Une invocation authentique pour chaque moment de la vie, classée par thème, plus un espace pour garder les tiennes.",
     body_en: "An authentic invocation for every moment of life, organized by topic, plus a space to keep your own.",
     body_ar: "دعاء صحيح لكل لحظة من لحظات الحياة، مصنّف حسب الموضوع، بالإضافة إلى مساحة لحفظ أدعيتك الخاصة.",
+  },
+  {
+    screen: "nawafil",
+    accent: "clay",
+    icon: "🙏",
+    title: "Nawafil",
+    title_en: "Nawafil",
+    title_ar: "النوافل",
+    body: "Coche chaque jour tes prières surérogatoires — sunnah rawatib, witr, doha, qiyam al-layl — depuis la carte Nawafil de l'accueil.",
+    body_en: "Check off your voluntary prayers each day — sunnah rawatib, witr, duha, qiyam al-layl — from the Nawafil card on the home screen.",
+    body_ar: "اضبط كل يوم صلواتك النافلة — السنن الرواتب، الوتر، الضحى، قيام الليل — من بطاقة النوافل في الصفحة الرئيسية.",
   },
   {
     screen: "dashboard",
@@ -4279,7 +4386,7 @@ function OnboardingOverlay({ onNavigate, onEnableNotifications, onDismiss }) {
 /* ------------------------------------------------------------------ */
 /* Home screen                                                         */
 /* ------------------------------------------------------------------ */
-function HomeScreen({ progress, catCompletion, onOpen, onOpenApresPicker, streak, onOpenHistory, onOpenQibla, onOpenCalendar, onOpenMushaf, onOpenRamadan, onToggleTheme, location, prayerSettings, onToggleNotifyPrayer, onReplayOnboarding, languagePref, onSetLanguage }) {
+function HomeScreen({ progress, catCompletion, onOpen, onOpenApresPicker, streak, onOpenHistory, onOpenQibla, onOpenCalendar, onOpenMushaf, onOpenRamadan, onOpenNawafil, onToggleTheme, location, prayerSettings, onToggleNotifyPrayer, onReplayOnboarding, languagePref, onSetLanguage }) {
   const { times, nextKey, minutesRemaining } = usePrayerTimes(location, prayerSettings);
   const today = new Date();
   const hijriLabel = getHijriLabel(today);
@@ -4438,7 +4545,7 @@ function HomeScreen({ progress, catCompletion, onOpen, onOpenApresPicker, streak
       </button>
 
       <button
-        onClick={onOpenRamadan}
+        onClick={onOpenNawafil}
         className="flex items-center gap-3 active:scale-[0.98] transition mt-2.5"
         style={{
           width: "100%",
@@ -4451,12 +4558,12 @@ function HomeScreen({ progress, catCompletion, onOpen, onOpenApresPicker, streak
       >
         <div
           className="flex items-center justify-center flex-shrink-0"
-          style={{ width: 38, height: 38, borderRadius: 12, background: "rgba(139,124,177,0.16)" }}
+          style={{ width: 38, height: 38, borderRadius: 12, background: `${COLORS.clay}24` }}
         >
-          <CategoryIcon type="moon" color={COLORS.violetLight} size={20} />
+          <CategoryIcon type="hands" color={COLORS.clay} size={20} />
         </div>
         <p className="font-display font-semibold" style={{ color: COLORS.ink, fontSize: 14 }}>
-          {t("ramadan_mode")}
+          {t("nawafil_title")}
         </p>
       </button>
 
@@ -5154,6 +5261,101 @@ function MiniRing({ pct, color, done, size = 34 }) {
 /* Category screen                                                     */
 /* ------------------------------------------------------------------ */
 /* ------------------------------------------------------------------ */
+/* Nawafil — daily checklist of voluntary prayers                      */
+/* ------------------------------------------------------------------ */
+function NawafilScreen({ onBack }) {
+  const [log, setLog] = useState({});
+  const [loaded, setLoaded] = useState(false);
+  const today = todayKey();
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await window.storage.get(NAWAFIL_DAILY_KEY, false);
+        if (res && res.value) setLog(JSON.parse(res.value));
+      } catch (e) {
+        // none logged yet
+      }
+      setLoaded(true);
+    })();
+  }, []);
+
+  const todayFlags = log[today] || {};
+  const doneCount = NAWAFIL_ITEMS.filter((item) => todayFlags[item.id]).length;
+
+  const toggle = (id) => {
+    const nextFlags = { ...todayFlags, [id]: !todayFlags[id] };
+    const next = { ...log, [today]: nextFlags };
+    setLog(next);
+    window.storage.set(NAWAFIL_DAILY_KEY, JSON.stringify(next), false).catch(() => {});
+  };
+
+  if (!loaded) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <span className="font-ui" style={{ color: COLORS.ink, opacity: 0.7 }}>
+          {t("loading")}
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen flex flex-col px-5 pt-6 pb-10 fade-in">
+      <div className="flex items-center justify-between mb-2">
+        <button onClick={onBack} className="p-2.5 -ml-2 active:opacity-60" aria-label={t("back")}>
+          <BackIcon color={COLORS.ink} />
+        </button>
+        <p className="font-display" style={{ color: COLORS.ink, fontSize: 15 }}>
+          {t("nawafil_title")}
+        </p>
+        <div className="w-9" />
+      </div>
+      <p className="font-ui text-center mb-5" style={{ color: COLORS.inkSoft, fontSize: 12 }}>
+        {doneCount}/{NAWAFIL_ITEMS.length} {t("nawafil_done_today")}
+      </p>
+
+      <div className="flex flex-col gap-2">
+        {NAWAFIL_ITEMS.map((item) => {
+          const done = !!todayFlags[item.id];
+          return (
+            <button
+              key={item.id}
+              onClick={() => toggle(item.id)}
+              className="flex items-center gap-3 active:scale-[0.98] transition"
+              style={{
+                width: "100%",
+                background: COLORS.parchment,
+                borderRadius: 16,
+                padding: "12px 14px",
+                border: `1px solid ${done ? COLORS.clay : COLORS.parchmentDark}`,
+                textAlign: "left",
+              }}
+            >
+              <div
+                className="flex items-center justify-center flex-shrink-0"
+                style={{
+                  width: 26,
+                  height: 26,
+                  borderRadius: 99,
+                  background: done ? COLORS.clay : "transparent",
+                  border: `1.5px solid ${done ? COLORS.clay : inkA(0.25)}`,
+                }}
+              >
+                {done && <CheckIcon color="#FFFFFF" size={14} />}
+              </div>
+              <p className="font-display font-semibold" style={{ color: COLORS.ink, fontSize: 14, flex: 1 }}>
+                {localLabel(item)}
+              </p>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /* Après la prière — prayer picker (level 2)                           */
 /* ------------------------------------------------------------------ */
 function ApresPickerScreen({ prayerCompletion, onBack, onSelectPrayer }) {
@@ -5557,6 +5759,7 @@ function HistoryScreen({ history, streak, onBack }) {
 function DashboardScreen({ history, streak }) {
   const [tasbihLog, setTasbihLog] = useState({});
   const [quranLog, setQuranLog] = useState({});
+  const [nawafilLog, setNawafilLog] = useState({});
   const [loaded, setLoaded] = useState(false);
   const [dayOffset, setDayOffset] = useState(0); // 0 = today, negative = past days
 
@@ -5574,6 +5777,12 @@ function DashboardScreen({ history, streak }) {
       } catch (e) {
         // no Quran reading logged yet
       }
+      try {
+        const res = await window.storage.get(NAWAFIL_DAILY_KEY, false);
+        if (res && res.value) setNawafilLog(JSON.parse(res.value));
+      } catch (e) {
+        // no nawafil logged yet
+      }
       setLoaded(true);
     })();
   }, []);
@@ -5586,9 +5795,11 @@ function DashboardScreen({ history, streak }) {
   const flagsToday = history[viewedKey] || {};
   const tasbihToday = tasbihLog[viewedKey] || 0;
   const pagesToday = quranLog[viewedKey] || 0;
+  const nawafilFlagsToday = nawafilLog[viewedKey] || {};
+  const nawafilToday = NAWAFIL_ITEMS.filter((item) => nawafilFlagsToday[item.id]).length;
   const azkarDone = CATEGORIES.filter((cat) => flagsToday[cat.id]).length;
-  const activityCount = azkarDone + (tasbihToday > 0 ? 1 : 0) + (pagesToday > 0 ? 1 : 0);
-  const maxActivity = CATEGORIES.length + 2;
+  const activityCount = azkarDone + (tasbihToday > 0 ? 1 : 0) + (pagesToday > 0 ? 1 : 0) + (nawafilToday > 0 ? 1 : 0);
+  const maxActivity = CATEGORIES.length + 3;
 
   const message = !isToday
     ? activityCount === 0
@@ -5733,6 +5944,31 @@ function DashboardScreen({ history, streak }) {
                 : currentLanguage === "ar"
                 ? `التقدم في القرآن${isToday ? "، اليوم" : ""}`
                 : `Progression dans le Coran${isToday ? ", aujourd'hui" : ""}`}
+            </p>
+          </div>
+        </div>
+
+        <div
+          className="flex items-center gap-3"
+          style={{ background: COLORS.parchment, borderRadius: 16, padding: "10px 14px", border: `1px solid ${COLORS.parchmentDark}` }}
+        >
+          <div className="flex items-center justify-center flex-shrink-0" style={{ width: 38, height: 38, borderRadius: 12, background: `${COLORS.clay}24` }}>
+            <CategoryIcon type="hands" color={COLORS.clay} size={20} />
+          </div>
+          <div>
+            <p className="font-display font-semibold" style={{ color: COLORS.ink, fontSize: 14 }}>
+              {currentLanguage === "en"
+                ? `${nawafilToday}/${NAWAFIL_ITEMS.length} nawafil prayed`
+                : currentLanguage === "ar"
+                ? `${nawafilToday}/${NAWAFIL_ITEMS.length} نافلة أُدِّيت`
+                : `${nawafilToday}/${NAWAFIL_ITEMS.length} nawafil accomplis`}
+            </p>
+            <p className="font-ui" style={{ color: COLORS.inkSoft, fontSize: 11 }}>
+              {currentLanguage === "en"
+                ? `Voluntary prayers${isToday ? ", today" : ""}`
+                : currentLanguage === "ar"
+                ? `الصلوات النافلة${isToday ? "، اليوم" : ""}`
+                : `Prières surérogatoires${isToday ? ", aujourd'hui" : ""}`}
             </p>
           </div>
         </div>
@@ -6606,6 +6842,7 @@ function SettingsScreen({
   onResetLocation,
   locationStatus,
   onToggleNotifications,
+  onToggleAzkarNotifications,
   notificationStatus,
   themePreference,
   onSetThemePreference,
@@ -6963,6 +7200,76 @@ function SettingsScreen({
             />
           </div>
         </button>
+
+        <button
+          onClick={() =>
+            onToggleAzkarNotifications(
+              !(prayerSettings.notifyAzkar && Object.values(prayerSettings.notifyAzkar).some(Boolean))
+            )
+          }
+          disabled={notificationStatus === "requesting"}
+          className="w-full flex items-center justify-between active:opacity-80 mt-2.5"
+          style={{
+            background:
+              prayerSettings.notifyAzkar && Object.values(prayerSettings.notifyAzkar).some(Boolean)
+                ? `${COLORS.goldLight}29`
+                : inkA(0.05),
+            border: `1px solid ${
+              prayerSettings.notifyAzkar && Object.values(prayerSettings.notifyAzkar).some(Boolean)
+                ? COLORS.goldLight
+                : inkA(0.14)
+            }`,
+            borderRadius: 12,
+            padding: "12px 14px",
+          }}
+        >
+          <div className="text-left">
+            <p
+              className="font-ui font-semibold"
+              style={{
+                color:
+                  prayerSettings.notifyAzkar && Object.values(prayerSettings.notifyAzkar).some(Boolean)
+                    ? COLORS.goldLight
+                    : COLORS.ink,
+                fontSize: 13.5,
+              }}
+            >
+              {t("azkar_reminders_label")}
+            </p>
+            <p className="font-ui" style={{ color: COLORS.inkSoft, fontSize: 11, marginTop: 2 }}>
+              {t("azkar_reminders_hint")}
+            </p>
+          </div>
+          <div
+            style={{
+              width: 42,
+              height: 24,
+              borderRadius: 99,
+              background:
+                prayerSettings.notifyAzkar && Object.values(prayerSettings.notifyAzkar).some(Boolean)
+                  ? COLORS.goldLight
+                  : inkA(0.2),
+              position: "relative",
+              flexShrink: 0,
+              transition: "background 0.15s ease",
+            }}
+          >
+            <div
+              style={{
+                position: "absolute",
+                top: 2,
+                left:
+                  prayerSettings.notifyAzkar && Object.values(prayerSettings.notifyAzkar).some(Boolean) ? 20 : 2,
+                width: 20,
+                height: 20,
+                borderRadius: 99,
+                background: "#fff",
+                transition: "left 0.15s ease",
+              }}
+            />
+          </div>
+        </button>
+
         {notificationStatus === "denied" && (
           <p className="font-ui text-center mt-2.5" style={{ color: COLORS.clay, fontSize: 11 }}>
             {t("notif_denied_hint")}

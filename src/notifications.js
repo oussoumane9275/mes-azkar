@@ -126,3 +126,94 @@ export async function syncPrayerNotifications(computeTimesForDate, enabledPrayer
     await LocalNotifications.schedule({ notifications });
   }
 }
+
+// Azkar reminders — anchored to the prayer that starts each azkar window
+// (matin: from Fajr, soir: from Asr, coucher: from Isha) rather than a fixed
+// clock time, since prayer times shift through the year. Uses a separate id
+// range (2000+) so it can be cancelled/rescheduled independently of prayer
+// reminders above.
+const AZKAR_ID_BASE = 2000;
+const AZKAR_REMINDERS = [
+  {
+    key: "matin",
+    anchor: "fajr",
+    title: { fr: "Azkar du matin", en: "Morning azkar", ar: "أذكار الصباح" },
+    body: {
+      fr: "C'est l'heure des azkar du matin.",
+      en: "It's time for your morning azkar.",
+      ar: "حان الآن وقت أذكار الصباح.",
+    },
+  },
+  {
+    key: "soir",
+    anchor: "asr",
+    title: { fr: "Azkar du soir", en: "Evening azkar", ar: "أذكار المساء" },
+    body: {
+      fr: "C'est l'heure des azkar du soir.",
+      en: "It's time for your evening azkar.",
+      ar: "حان الآن وقت أذكار المساء.",
+    },
+  },
+  {
+    key: "coucher",
+    anchor: "isha",
+    title: { fr: "Azkar du coucher", en: "Bedtime azkar", ar: "أذكار النوم" },
+    body: {
+      fr: "C'est l'heure des azkar avant de dormir.",
+      en: "It's time for your bedtime azkar.",
+      ar: "حان الآن وقت أذكار النوم.",
+    },
+  },
+];
+const ALL_AZKAR_NOTIFICATION_IDS = DAY_OFFSETS.flatMap((dayOffset) =>
+  AZKAR_REMINDERS.map((_, i) => AZKAR_ID_BASE + dayOffset * 10 + i + 1)
+);
+
+let azkarChannelReady = false;
+async function ensureAzkarChannel() {
+  if (azkarChannelReady) return;
+  await LocalNotifications.createChannel({
+    id: "azkar_channel",
+    name: "Rappels Azkar",
+    importance: 4,
+    visibility: 1,
+  }).catch(() => {});
+  azkarChannelReady = true;
+}
+
+export async function cancelAzkarNotifications() {
+  await LocalNotifications.cancel({ notifications: ALL_AZKAR_NOTIFICATION_IDS.map((id) => ({ id })) });
+}
+
+// (Re)schedules the next week's azkar reminders, one per day per window,
+// skipping any anchor time that's already passed and any window switched off
+// individually via enabledAzkar (e.g. { matin: true, soir: false, coucher: true }).
+export async function syncAzkarNotifications(computeTimesForDate, enabledAzkar, lang = "fr") {
+  await ensureAzkarChannel();
+  await cancelAzkarNotifications();
+  const now = new Date();
+  const notifications = [];
+
+  DAY_OFFSETS.forEach((dayOffset) => {
+    const day = new Date(now);
+    day.setDate(day.getDate() + dayOffset);
+    const decimals = computeTimesForDate(day);
+
+    AZKAR_REMINDERS.forEach((r, i) => {
+      if (enabledAzkar && enabledAzkar[r.key] === false) return;
+      const at = decimalHourToDate(day, decimals[r.anchor]);
+      if (at <= now) return;
+      notifications.push({
+        id: AZKAR_ID_BASE + dayOffset * 10 + i + 1,
+        title: r.title[lang] || r.title.fr,
+        body: r.body[lang] || r.body.fr,
+        schedule: { at },
+        channelId: "azkar_channel",
+      });
+    });
+  });
+
+  if (notifications.length) {
+    await LocalNotifications.schedule({ notifications });
+  }
+}
