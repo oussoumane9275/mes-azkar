@@ -2100,6 +2100,206 @@ function CategoryIcon({ type, color, size = 26 }) {
   );
 }
 
+// One consistent line-icon per invocation topic — replaces the old emoji
+// (which rendered in whatever colorful style the OS font shipped, clashing
+// with the rest of the app's single-color stroke icons) with the same
+// minimal 24x24 stroke language used everywhere else, tinted with the
+// current accent color like every other icon in the app.
+function InvocationIcon({ type, color, size = 20 }) {
+  const c = { width: size, height: size, viewBox: "0 0 24 24", fill: "none" };
+  const s = { stroke: color, strokeWidth: 1.6, strokeLinecap: "round", strokeLinejoin: "round" };
+  switch (type) {
+    case "sommeil":
+      return <CategoryIcon type="bed" color={color} size={size} />;
+    case "ramadan":
+      return <CategoryIcon type="moon" color={color} size={size} />;
+    case "priere":
+    case "hajj":
+      return <CategoryIcon type="hands" color={color} size={size} />;
+    case "ablutions":
+      return (
+        <svg {...c}>
+          <path d="M12 2.5C12 2.5 6.5 10 6.5 14.5a5.5 5.5 0 0 0 11 0C17.5 10 12 2.5 12 2.5Z" {...s} />
+        </svg>
+      );
+    case "maison":
+      return (
+        <svg {...c}>
+          <path d="M3 11 12 3l9 8" {...s} />
+          <path d="M5 10v10h14V10" {...s} />
+        </svg>
+      );
+    case "habits":
+      return (
+        <svg {...c}>
+          <path d="M8 4 4 7l2.5 3L8 8.5V20h8V8.5L17.5 10 20 7l-4-3q-2 2-4 2t-4-2Z" {...s} />
+        </svg>
+      );
+    case "toilettes":
+      return (
+        <svg {...c}>
+          <path d="M6 21V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v17" {...s} />
+          <path d="M4 21h16" {...s} />
+          <circle cx="14.5" cy="12" r="0.9" fill={color} />
+        </svg>
+      );
+    case "nourriture":
+      return (
+        <svg {...c}>
+          <path d="M4 12a8 8 0 0 0 16 0" {...s} />
+          <path d="M4 12h16M12 4v5" {...s} />
+        </svg>
+      );
+    case "mosquee":
+      return (
+        <svg {...c}>
+          <path d="M4 21h16M6 21v-8a6 6 0 0 1 12 0v8" {...s} />
+          <path d="M12 13V5M9.5 6H14.5" {...s} />
+          <path d="M12 2.5 13.4 5H10.6Z" fill={color} stroke="none" />
+        </svg>
+      );
+    case "istikhara":
+      return (
+        <svg {...c}>
+          <path
+            d="M12 3 13.6 8.6 19.4 9.2 15 13 16.4 18.7 12 15.4 7.6 18.7 9 13 4.6 9.2 10.4 8.6Z"
+            {...s}
+          />
+        </svg>
+      );
+    case "louange":
+    case "repentir":
+      return (
+        <svg {...c}>
+          <path d="M6 20C6 12 7.5 8 7.5 4M18 20C18 12 16.5 8 16.5 4" {...s} />
+        </svg>
+      );
+    case "rabbana":
+    case "savoir":
+      return <BookIcon color={color} size={size} />;
+    case "tristesse":
+    case "pluie":
+      return (
+        <svg {...c}>
+          <path d="M7 16a4 4 0 0 1 .4-8 5.5 5.5 0 0 1 10.1-1.6A4.5 4.5 0 0 1 17 16H7Z" {...s} />
+          {type === "pluie" && <path d="M9 19.5 8 21.5M13 19.5 12 21.5M17 19.5 16 21.5" {...s} />}
+        </svg>
+      );
+    case "joie":
+      return <StarIcon color={color} size={size} filled={false} />;
+    case "doute":
+      return (
+        <svg {...c}>
+          <path d="M9.2 9a3 3 0 1 1 4.2 2.7c-.8.4-1.4 1-1.4 2v.5" {...s} />
+          <path d="M12 17.2h.01" {...s} />
+        </svg>
+      );
+    case "colere":
+      return (
+        <svg {...c}>
+          <path d="M4 8h5.5a2.5 2.5 0 1 0-2.5-2.5" {...s} />
+          <path d="M4 13h9.5a2.5 2.5 0 1 1-2.5 2.5" {...s} />
+          <path d="M4 18h6.5a2.5 2.5 0 1 1-2.5 2.5" {...s} />
+        </svg>
+      );
+    case "tentation":
+      return (
+        <svg {...c}>
+          <path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7Z" {...s} />
+          <path d="M8.5 8.5 16.5 16" {...s} />
+        </svg>
+      );
+    case "protection":
+      return (
+        <svg {...c}>
+          <path d="M12 3 19.5 6v5.5c0 5-3.4 8.4-7.5 9.5-4.1-1.1-7.5-4.5-7.5-9.5V6Z" {...s} />
+        </svg>
+      );
+    case "mariage":
+      return (
+        <svg {...c}>
+          <circle cx="9" cy="14" r="4" {...s} />
+          <circle cx="15" cy="14" r="4" {...s} />
+        </svg>
+      );
+    case "enfants":
+      return (
+        <svg {...c}>
+          <circle cx="12" cy="6.5" r="3" {...s} />
+          <path d="M6 21c0-4.5 2.5-7.5 6-7.5s6 3 6 7.5" {...s} />
+        </svg>
+      );
+    case "parents":
+      return (
+        <svg {...c}>
+          <circle cx="7.5" cy="6.5" r="2.6" {...s} />
+          <circle cx="16.5" cy="6.5" r="2.6" {...s} />
+          <path d="M2.5 21c0-3.8 2-6.5 5-6.5s5 2.7 5 6.5M11.5 21c0-3.8 2-6.5 5-6.5s5 2.7 5 6.5" {...s} />
+        </svg>
+      );
+    case "maladie":
+      return (
+        <svg {...c}>
+          <circle cx="12" cy="12" r="9" {...s} />
+          <path d="M12 8v8M8 12h8" {...s} />
+        </svg>
+      );
+    case "deces":
+      return (
+        <svg {...c}>
+          <path d="M12 2c-5 6-5 13 0 20 5-7 5-14 0-20Z" {...s} />
+          <path d="M12 6v14" {...s} />
+        </svg>
+      );
+    case "societe":
+      return (
+        <svg {...c}>
+          <circle cx="8" cy="8" r="2.6" {...s} />
+          <circle cx="16" cy="8" r="2.6" {...s} />
+          <path d="M3 20c0-3.5 2.2-6 5-6s5 2.5 5 6M11 20c0-3.5 2.2-6 5-6s5 2.5 5 6" {...s} />
+        </svg>
+      );
+    case "voyage":
+      return (
+        <svg {...c}>
+          <rect x="4" y="8" width="16" height="12" rx="2" {...s} />
+          <path d="M9 8V6a3 3 0 0 1 3-3v0a3 3 0 0 1 3 3v2" {...s} />
+          <path d="M4 13h16" {...s} />
+        </svg>
+      );
+    case "animaux":
+      return (
+        <svg {...c}>
+          <circle cx="7" cy="9" r="1.6" fill={color} />
+          <circle cx="12" cy="6.5" r="1.6" fill={color} />
+          <circle cx="17" cy="9" r="1.6" fill={color} />
+          <path d="M12 12c-3 0-5 2-5 4.5S9 20 12 20s5-1 5-3.5S15 12 12 12Z" {...s} />
+        </svg>
+      );
+    case "richesse":
+      return (
+        <svg {...c}>
+          <circle cx="12" cy="12" r="9" {...s} />
+          <path d="M12 7v10M9.3 9.6c0-1.1 1.2-1.6 2.7-1.6s2.7.5 2.7 1.6-1.2 1.4-2.7 1.4-2.7.3-2.7 1.4 1.2 1.6 2.7 1.6 2.7-.5 2.7-1.6" {...s} />
+        </svg>
+      );
+    case "bienfaits":
+      return (
+        <svg {...c}>
+          <rect x="4" y="9" width="16" height="11" {...s} />
+          <path d="M4 9h16M12 9v11" {...s} />
+          <path d="M12 9c-1-3.5-6-3.5-6-1s3 1 6 1c3 0 6 1.5 6-1s-5-2.5-6 1Z" {...s} />
+        </svg>
+      );
+    default:
+      return (
+        <svg {...c}>
+          <path d="M12 21c-4-3-8-6-8-11a5 5 0 0 1 8-4 5 5 0 0 1 8 4c0 5-4 8-8 11Z" {...s} />
+        </svg>
+      );
+  }
+}
+
 function BackIcon({ color }) {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
@@ -2478,7 +2678,7 @@ function BeadRing({ current, target, color, colorLight, pulse }) {
           style={{ transition: "stroke-dasharray 0.25s ease, stroke 0.25s ease" }}
         />
       </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
+      <div className="flex flex-col items-center justify-center" style={{ position: "absolute", inset: 0 }}>
         {complete ? (
           <CheckIcon color={colorLight} />
         ) : (
@@ -4083,7 +4283,7 @@ function HomeScreen({ progress, catCompletion, onOpen, onOpenApresPicker, streak
                         }}
                         className="flex items-center justify-between active:opacity-70"
                         style={{
-                          background: active ? "rgba(231,204,133,0.16)" : "transparent",
+                          background: active ? `${COLORS.goldLight}29` : "transparent",
                           borderRadius: 9,
                           padding: "8px 10px",
                           textAlign: "left",
@@ -4181,7 +4381,7 @@ function HomeScreen({ progress, catCompletion, onOpen, onOpenApresPicker, streak
       >
         <div
           className="flex items-center justify-center flex-shrink-0"
-          style={{ width: 38, height: 38, borderRadius: 12, background: "rgba(231,204,133,0.14)" }}
+          style={{ width: 38, height: 38, borderRadius: 12, background: `${COLORS.goldLight}24` }}
         >
           <QiblaIcon color={COLORS.goldLight} size={20} />
         </div>
@@ -4303,7 +4503,7 @@ function ContinueReadingHomeCard({ onOpen }) {
     >
       <div
         className="flex items-center justify-center flex-shrink-0"
-        style={{ width: 38, height: 38, borderRadius: 12, background: "rgba(231,204,133,0.14)" }}
+        style={{ width: 38, height: 38, borderRadius: 12, background: `${COLORS.goldLight}24` }}
       >
         <BookIcon color={COLORS.goldLight} size={20} />
       </div>
@@ -4447,34 +4647,43 @@ function PrayerTimesCard({ times, nextKey, minutesRemaining, locationLabel, iqam
     <div
       className="mb-6"
       style={{
-        background: inkA(0.07),
-        border: `1px solid ${inkA(0.14)}`,
-        borderRadius: 18,
-        padding: "12px 8px",
+        background: COLORS.parchment,
+        border: `1px solid ${COLORS.parchmentDark}`,
+        borderRadius: 22,
+        padding: "16px 14px 14px 14px",
       }}
     >
-      <div className="flex items-center justify-between px-1" style={{ marginBottom: 4 }}>
-        <p className="font-ui" style={{ color: COLORS.inkSoft, fontSize: 10.5, letterSpacing: 0.5, textTransform: "uppercase" }}>
+      <div className="flex items-center justify-between px-1" style={{ marginBottom: 8 }}>
+        <p className="font-ui" style={{ color: COLORS.inkFaint, fontSize: 10.5, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase" }}>
           {locationLabel}
         </p>
-        <LiveClock color={COLORS.inkSoft} />
+        <LiveClock color={COLORS.ink} />
       </div>
       {minutesRemaining != null && (
-        <p className="font-display font-semibold text-center" style={{ color: COLORS.goldLight, fontSize: 13.5, marginBottom: 8 }}>
-          {nextLabel} {t("countdown_in")} {formatCountdown(minutesRemaining)}
-        </p>
+        <div className="flex justify-center" style={{ marginBottom: 14 }}>
+          <p
+            className="font-ui font-semibold"
+            style={{ color: COLORS.gold, background: `${COLORS.goldLight}29`, fontSize: 12, padding: "6px 14px", borderRadius: 30 }}
+          >
+            {nextLabel} {t("countdown_in")} {formatCountdown(minutesRemaining)}
+          </p>
+        </div>
       )}
-      <div className="flex items-stretch justify-between px-2">
+      <div className="flex items-stretch justify-between px-1" style={{ borderTop: `1px solid ${COLORS.parchmentDark}`, paddingTop: 14, paddingBottom: 12 }}>
         {prayerTimes.map((p) => {
           const active = p.key === nextKey;
           return (
-            <div key={p.key} className="flex flex-col items-center flex-1">
+            <div
+              key={p.key}
+              className="flex flex-col items-center flex-1"
+              style={active ? { background: `${COLORS.goldLight}22`, borderRadius: 12, margin: "-4px 0", paddingTop: 4, paddingBottom: 4 } : undefined}
+            >
               <span
                 className="font-ui"
                 style={{
-                  fontSize: 11,
-                  fontWeight: active ? 700 : 500,
-                  color: active ? COLORS.goldLight : inkA(0.55),
+                  fontSize: 10.5,
+                  fontWeight: 700,
+                  color: active ? COLORS.gold : COLORS.inkFaint,
                 }}
               >
                 {p.label}
@@ -4482,16 +4691,15 @@ function PrayerTimesCard({ times, nextKey, minutesRemaining, locationLabel, iqam
               <span
                 className="font-ui mt-1"
                 style={{
-                  fontSize: 13,
-                  fontWeight: active ? 700 : 500,
-                  color: active ? COLORS.goldLight : COLORS.ink,
-                  opacity: active ? 1 : 0.85,
+                  fontSize: 14,
+                  fontWeight: active ? 800 : 700,
+                  color: active ? COLORS.gold : COLORS.ink,
                 }}
               >
                 {p.time}
               </span>
               {iqamaOffsets && iqamaOffsets[p.key] != null && (
-                <span className="font-ui" style={{ fontSize: 9.5, color: inkA(0.45), marginTop: 1 }}>
+                <span className="font-ui" style={{ fontSize: 9.5, color: COLORS.inkFaint, marginTop: 1 }}>
                   +{iqamaOffsets[p.key]}
                 </span>
               )}
@@ -4511,20 +4719,20 @@ function PrayerTimesCard({ times, nextKey, minutesRemaining, locationLabel, iqam
                   />
                 </button>
               )}
-              {active && (
-                <div style={{ width: 4, height: 4, borderRadius: 99, background: COLORS.goldLight, marginTop: 4 }} />
-              )}
             </div>
           );
         })}
       </div>
 
       {sunrise && (
-        <div className="flex items-center justify-center gap-1.5" style={{ marginTop: 10 }}>
-          <SunriseIcon color={sunrise.key === nextKey ? COLORS.goldLight : inkA(0.45)} size={13} />
+        <div
+          className="flex items-center justify-center gap-1.5"
+          style={{ borderTop: `1px solid ${COLORS.parchmentDark}`, paddingTop: 10 }}
+        >
+          <SunriseIcon color={sunrise.key === nextKey ? COLORS.gold : COLORS.inkFaint} size={13} />
           <span
             className="font-ui"
-            style={{ fontSize: 10.5, color: sunrise.key === nextKey ? COLORS.goldLight : inkA(0.55), fontWeight: sunrise.key === nextKey ? 700 : 500 }}
+            style={{ fontSize: 11, color: sunrise.key === nextKey ? COLORS.gold : COLORS.inkFaint, fontWeight: 700 }}
           >
             {sunrise.label} {sunrise.time}
           </span>
@@ -4887,7 +5095,7 @@ function MiniRing({ pct, color, done, size = 34 }) {
         />
       </svg>
       {done && (
-        <div className="absolute inset-0 flex items-center justify-center">
+        <div className="flex items-center justify-center" style={{ position: "absolute", inset: 0 }}>
           <div style={{ width: size <= 20 ? 4 : 7, height: size <= 20 ? 4 : 7, borderRadius: 99, background: color }} />
         </div>
       )}
@@ -5008,24 +5216,34 @@ function CategoryScreen({
           can grow or shrink with content length. The counter below it never
           moves, no matter how long the Arabic/translation text is. */}
       <div className="flex-1 overflow-y-auto" style={{ minHeight: 0 }}>
-        <div className="flex items-center justify-center gap-1.5 mb-6 flex-wrap px-4">
-          {items.map((it, i) => {
-            const done = (catProgress.counts[it.id] || 0) >= it.count;
-            const isCurrent = i === index;
-            return (
-              <button
-                key={it.id}
-                onClick={() => onGoto(i)}
-                style={{
-                  width: isCurrent ? 9 : 6,
-                  height: isCurrent ? 9 : 6,
-                  borderRadius: 99,
-                  background: done ? category.accent : isCurrent ? COLORS.ink : inkA(0.3),
-                  transition: "all 0.2s ease",
-                }}
-              />
-            );
-          })}
+        <div style={{ marginBottom: 20, paddingLeft: 4, paddingRight: 4 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+            <span className="font-ui font-semibold" style={{ color: category.accent, fontSize: 11.5 }}>
+              {trField(item, "title")}
+            </span>
+            <span className="font-ui font-semibold" style={{ color: COLORS.inkSoft, fontSize: 11.5 }}>
+              {index + 1} {t("label_of")} {items.length}
+            </span>
+          </div>
+          <div style={{ display: "flex", gap: 4 }}>
+            {items.map((it, i) => {
+              const done = (catProgress.counts[it.id] || 0) >= it.count;
+              const isCurrent = i === index;
+              return (
+                <button
+                  key={it.id}
+                  onClick={() => onGoto(i)}
+                  style={{
+                    height: 5,
+                    flex: 1,
+                    borderRadius: 4,
+                    background: isCurrent ? category.accent : done ? category.accentLight : COLORS.parchmentDark,
+                    transition: "background 0.2s ease",
+                  }}
+                />
+              );
+            })}
+          </div>
         </div>
 
         <div
@@ -5037,11 +5255,16 @@ function CategoryScreen({
             border: `1px solid ${COLORS.parchmentDark}`,
           }}
         >
-          <div className="flex items-center justify-center gap-2">
-            <p className="font-ui font-semibold text-center" style={{ color: category.accent, fontSize: 12, letterSpacing: 0.5, textTransform: "uppercase" }}>
-              {trField(item, "title")}
-            </p>
-            {item.audio && <AudioPlayButton key={item.id} src={item.audio} color={category.accent} />}
+          <div className="flex items-center justify-center mb-4">
+            <div
+              className="flex items-center gap-2"
+              style={{ background: `${category.accent}1F`, padding: item.audio ? "5px 14px 5px 5px" : "6px 14px", borderRadius: 30 }}
+            >
+              {item.audio && <AudioPlayButton key={item.id} src={item.audio} color={category.accent} size={24} />}
+              <span className="font-ui font-semibold" style={{ color: category.accent, fontSize: 11.5, letterSpacing: 0.5, textTransform: "uppercase" }}>
+                {trField(item, "title")}
+              </span>
+            </div>
           </div>
 
           <p
@@ -5417,7 +5640,7 @@ function DashboardScreen({ history, streak }) {
           className="flex items-center gap-3"
           style={{ background: COLORS.parchment, borderRadius: 16, padding: "10px 14px", border: `1px solid ${COLORS.parchmentDark}` }}
         >
-          <div className="flex items-center justify-center flex-shrink-0" style={{ width: 38, height: 38, borderRadius: 12, background: "rgba(231,204,133,0.14)" }}>
+          <div className="flex items-center justify-center flex-shrink-0" style={{ width: 38, height: 38, borderRadius: 12, background: `${COLORS.goldLight}24` }}>
             <TasbihIcon color={COLORS.goldLight} size={20} />
           </div>
           <div>
@@ -5467,7 +5690,7 @@ function DashboardScreen({ history, streak }) {
           className="flex items-center gap-3"
           style={{ background: COLORS.parchment, borderRadius: 16, padding: "10px 14px", border: `1px solid ${COLORS.parchmentDark}` }}
         >
-          <div className="flex items-center justify-center flex-shrink-0" style={{ width: 38, height: 38, borderRadius: 12, background: "rgba(231,204,133,0.14)" }}>
+          <div className="flex items-center justify-center flex-shrink-0" style={{ width: 38, height: 38, borderRadius: 12, background: `${COLORS.goldLight}24` }}>
             <FlameIcon color={streak > 0 ? COLORS.goldLight : inkA(0.35)} size={20} />
           </div>
           <div>
@@ -5909,10 +6132,10 @@ function TasbihScreen({ arabicSize }) {
   }
 
   return (
-    <div className="min-h-screen flex flex-col px-5 pt-6 pb-28 fade-in">
+    <div className="flex flex-col px-5 pt-6 fade-in" style={{ height: "100vh" }}>
       {showFingerTip && <FingerCountingTip onClose={() => setShowFingerTip(false)} />}
 
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-3" style={{ flexShrink: 0 }}>
         <button onClick={() => setShowFingerTip(true)} className="p-2.5 -ml-2 active:opacity-60" aria-label={t("finger_tip")}>
           <InfoIcon color={COLORS.inkSoft} size={18} />
         </button>
@@ -5921,6 +6144,7 @@ function TasbihScreen({ arabicSize }) {
         </button>
       </div>
 
+      <div className="flex-1 overflow-y-auto" style={{ minHeight: 0 }}>
       <div className="text-center mb-4">
         <div className="flex items-center justify-center gap-2">
           <span className="font-arabic" style={{ color: COLORS.goldLight, fontSize: 22, letterSpacing: 0.5 }}>
@@ -5981,9 +6205,7 @@ function TasbihScreen({ arabicSize }) {
         })}
       </div>
 
-      {/* Selected phrase card + counter, centered together like the azkar reader */}
-      <div className="flex-1 flex flex-col items-center justify-center">
-        <div
+      <div
           style={{
             width: "100%",
             background: COLORS.parchment,
@@ -6015,17 +6237,17 @@ function TasbihScreen({ arabicSize }) {
             </div>
           )}
         </div>
+      </div>
 
-        <button onClick={handleTap} className="mt-7 flex flex-col items-center gap-3" style={{ touchAction: "manipulation" }}>
+      <div className="flex flex-col items-center pt-5 pb-6" style={{ flexShrink: 0 }}>
+        <button onClick={handleTap} className="flex flex-col items-center gap-3" style={{ touchAction: "manipulation" }}>
           <TasbihButton count={count} pulse={pulse} />
           <span className="font-ui" style={{ color: COLORS.ink, fontSize: 12, opacity: 0.75 }}>
             {t("tap_to_count_unlimited")}
           </span>
         </button>
-      </div>
 
-      {/* Nav */}
-      <div className="flex items-center justify-between mt-8 px-2">
+      <div className="flex items-center justify-between w-full mt-6 px-2">
         <button
           onClick={() => index > 0 && goToIndex(index - 1)}
           disabled={index === 0}
@@ -6047,6 +6269,7 @@ function TasbihScreen({ arabicSize }) {
         >
           <ChevronIcon dir="right" color={COLORS.ink} />
         </button>
+      </div>
       </div>
     </div>
   );
@@ -6096,7 +6319,7 @@ function TasbihButton({ count, pulse }) {
           );
         })}
       </svg>
-      <div className="flex flex-col items-center justify-center">
+      <div className="flex flex-col items-center justify-center" style={{ position: "relative" }}>
         <span className="font-ui font-semibold" style={{ fontSize: 44, color: COLORS.ink, lineHeight: 1 }}>
           {count}
         </span>
@@ -6217,7 +6440,7 @@ function OfflineQuranDownloadRow() {
         onClick={state === "downloading" ? () => (cancelRef.current = true) : startDownload}
         className="mt-2.5 active:opacity-80"
         style={{
-          background: state === "downloading" ? "transparent" : "rgba(231,204,133,0.14)",
+          background: state === "downloading" ? "transparent" : `${COLORS.goldLight}24`,
           borderRadius: 10,
           padding: "6px 12px",
         }}
@@ -6433,7 +6656,7 @@ function SettingsScreen({
                 }}
                 className="flex-1 active:opacity-80"
                 style={{
-                  background: active ? "rgba(231,204,133,0.16)" : inkA(0.05),
+                  background: active ? `${COLORS.goldLight}29` : inkA(0.05),
                   border: `1px solid ${active ? COLORS.goldLight : inkA(0.14)}`,
                   borderRadius: 12,
                   padding: "10px 8px",
@@ -6463,7 +6686,7 @@ function SettingsScreen({
                 }}
                 className="flex flex-col items-center gap-1.5 active:opacity-80"
                 style={{
-                  background: active ? "rgba(231,204,133,0.12)" : inkA(0.05),
+                  background: active ? `${COLORS.goldLight}1F` : inkA(0.05),
                   border: `1px solid ${active ? swatch : inkA(0.14)}`,
                   borderRadius: 12,
                   padding: "10px 6px",
@@ -6534,7 +6757,7 @@ function SettingsScreen({
                 }}
                 className="flex items-center justify-between active:opacity-80"
                 style={{
-                  background: active ? "rgba(231,204,133,0.16)" : inkA(0.05),
+                  background: active ? `${COLORS.goldLight}29` : inkA(0.05),
                   border: `1px solid ${active ? COLORS.goldLight : inkA(0.14)}`,
                   borderRadius: 12,
                   padding: "11px 14px",
@@ -6589,7 +6812,7 @@ function SettingsScreen({
                 }}
                 className="flex items-center justify-between active:opacity-80"
                 style={{
-                  background: active ? "rgba(231,204,133,0.16)" : inkA(0.05),
+                  background: active ? `${COLORS.goldLight}29` : inkA(0.05),
                   border: `1px solid ${active ? COLORS.goldLight : inkA(0.14)}`,
                   borderRadius: 12,
                   padding: "11px 14px",
@@ -6623,7 +6846,7 @@ function SettingsScreen({
           disabled={notificationStatus === "requesting"}
           className="w-full flex items-center justify-between active:opacity-80"
           style={{
-            background: prayerSettings.notificationsEnabled ? "rgba(231,204,133,0.16)" : inkA(0.05),
+            background: prayerSettings.notificationsEnabled ? `${COLORS.goldLight}29` : inkA(0.05),
             border: `1px solid ${prayerSettings.notificationsEnabled ? COLORS.goldLight : inkA(0.14)}`,
             borderRadius: 12,
             padding: "12px 14px",
@@ -6693,7 +6916,7 @@ function SettingsScreen({
           disabled={locationStatus === "loading"}
           className="w-full active:opacity-80 mt-2.5"
           style={{
-            background: "rgba(231,204,133,0.16)",
+            background: `${COLORS.goldLight}29`,
             border: `1px solid ${COLORS.goldLight}`,
             borderRadius: 12,
             padding: "10px 14px",
@@ -6726,7 +6949,7 @@ function SettingsScreen({
         expanded={expanded === "methode"}
         onToggle={() => toggleSection("methode")}
       >
-        <div style={{ background: "rgba(231,204,133,0.1)", border: `1px solid ${inkA(0.1)}`, borderRadius: 14, padding: "12px 14px", marginBottom: 12 }}>
+        <div style={{ background: `${COLORS.goldLight}1A`, border: `1px solid ${inkA(0.1)}`, borderRadius: 14, padding: "12px 14px", marginBottom: 12 }}>
           <p className="font-ui font-semibold mb-1.5" style={{ color: COLORS.ink, fontSize: 12.5 }}>
             {t("calibrate_mosque_title")}
           </p>
@@ -6754,7 +6977,7 @@ function SettingsScreen({
                 }}
                 className="flex items-center justify-between active:opacity-80"
                 style={{
-                  background: active ? "rgba(231,204,133,0.16)" : inkA(0.05),
+                  background: active ? `${COLORS.goldLight}29` : inkA(0.05),
                   border: `1px solid ${active ? COLORS.goldLight : inkA(0.14)}`,
                   borderRadius: 12,
                   padding: "11px 14px",
@@ -7381,7 +7604,12 @@ function InvocationsLibraryScreen({ onSelectTopic, onOpenPersonal }) {
                     border: `1px solid ${COLORS.parchmentDark}`,
                   }}
                 >
-                  <span style={{ fontSize: 24 }}>{topic.emoji}</span>
+                  <div
+                    className="flex items-center justify-center"
+                    style={{ width: 36, height: 36, borderRadius: 11, background: `${COLORS.goldLight}24` }}
+                  >
+                    <InvocationIcon type={topicId} color={COLORS.gold} size={17} />
+                  </div>
                   <span
                     className="font-ui font-medium text-center"
                     style={{ color: COLORS.ink, fontSize: 11.5, lineHeight: 1.2 }}
@@ -7662,7 +7890,7 @@ function InvocationTopicScreen({ topicId, arabicSize, onBack }) {
           <BackIcon color={COLORS.ink} />
         </button>
         <div className="flex items-center gap-2">
-          <span style={{ fontSize: 18 }}>{topic.emoji}</span>
+          <InvocationIcon type={topicId} color={COLORS.gold} size={16} />
           <p className="font-display" style={{ color: COLORS.ink, fontSize: 15 }}>
             {localLabel(topic)}
           </p>
@@ -8679,7 +8907,7 @@ function QuranReaderScreen({ surahNumber, arabicSize, onBack, onChangeSurah, onO
           </span>
           <span
             className="font-ui font-semibold flex items-center gap-1"
-            style={{ color: COLORS.goldLight, fontSize: 11, padding: "5px 10px", borderRadius: 99, background: "rgba(231,204,133,0.16)" }}
+            style={{ color: COLORS.goldLight, fontSize: 11, padding: "5px 10px", borderRadius: 99, background: `${COLORS.goldLight}29` }}
           >
             {t("change_label")}
             <ChevronIcon dir="right" color={COLORS.goldLight} size={12} />
@@ -8716,7 +8944,7 @@ function QuranReaderScreen({ surahNumber, arabicSize, onBack, onChangeSurah, onO
                   else ayahNodesRef.current.delete(a.n);
                 }}
                 style={{
-                  background: isPlaying ? "rgba(231,204,133,0.14)" : COLORS.parchment,
+                  background: isPlaying ? `${COLORS.goldLight}24` : COLORS.parchment,
                   borderRadius: 16,
                   padding: "14px 16px",
                   border: `1px solid ${isPlaying ? COLORS.goldLight : isBookmark ? COLORS.gold : COLORS.parchmentDark}`,
@@ -9334,7 +9562,7 @@ function MushafPageView({ initialPage, persistKey, showHeader = false, onBack })
               <button
                 onClick={handleToggleBookmark}
                 className="p-1.5 active:opacity-70"
-                style={{ borderRadius: 99, background: isBookmarked ? "rgba(231,204,133,0.16)" : inkA(0.06) }}
+                style={{ borderRadius: 99, background: isBookmarked ? `${COLORS.goldLight}29` : inkA(0.06) }}
                 aria-label={isBookmarked ? t("remove_bookmark") : t("add_bookmark")}
               >
                 <StarIcon color={isBookmarked ? COLORS.goldLight : COLORS.inkSoft} filled={isBookmarked} size={14} />
@@ -9344,7 +9572,7 @@ function MushafPageView({ initialPage, persistKey, showHeader = false, onBack })
                 disabled={pageMarked}
                 className="flex items-center gap-1.5 active:opacity-70"
                 style={{
-                  background: pageMarked ? "rgba(231,204,133,0.16)" : inkA(0.06),
+                  background: pageMarked ? `${COLORS.goldLight}29` : inkA(0.06),
                   border: `1px solid ${pageMarked ? COLORS.goldLight : inkA(0.18)}`,
                   borderRadius: 99,
                   padding: "5px 12px",
