@@ -35,17 +35,14 @@
         <service
             android:name="ar.com.anura.plugins.backgroundmode.BackgroundModeService"
             android:foregroundServiceType="mediaPlayback"
-            tools:node="merge" />
+            tools:node="merge"
+        />
 
-        <receiver
-            android:name=".AzkarWidgetProvider"
-            android:exported="true">
+        <receiver android:name=".AzkarWidgetProvider" android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/azkar_widget_info" />
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/azkar_widget_info" />
         </receiver>
     </application>
 
