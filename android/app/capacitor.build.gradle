@@ -16,7 +16,7 @@ dependencies {
     implementation project(':capacitor-haptics')
     implementation project(':capacitor-local-notifications')
     implementation project(':capacitor-status-bar')
-
+    implementation "com.android.support:support-v4:28.0.0"
 }
 
 

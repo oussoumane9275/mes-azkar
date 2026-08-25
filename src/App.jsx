@@ -18,6 +18,7 @@ import {
   ADHAN_VOICES,
   DEFAULT_MUEZZIN,
 } from "./notifications.js";
+import { showMusicControls, setMusicControlsPlaying, hideMusicControls, subscribeMusicControls } from "./musicControls.js";
 
 /* ------------------------------------------------------------------ */
 /* Design tokens — light/dark themes                                   */
@@ -3398,6 +3399,7 @@ function AzkarApp() {
     }
     setQuranPlayerState(null);
     clearMediaSession();
+    hideMusicControls();
   }, []);
 
   const quranMediaTitle = (state) => {
@@ -3432,6 +3434,7 @@ function AzkarApp() {
         onNext: hasNext ? () => quranPlayNextRef.current() : null,
         onPrev: hasPrev ? () => quranPlayPrevRef.current() : null,
       });
+      showMusicControls({ title: quranMediaTitle(nextState), artist: reciterMeta.name, isPlaying: true, hasPrev, hasNext });
       markQuranAyahRead(surahNumber, ayahInSurah);
       audio.addEventListener("ended", () => {
         if (quranPlayerRef.current.repeatOne) {
@@ -3475,6 +3478,7 @@ function AzkarApp() {
         onNext: hasNext ? () => quranPlayNextRef.current() : null,
         onPrev: hasPrev ? () => quranPlayPrevRef.current() : null,
       });
+      showMusicControls({ title: quranMediaTitle(nextState), artist: reciterMeta.name, isPlaying: true, hasPrev, hasNext });
       audio.addEventListener("ended", () => {
         if (quranPlayerRef.current.repeatOne) {
           playQuranSurahFull(surahNumber, reciterId, { continuing: true });
@@ -3500,6 +3504,7 @@ function AzkarApp() {
     if (!audio) return;
     audio.pause();
     setQuranPlayerState((prev) => (prev ? { ...prev, isPlaying: false } : prev));
+    setMusicControlsPlaying(false);
     const state = quranPlayerStateRef.current;
     if (!state) return;
     const reciterList = state.mode === "ayah" ? RECITERS : FULL_SURAH_RECITERS;
@@ -3521,6 +3526,7 @@ function AzkarApp() {
     if (!state || !audio) return;
     audio.play().catch(() => {});
     setQuranPlayerState((prev) => (prev ? { ...prev, isPlaying: true } : prev));
+    setMusicControlsPlaying(true);
     const reciterList = state.mode === "ayah" ? RECITERS : FULL_SURAH_RECITERS;
     const reciterMeta = reciterList.find((r) => r.id === state.reciterId) || reciterList[0];
     updateMediaSession({
@@ -3620,6 +3626,23 @@ function AzkarApp() {
     quranHasNextRef.current = quranHasNext;
     quranHasPrevRef.current = quranHasPrev;
   }, [resumeQuranPlayback, pauseQuranPlayback, quranPlayNext, quranPlayPrev, quranHasNext, quranHasPrev]);
+
+  // Registered once — routes native lock-screen/notification button presses
+  // through the same always-current refs the Media Session handlers use, so
+  // this doesn't need to be re-subscribed as playback state changes.
+  useEffect(() => {
+    subscribeMusicControls({
+      onPlay: () => resumeQuranPlaybackRef.current(),
+      onPause: () => pauseQuranPlaybackRef.current(),
+      onToggle: () => {
+        const state = quranPlayerStateRef.current;
+        if (state && state.isPlaying) pauseQuranPlaybackRef.current();
+        else resumeQuranPlaybackRef.current();
+      },
+      onNext: () => quranPlayNextRef.current(),
+      onPrev: () => quranPlayPrevRef.current(),
+    });
+  }, []);
 
   const [progress, setProgress] = useState(emptyProgress());
   const [history, setHistory] = useState({});
