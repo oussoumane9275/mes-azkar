@@ -172,7 +172,7 @@ function notifyAudioStop() {
 // media session is what tells the WebView "this is real, ongoing media
 // playback, don't throttle it"). It also draws the lock-screen playback
 // controls for free.
-function updateMediaSession({ title, artist, playing, onPause, onNext }) {
+function updateMediaSession({ title, artist, playing, onPlay, onPause, onNext, onPrev }) {
   if (typeof navigator === "undefined" || !navigator.mediaSession) return;
   try {
     navigator.mediaSession.metadata = new MediaMetadata({
@@ -180,9 +180,11 @@ function updateMediaSession({ title, artist, playing, onPause, onNext }) {
       artist: artist || "Mes Azkar",
     });
     navigator.mediaSession.playbackState = playing ? "playing" : "paused";
+    navigator.mediaSession.setActionHandler("play", onPlay || null);
     navigator.mediaSession.setActionHandler("pause", onPause || null);
     navigator.mediaSession.setActionHandler("stop", onPause || null);
     navigator.mediaSession.setActionHandler("nexttrack", onNext || null);
+    navigator.mediaSession.setActionHandler("previoustrack", onPrev || null);
   } catch (e) {
     // Media Session unsupported on this WebView — non-critical
   }
@@ -195,6 +197,7 @@ function clearMediaSession() {
     navigator.mediaSession.setActionHandler("pause", null);
     navigator.mediaSession.setActionHandler("stop", null);
     navigator.mediaSession.setActionHandler("nexttrack", null);
+    navigator.mediaSession.setActionHandler("previoustrack", null);
   } catch (e) {
     // non-critical
   }
@@ -2096,6 +2099,20 @@ function reciterAudioUrl(reciterId, ayahNumber) {
   return `${QURAN_AYAH_AUDIO_ROOT}/${r.bitrate}/${r.id}/${ayahNumber}.mp3`;
 }
 
+// Maps (surah, ayah-within-surah) to the global 1-6236 ayah number the audio
+// CDN indexes by — computed from QURAN_SURAHS' ayahCount rather than from a
+// fetched surah's verse list, so the persistent player (which must survive
+// the reader screen unmounting) can queue up the next/previous verse's audio
+// without needing that screen's live-fetched data.
+function globalAyahNumber(surahNumber, ayahInSurah) {
+  let offset = 0;
+  for (const s of QURAN_SURAHS) {
+    if (s.number === surahNumber) return offset + ayahInSurah;
+    offset += s.ayahCount;
+  }
+  return null;
+}
+
 // A handful of newer/popular reciters (incl. current Haramain imams) that
 // mp3quran.net hosts only as one continuous file per surah, not split by
 // ayah like the CDN above — so they get their own simple "listen straight
@@ -2400,6 +2417,29 @@ function PauseIcon({ color, size = 16 }) {
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <rect x="6" y="4.5" width="4" height="15" rx="1" fill={color} />
       <rect x="14" y="4.5" width="4" height="15" rx="1" fill={color} />
+    </svg>
+  );
+}
+function NextIcon({ color, size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M6 5.5v13l10-6.5-10-6.5Z" fill={color} />
+      <rect x="17" y="5.5" width="2.2" height="13" rx="1" fill={color} />
+    </svg>
+  );
+}
+function RepeatIcon({ color, size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path
+        d="M6.5 8H15a4 4 0 0 1 4 4v1M17.5 16H9a4 4 0 0 1-4-4v-1"
+        stroke={color}
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path d="M9 5.5 6.5 8 9 10.5" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M15 13.5 17.5 16 15 18.5" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -3058,6 +3098,276 @@ function BottomNav({ active, onNavigate }) {
   );
 }
 
+function formatPlaybackTime(seconds) {
+  if (!isFinite(seconds) || seconds < 0) return "0:00";
+  const total = Math.floor(seconds);
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  const mm = h > 0 ? String(m).padStart(2, "0") : String(m);
+  const ss = String(s).padStart(2, "0");
+  return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
+}
+
+// Tracks currentTime/duration of whichever <audio> element the persistent
+// Quran player currently owns. Kept as its own hook (rather than folded into
+// quranPlayerState) so the frequent timeupdate ticks only re-render the small
+// progress-bar UI that uses this hook, not the whole app.
+function useQuranAudioProgress(quranPlayerRef, trackKey) {
+  const [progress, setProgress] = useState({ currentTime: 0, duration: 0 });
+  useEffect(() => {
+    const audio = quranPlayerRef.current.audio;
+    if (!audio) {
+      setProgress({ currentTime: 0, duration: 0 });
+      return;
+    }
+    const update = () => setProgress({ currentTime: audio.currentTime, duration: audio.duration || 0 });
+    update();
+    audio.addEventListener("timeupdate", update);
+    audio.addEventListener("loadedmetadata", update);
+    audio.addEventListener("durationchange", update);
+    return () => {
+      audio.removeEventListener("timeupdate", update);
+      audio.removeEventListener("loadedmetadata", update);
+      audio.removeEventListener("durationchange", update);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quranPlayerRef, trackKey]);
+  return progress;
+}
+
+// Seek bar + skip ±10s + speed toggle, shared by the ayah reader and the
+// full-surah player — both just hand it the same set of AzkarApp-level
+// playback functions, since the underlying <audio> element lives there.
+// The full playback card: title/subtitle, a big "disc" play button flanked by
+// prev/next (echoes BeadRing/TasbihButton's disc treatment elsewhere in the
+// app instead of introducing a new visual language for this one screen),
+// a seek bar with elapsed/remaining time, then a secondary row for ±10s
+// skip, playback speed, and repeat-this-track.
+function QuranPlaybackCard({
+  title,
+  subtitle,
+  quranPlayerRef,
+  player,
+  isPlaying,
+  onPlayPause,
+  onNext,
+  onPrev,
+  canPrev,
+  canNext,
+  onSkip,
+  onSeek,
+  onCycleSpeed,
+  onToggleRepeat,
+  repeatOne,
+}) {
+  const trackKey = player ? `${player.mode}-${player.surahNumber}-${player.ayahInSurah || 0}-${player.reciterId}` : "none";
+  const { currentTime, duration } = useQuranAudioProgress(quranPlayerRef, trackKey);
+  const trackRef = useRef(null);
+  const rate = quranPlayerRef.current.rate || 1;
+  const pct = duration > 0 ? Math.min(1, currentTime / duration) : 0;
+
+  const handleSeek = (clientX) => {
+    const el = trackRef.current;
+    if (!el || !duration) return;
+    const rect = el.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    onSeek(ratio * duration);
+  };
+
+  return (
+    <div
+      className="flex flex-col items-center mb-4"
+      style={{ background: COLORS.parchment, borderRadius: 20, border: `1px solid ${COLORS.parchmentDark}`, padding: "18px 18px 14px" }}
+    >
+      <p className="font-display font-semibold text-center truncate" style={{ color: COLORS.ink, fontSize: 15, maxWidth: "100%" }}>
+        {title}
+      </p>
+      <p className="font-ui text-center mt-0.5" style={{ color: COLORS.inkSoft, fontSize: 11.5 }}>
+        {subtitle}
+      </p>
+
+      <div className="flex items-center justify-center gap-6 mt-4">
+        <button
+          onClick={onPrev}
+          disabled={!canPrev}
+          className="flex items-center justify-center active:opacity-60"
+          style={{ width: 38, height: 38, opacity: canPrev ? 1 : 0.3 }}
+          aria-label={t("nav_previous")}
+        >
+          <ChevronIcon dir="left" color={COLORS.ink} size={20} />
+        </button>
+
+        <button onClick={onPlayPause} className="flex items-center justify-center active:scale-95 transition" style={{ width: 64, height: 64, position: "relative" }}>
+          <div style={{ position: "absolute", inset: -10, borderRadius: "50%", background: discGlowBackground() }} />
+          <div style={{ position: "absolute", inset: 0, borderRadius: "50%", ...discSurfaceStyle() }} />
+          <span style={{ position: "relative" }}>
+            {isPlaying ? <PauseIcon color={COLORS.goldLight} size={24} /> : <PlayIcon color={COLORS.goldLight} size={24} />}
+          </span>
+        </button>
+
+        <button
+          onClick={onNext}
+          disabled={!canNext}
+          className="flex items-center justify-center active:opacity-60"
+          style={{ width: 38, height: 38, opacity: canNext ? 1 : 0.3 }}
+          aria-label={t("nav_next")}
+        >
+          <ChevronIcon dir="right" color={COLORS.ink} size={20} />
+        </button>
+      </div>
+
+      <div className="w-full mt-4">
+        <div
+          ref={trackRef}
+          onClick={(e) => handleSeek(e.clientX)}
+          className="relative w-full"
+          style={{ height: 16, display: "flex", alignItems: "center", cursor: "pointer" }}
+        >
+          <div style={{ position: "absolute", left: 0, right: 0, height: 5, borderRadius: 99, background: inkA(0.1) }} />
+          <div
+            style={{
+              position: "absolute",
+              left: 0,
+              width: `${pct * 100}%`,
+              height: 5,
+              borderRadius: 99,
+              background: `linear-gradient(90deg, ${COLORS.gold}, ${COLORS.goldLight})`,
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              left: `calc(${pct * 100}% - 7px)`,
+              width: 14,
+              height: 14,
+              borderRadius: 99,
+              background: COLORS.goldLight,
+              border: `2px solid ${COLORS.parchment}`,
+              boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
+            }}
+          />
+        </div>
+        <div className="flex items-center justify-between mt-1">
+          <span className="font-ui" style={{ color: COLORS.inkSoft, fontSize: 10.5, fontVariantNumeric: "tabular-nums" }}>
+            {formatPlaybackTime(currentTime)}
+          </span>
+          <span className="font-ui" style={{ color: COLORS.inkSoft, fontSize: 10.5, fontVariantNumeric: "tabular-nums" }}>
+            {formatPlaybackTime(duration)}
+          </span>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-center gap-6 mt-2.5">
+        <button onClick={() => onSkip(-10)} className="flex items-center justify-center active:opacity-60" aria-label={t("skip_back_10")}>
+          <SkipIcon color={COLORS.inkSoft} size={19} dir="back" />
+        </button>
+        <button
+          onClick={onCycleSpeed}
+          className="flex items-center justify-center active:opacity-70"
+          style={{ minWidth: 40, height: 26, borderRadius: 99, background: inkA(0.06), padding: "0 10px" }}
+          aria-label={t("playback_speed")}
+        >
+          <span className="font-ui font-semibold" style={{ color: COLORS.ink, fontSize: 11.5 }}>
+            {rate}×
+          </span>
+        </button>
+        <button onClick={() => onSkip(10)} className="flex items-center justify-center active:opacity-60" aria-label={t("skip_forward_10")}>
+          <SkipIcon color={COLORS.inkSoft} size={19} dir="forward" />
+        </button>
+        <button
+          onClick={onToggleRepeat}
+          className="flex items-center justify-center active:opacity-60"
+          style={{ width: 26, height: 26, borderRadius: 99, background: repeatOne ? `${COLORS.goldLight}29` : "transparent" }}
+          aria-label={t("repeat_verse")}
+        >
+          <RepeatIcon color={repeatOne ? COLORS.goldLight : COLORS.inkSoft} size={16} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function SkipIcon({ color, size = 20, dir = "forward" }) {
+  const flip = dir === "back" ? "scaleX(-1)" : undefined;
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={{ transform: flip }}>
+      <path
+        d="M4 12a8 8 0 1 1 2.5 5.8"
+        stroke={color}
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        fill="none"
+      />
+      <path d="M4 7v4.5h4.5" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      <text x="12" y="15.5" textAnchor="middle" fontSize="7.5" fontWeight="700" fill={color} style={{ transform: flip, transformOrigin: "12px 12px" }}>
+        10
+      </text>
+    </svg>
+  );
+}
+
+// A persistent bar so Quran recitation keeps playing (and stays controllable)
+// while the reader/full-surah screens are visible — see QuranReaderScreen and
+// FullSurahReciterScreen — while the listener browses the rest of the app.
+function QuranMiniPlayer({ player, onPause, onResume, onNext, onOpen, aboveNav }) {
+  const surahMeta = QURAN_SURAHS.find((s) => s.number === player.surahNumber);
+  const reciterList = player.mode === "ayah" ? RECITERS : FULL_SURAH_RECITERS;
+  const reciterMeta = reciterList.find((r) => r.id === player.reciterId) || reciterList[0];
+  const subtitle =
+    player.mode === "ayah"
+      ? `${reciterMeta.name} · ${t("verse_label")} ${player.ayahInSurah}`
+      : reciterMeta.name;
+
+  return (
+    <button
+      onClick={onOpen}
+      className="fixed left-3 right-3 flex items-center gap-3 active:opacity-90"
+      style={{
+        bottom: aboveNav ? "calc(58px + env(safe-area-inset-bottom, 0px))" : "calc(10px + env(safe-area-inset-bottom, 0px))",
+        background: COLORS.parchment,
+        border: `1px solid ${COLORS.goldLight}`,
+        borderRadius: 16,
+        padding: "10px 12px",
+        boxShadow: "0 6px 20px rgba(0,0,0,0.12)",
+        zIndex: 25,
+      }}
+    >
+      <div className="flex items-center justify-center flex-shrink-0" style={{ width: 34, height: 34, borderRadius: 10, background: `${COLORS.goldLight}29` }}>
+        <QuranIcon color={COLORS.goldLight} size={16} />
+      </div>
+      <div className="flex-1 text-left" style={{ minWidth: 0 }}>
+        <p className="font-display font-semibold truncate" style={{ color: COLORS.ink, fontSize: 13 }}>
+          {surahMeta ? surahMeta.translit : ""}
+        </p>
+        <p className="font-ui truncate" style={{ color: COLORS.inkSoft, fontSize: 11 }}>
+          {subtitle}
+        </p>
+      </div>
+      <span
+        onClick={(e) => {
+          e.stopPropagation();
+          player.isPlaying ? onPause() : onResume();
+        }}
+        className="flex items-center justify-center active:opacity-60 flex-shrink-0"
+        style={{ width: 32, height: 32, borderRadius: 99, background: `${COLORS.goldLight}29` }}
+      >
+        {player.isPlaying ? <PauseIcon color={COLORS.goldLight} size={14} /> : <PlayIcon color={COLORS.goldLight} size={14} />}
+      </span>
+      <span
+        onClick={(e) => {
+          e.stopPropagation();
+          onNext();
+        }}
+        className="flex items-center justify-center active:opacity-60 flex-shrink-0"
+        style={{ width: 32, height: 32, borderRadius: 99, background: "rgba(0,0,0,0.05)" }}
+      >
+        <NextIcon color={COLORS.ink} size={14} />
+      </span>
+    </button>
+  );
+}
+
 /* ------------------------------------------------------------------ */
 /* App                                                                  */
 /* ------------------------------------------------------------------ */
@@ -3069,6 +3379,248 @@ function AzkarApp() {
   const [activeSurahNumber, setActiveSurahNumber] = useState(null);
   const [activeReciterId, setActiveReciterId] = useState(null);
   const [activeFullReciterId, setActiveFullReciterId] = useState(null);
+
+  // Quran playback lives here (not inside QuranReaderScreen/FullSurahReciterScreen)
+  // so it survives navigating to another screen — the reader screens become thin
+  // views over this shared state instead of owning their own <audio> element.
+  // quranPlayerState is a serializable snapshot for rendering (mini-player, reader
+  // highlight, etc); the actual Audio object + mutable bookkeeping lives in the ref
+  // so playback logic never has to fight React's render cycle.
+  const [quranPlayerState, setQuranPlayerState] = useState(null);
+  const quranPlayerRef = useRef({ audio: null, repeatOne: false });
+
+  const stopQuranPlayback = useCallback(() => {
+    const audio = quranPlayerRef.current.audio;
+    if (audio) {
+      audio.pause();
+      quranPlayerRef.current.audio = null;
+      notifyAudioStop();
+    }
+    setQuranPlayerState(null);
+    clearMediaSession();
+  }, []);
+
+  const quranMediaTitle = (state) => {
+    const surahMeta = QURAN_SURAHS.find((s) => s.number === state.surahNumber);
+    if (state.mode === "ayah") {
+      return `${surahMeta ? surahMeta.translit : ""} — ${t("verse_label")} ${state.ayahInSurah}`;
+    }
+    return surahMeta ? surahMeta.translit : "";
+  };
+
+  const playQuranAyah = useCallback(
+    (surahNumber, reciterId, ayahInSurah, { continuing = false } = {}) => {
+      const prevAudio = quranPlayerRef.current.audio;
+      if (prevAudio) prevAudio.pause();
+      const globalNum = globalAyahNumber(surahNumber, ayahInSurah);
+      const audio = new Audio(reciterAudioUrl(reciterId, globalNum));
+      audio.playbackRate = quranPlayerRef.current.rate || 1;
+      quranPlayerRef.current.audio = audio;
+      const nextState = { mode: "ayah", reciterId, surahNumber, ayahInSurah, isPlaying: true };
+      setQuranPlayerState(nextState);
+      if (!continuing) notifyAudioStart();
+      const reciterMeta = RECITERS.find((r) => r.id === reciterId) || RECITERS[0];
+      const surahMeta = QURAN_SURAHS.find((s) => s.number === surahNumber);
+      const hasNext = ayahInSurah < (surahMeta ? surahMeta.ayahCount : 0);
+      const hasPrev = ayahInSurah > 1;
+      updateMediaSession({
+        title: quranMediaTitle(nextState),
+        artist: reciterMeta.name,
+        playing: true,
+        onPlay: () => resumeQuranPlaybackRef.current(),
+        onPause: () => pauseQuranPlaybackRef.current(),
+        onNext: hasNext ? () => quranPlayNextRef.current() : null,
+        onPrev: hasPrev ? () => quranPlayPrevRef.current() : null,
+      });
+      markQuranAyahRead(surahNumber, ayahInSurah);
+      audio.addEventListener("ended", () => {
+        if (quranPlayerRef.current.repeatOne) {
+          playQuranAyah(surahNumber, reciterId, ayahInSurah, { continuing: true });
+          return;
+        }
+        if (hasNext) {
+          playQuranAyah(surahNumber, reciterId, ayahInSurah + 1, { continuing: true });
+        } else {
+          stopQuranPlayback();
+        }
+      });
+      audio.play().catch(() => {
+        notifyAudioStop();
+        clearMediaSession();
+        setQuranPlayerState(null);
+      });
+    },
+    [stopQuranPlayback]
+  );
+
+  const playQuranSurahFull = useCallback(
+    (surahNumber, reciterId, { continuing = false } = {}) => {
+      const prevAudio = quranPlayerRef.current.audio;
+      if (prevAudio) prevAudio.pause();
+      const reciterMeta = FULL_SURAH_RECITERS.find((r) => r.id === reciterId) || FULL_SURAH_RECITERS[0];
+      const audio = new Audio(fullSurahAudioUrl(reciterMeta, surahNumber));
+      audio.playbackRate = quranPlayerRef.current.rate || 1;
+      quranPlayerRef.current.audio = audio;
+      const nextState = { mode: "surah", reciterId, surahNumber, isPlaying: true };
+      setQuranPlayerState(nextState);
+      if (!continuing) notifyAudioStart();
+      const hasNext = surahNumber < 114;
+      const hasPrev = surahNumber > 1;
+      updateMediaSession({
+        title: quranMediaTitle(nextState),
+        artist: reciterMeta.name,
+        playing: true,
+        onPlay: () => resumeQuranPlaybackRef.current(),
+        onPause: () => pauseQuranPlaybackRef.current(),
+        onNext: hasNext ? () => quranPlayNextRef.current() : null,
+        onPrev: hasPrev ? () => quranPlayPrevRef.current() : null,
+      });
+      audio.addEventListener("ended", () => {
+        if (quranPlayerRef.current.repeatOne) {
+          playQuranSurahFull(surahNumber, reciterId, { continuing: true });
+          return;
+        }
+        if (hasNext) {
+          playQuranSurahFull(surahNumber + 1, reciterId, { continuing: true });
+        } else {
+          stopQuranPlayback();
+        }
+      });
+      audio.play().catch(() => {
+        notifyAudioStop();
+        clearMediaSession();
+        setQuranPlayerState(null);
+      });
+    },
+    [stopQuranPlayback]
+  );
+
+  const pauseQuranPlayback = useCallback(() => {
+    const audio = quranPlayerRef.current.audio;
+    if (!audio) return;
+    audio.pause();
+    setQuranPlayerState((prev) => (prev ? { ...prev, isPlaying: false } : prev));
+    const state = quranPlayerStateRef.current;
+    if (!state) return;
+    const reciterList = state.mode === "ayah" ? RECITERS : FULL_SURAH_RECITERS;
+    const reciterMeta = reciterList.find((r) => r.id === state.reciterId) || reciterList[0];
+    updateMediaSession({
+      title: quranMediaTitle(state),
+      artist: reciterMeta.name,
+      playing: false,
+      onPlay: () => resumeQuranPlaybackRef.current(),
+      onPause: () => pauseQuranPlaybackRef.current(),
+      onNext: quranHasNextRef.current() ? () => quranPlayNextRef.current() : null,
+      onPrev: quranHasPrevRef.current() ? () => quranPlayPrevRef.current() : null,
+    });
+  }, []);
+
+  const resumeQuranPlayback = useCallback(() => {
+    const state = quranPlayerStateRef.current;
+    const audio = quranPlayerRef.current.audio;
+    if (!state || !audio) return;
+    audio.play().catch(() => {});
+    setQuranPlayerState((prev) => (prev ? { ...prev, isPlaying: true } : prev));
+    const reciterList = state.mode === "ayah" ? RECITERS : FULL_SURAH_RECITERS;
+    const reciterMeta = reciterList.find((r) => r.id === state.reciterId) || reciterList[0];
+    updateMediaSession({
+      title: quranMediaTitle(state),
+      artist: reciterMeta.name,
+      playing: true,
+      onPlay: () => resumeQuranPlaybackRef.current(),
+      onPause: () => pauseQuranPlaybackRef.current(),
+      onNext: quranHasNextRef.current() ? () => quranPlayNextRef.current() : null,
+      onPrev: quranHasPrevRef.current() ? () => quranPlayPrevRef.current() : null,
+    });
+  }, []);
+
+  const quranHasNext = useCallback(() => {
+    const state = quranPlayerStateRef.current;
+    if (!state) return false;
+    if (state.mode === "ayah") {
+      const surahMeta = QURAN_SURAHS.find((s) => s.number === state.surahNumber);
+      return state.ayahInSurah < (surahMeta ? surahMeta.ayahCount : 0);
+    }
+    return state.surahNumber < 114;
+  }, []);
+
+  const quranHasPrev = useCallback(() => {
+    const state = quranPlayerStateRef.current;
+    if (!state) return false;
+    return state.mode === "ayah" ? state.ayahInSurah > 1 : state.surahNumber > 1;
+  }, []);
+
+  const quranPlayNext = useCallback(() => {
+    const state = quranPlayerStateRef.current;
+    if (!state) return;
+    if (state.mode === "ayah") {
+      playQuranAyah(state.surahNumber, state.reciterId, state.ayahInSurah + 1, { continuing: true });
+    } else {
+      playQuranSurahFull(state.surahNumber + 1, state.reciterId, { continuing: true });
+    }
+  }, [playQuranAyah, playQuranSurahFull]);
+
+  const quranPlayPrev = useCallback(() => {
+    const state = quranPlayerStateRef.current;
+    if (!state) return;
+    if (state.mode === "ayah") {
+      if (state.ayahInSurah > 1) playQuranAyah(state.surahNumber, state.reciterId, state.ayahInSurah - 1, { continuing: true });
+    } else if (state.surahNumber > 1) {
+      playQuranSurahFull(state.surahNumber - 1, state.reciterId, { continuing: true });
+    }
+  }, [playQuranAyah, playQuranSurahFull]);
+
+  const toggleQuranRepeatOne = useCallback(() => {
+    quranPlayerRef.current.repeatOne = !quranPlayerRef.current.repeatOne;
+    setQuranPlayerState((prev) => (prev ? { ...prev } : prev));
+  }, []);
+
+  const skipQuranSeconds = useCallback((delta) => {
+    const audio = quranPlayerRef.current.audio;
+    if (!audio || !isFinite(audio.duration)) return;
+    audio.currentTime = Math.max(0, Math.min(audio.duration, audio.currentTime + delta));
+  }, []);
+
+  const seekQuranTo = useCallback((time) => {
+    const audio = quranPlayerRef.current.audio;
+    if (!audio || !isFinite(audio.duration)) return;
+    audio.currentTime = Math.max(0, Math.min(audio.duration, time));
+  }, []);
+
+  const cycleQuranSpeed = useCallback(() => {
+    const audio = quranPlayerRef.current.audio;
+    const rates = [1, 1.25, 1.5, 0.75];
+    const current = quranPlayerRef.current.rate || 1;
+    const next = rates[(rates.indexOf(current) + 1) % rates.length];
+    quranPlayerRef.current.rate = next;
+    if (audio) audio.playbackRate = next;
+    setQuranPlayerState((prev) => (prev ? { ...prev } : prev));
+  }, []);
+
+  // Plain refs mirroring the latest state/callbacks so the closures captured
+  // once inside updateMediaSession's action handlers (and inside the "ended"
+  // listeners above) always call the CURRENT version — those handlers are
+  // registered at play-time and would otherwise keep calling stale callbacks
+  // from whichever render happened to be active when playback started.
+  const quranPlayerStateRef = useRef(null);
+  useEffect(() => {
+    quranPlayerStateRef.current = quranPlayerState;
+  }, [quranPlayerState]);
+  const resumeQuranPlaybackRef = useRef(() => {});
+  const pauseQuranPlaybackRef = useRef(() => {});
+  const quranPlayNextRef = useRef(() => {});
+  const quranPlayPrevRef = useRef(() => {});
+  const quranHasNextRef = useRef(() => false);
+  const quranHasPrevRef = useRef(() => false);
+  useEffect(() => {
+    resumeQuranPlaybackRef.current = resumeQuranPlayback;
+    pauseQuranPlaybackRef.current = pauseQuranPlayback;
+    quranPlayNextRef.current = quranPlayNext;
+    quranPlayPrevRef.current = quranPlayPrev;
+    quranHasNextRef.current = quranHasNext;
+    quranHasPrevRef.current = quranHasPrev;
+  }, [resumeQuranPlayback, pauseQuranPlayback, quranPlayNext, quranPlayPrev, quranHasNext, quranHasPrev]);
+
   const [progress, setProgress] = useState(emptyProgress());
   const [history, setHistory] = useState({});
   const [arabicSize, setArabicSize] = useState(DEFAULT_ARABIC_SIZE);
@@ -3999,7 +4551,21 @@ function AzkarApp() {
       )}
 
       {screen === "quran-full-reciter" && (
-        <FullSurahReciterScreen reciterId={activeFullReciterId} onBack={() => setScreen("quran-reciters")} />
+        <FullSurahReciterScreen
+          reciterId={activeFullReciterId}
+          onBack={() => setScreen("quran-reciters")}
+          player={quranPlayerState}
+          onPlaySurah={(n) => playQuranSurahFull(n, activeFullReciterId)}
+          onPause={pauseQuranPlayback}
+          onResume={resumeQuranPlayback}
+          onNext={quranPlayNext}
+          onPrev={quranPlayPrev}
+          onToggleRepeat={toggleQuranRepeatOne}
+          quranPlayerRef={quranPlayerRef}
+          onSkip={skipQuranSeconds}
+          onSeek={seekQuranTo}
+          onCycleSpeed={cycleQuranSpeed}
+        />
       )}
 
       {screen === "quran-reader" && (
@@ -4009,6 +4575,17 @@ function AzkarApp() {
           onBack={() => setScreen("quran-list")}
           onChangeSurah={(number) => setActiveSurahNumber(number)}
           onOpenReciters={() => setScreen("quran-reciters")}
+          player={quranPlayerState}
+          onPlayAyah={playQuranAyah}
+          onPause={pauseQuranPlayback}
+          onResume={resumeQuranPlayback}
+          onNext={quranPlayNext}
+          onPrev={quranPlayPrev}
+          onToggleRepeat={toggleQuranRepeatOne}
+          quranPlayerRef={quranPlayerRef}
+          onSkip={skipQuranSeconds}
+          onSeek={seekQuranTo}
+          onCycleSpeed={cycleQuranSpeed}
         />
       )}
 
@@ -4092,7 +4669,28 @@ function AzkarApp() {
         />
       )}
 
-      {TAB_SCREENS.includes(screen) && <BottomNav active={screen} onNavigate={setScreen} />}
+      {(TAB_SCREENS.includes(screen) || screen === "quran-reader" || screen === "quran-full-reciter") && (
+        <BottomNav active={screen} onNavigate={setScreen} />
+      )}
+
+      {quranPlayerState && screen !== "quran-reader" && screen !== "quran-full-reciter" && (
+        <QuranMiniPlayer
+          player={quranPlayerState}
+          onPause={pauseQuranPlayback}
+          onResume={resumeQuranPlayback}
+          onNext={quranPlayNext}
+          onOpen={() => {
+            if (quranPlayerState.mode === "ayah") {
+              setActiveSurahNumber(quranPlayerState.surahNumber);
+              setScreen("quran-reader");
+            } else {
+              setActiveFullReciterId(quranPlayerState.reciterId);
+              setScreen("quran-full-reciter");
+            }
+          }}
+          aboveNav={TAB_SCREENS.includes(screen)}
+        />
+      )}
 
       {showOnboarding && (
         <OnboardingOverlay
@@ -9032,56 +9630,37 @@ function ReciterSpaceScreen({ reciterId, onBack, onSelectSurah }) {
 // per-ayah audio to sync against, just a straight-through listen that
 // auto-advances surah to surah like a playlist, same as the ayah-by-ayah
 // reader does verse to verse.
-function FullSurahReciterScreen({ reciterId, onBack }) {
+function FullSurahReciterScreen({
+  reciterId,
+  onBack,
+  player,
+  onPlaySurah,
+  onPause,
+  onResume,
+  onNext,
+  onPrev,
+  onToggleRepeat,
+  quranPlayerRef,
+  onSkip,
+  onSeek,
+  onCycleSpeed,
+}) {
   const reciter = FULL_SURAH_RECITERS.find((r) => r.id === reciterId) || FULL_SURAH_RECITERS[0];
-  const [playingSurah, setPlayingSurah] = useState(null);
-  const audioRef = useRef(null);
-
-  const stopPlayback = useCallback(() => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current = null;
-      notifyAudioStop();
-    }
-    setPlayingSurah(null);
-    clearMediaSession();
-  }, []);
-
-  const playSurah = (surahNumber, { continuing = false } = {}) => {
-    if (audioRef.current) audioRef.current.pause();
-    const audio = new Audio(fullSurahAudioUrl(reciter, surahNumber));
-    audioRef.current = audio;
-    setPlayingSurah(surahNumber);
-    if (!continuing) notifyAudioStart();
-    const surahMeta = QURAN_SURAHS.find((s) => s.number === surahNumber);
-    const next = surahNumber < 114 ? surahNumber + 1 : null;
-    updateMediaSession({
-      title: surahMeta ? surahMeta.translit : "",
-      artist: reciter.name,
-      playing: true,
-      onPause: stopPlayback,
-      onNext: next ? () => playSurah(next, { continuing: true }) : null,
-    });
-    audio.addEventListener("ended", () => {
-      if (next) playSurah(next, { continuing: true });
-      else stopPlayback();
-    });
-    audio.play().catch(() => {
-      notifyAudioStop();
-      clearMediaSession();
-      setPlayingSurah(null);
-    });
-  };
-
-  useEffect(() => stopPlayback, [stopPlayback]);
+  const isThisReciter = player && player.mode === "surah" && player.reciterId === reciterId;
+  const playingSurah = isThisReciter ? player.surahNumber : null;
+  const isPlaying = isThisReciter && player.isPlaying;
+  const repeatOne = isThisReciter && player.repeatOne;
 
   const toggleSurah = (surahNumber) => {
-    if (playingSurah === surahNumber) stopPlayback();
-    else playSurah(surahNumber);
+    if (playingSurah === surahNumber) {
+      isPlaying ? onPause() : onResume();
+    } else {
+      onPlaySurah(surahNumber);
+    }
   };
 
   return (
-    <div className="min-h-screen flex flex-col px-5 pt-6 pb-10 fade-in">
+    <div className="min-h-screen flex flex-col px-5 pt-6 pb-32 fade-in">
       <div className="flex items-center justify-between mb-5">
         <button onClick={onBack} className="p-2.5 -ml-2 active:opacity-60" aria-label={t("back")}>
           <BackIcon color={COLORS.ink} />
@@ -9105,6 +9684,26 @@ function FullSurahReciterScreen({ reciterId, onBack }) {
         </p>
       </div>
 
+      {isThisReciter && (
+        <QuranPlaybackCard
+          title={QURAN_SURAHS.find((s) => s.number === playingSurah)?.translit}
+          subtitle={reciter.name}
+          quranPlayerRef={quranPlayerRef}
+          player={player}
+          isPlaying={isPlaying}
+          onPlayPause={() => (isPlaying ? onPause() : onResume())}
+          onNext={onNext}
+          onPrev={onPrev}
+          canPrev={playingSurah > 1}
+          canNext={playingSurah < 114}
+          onSkip={onSkip}
+          onSeek={onSeek}
+          onCycleSpeed={onCycleSpeed}
+          onToggleRepeat={onToggleRepeat}
+          repeatOne={repeatOne}
+        />
+      )}
+
       <div className="flex flex-col gap-2">
         {QURAN_SURAHS.map((s) => {
           const playing = playingSurah === s.number;
@@ -9125,14 +9724,18 @@ function FullSurahReciterScreen({ reciterId, onBack }) {
                   className="flex items-center justify-center flex-shrink-0"
                   style={{ width: 30, height: 30, borderRadius: 10, background: playing ? `${COLORS.goldLight}29` : "rgba(0,0,0,0.04)" }}
                 >
-                  {playing ? <PauseIcon color={COLORS.gold} size={13} /> : <PlayIcon color={COLORS.inkSoft} size={13} />}
+                  {playing && isPlaying ? (
+                    <PauseIcon color={COLORS.gold} size={13} />
+                  ) : (
+                    <PlayIcon color={playing ? COLORS.gold : COLORS.inkSoft} size={13} />
+                  )}
                 </div>
                 <div className="text-left">
                   <p className="font-display font-semibold" style={{ color: playing ? COLORS.gold : COLORS.ink, fontSize: 14 }}>
                     {s.translit}
                   </p>
                   <p className="font-ui" style={{ color: COLORS.inkSoft, fontSize: 11, marginTop: 1 }}>
-                    {playing ? t("now_playing") : `${trField(s, "meaning")} · ${s.ayahCount} ${t("verses_label")}`}
+                    {playing ? (isPlaying ? t("now_playing") : t("pause_label")) : `${trField(s, "meaning")} · ${s.ayahCount} ${t("verses_label")}`}
                   </p>
                 </div>
               </div>
@@ -9150,7 +9753,24 @@ function FullSurahReciterScreen({ reciterId, onBack }) {
 /* ------------------------------------------------------------------ */
 /* Quran reader — verses of a single surah, fetched live               */
 /* ------------------------------------------------------------------ */
-function QuranReaderScreen({ surahNumber, arabicSize, onBack, onChangeSurah, onOpenReciters }) {
+function QuranReaderScreen({
+  surahNumber,
+  arabicSize,
+  onBack,
+  onChangeSurah,
+  onOpenReciters,
+  player,
+  onPlayAyah,
+  onPause,
+  onResume,
+  onNext,
+  onPrev,
+  onToggleRepeat,
+  quranPlayerRef,
+  onSkip,
+  onSeek,
+  onCycleSpeed,
+}) {
   const [ayahs, setAyahs] = useState(null);
   const [status, setStatus] = useState("loading"); // 'loading' | 'ready' | 'error'
   const [progress, setProgress] = useState({ lastSurah: null, lastAyah: null, readAyahs: {} });
@@ -9173,74 +9793,31 @@ function QuranReaderScreen({ surahNumber, arabicSize, onBack, onChangeSurah, onO
 
   const currentReciterMeta = RECITERS.find((r) => r.id === reciter) || RECITERS[0];
 
-  // Sequential ayah-by-ayah playback — the recitation follows the reading:
-  // each ayah's audio auto-advances to the next one and highlights/scrolls to it.
-  const [playingAyah, setPlayingAyah] = useState(null);
-  const playerAudioRef = useRef(null);
-  const ayahsRef = useRef([]);
+  // Playback itself lives in AzkarApp (see quranPlayerState/playQuranAyah) so it
+  // survives navigating away from this screen — this component just reflects
+  // whatever slice of that shared state concerns the current surah+reciter.
   const ayahNodesRef = useRef(new Map());
+  const isThisPlayer = player && player.mode === "ayah" && player.surahNumber === surahNumber && player.reciterId === reciter;
+  const playingAyah = isThisPlayer ? player.ayahInSurah : null;
+  const isPlaying = isThisPlayer && player.isPlaying;
+  const repeatOne = isThisPlayer && player.repeatOne;
+
   useEffect(() => {
-    ayahsRef.current = ayahs;
-  }, [ayahs]);
-
-  const stopPlayback = useCallback(() => {
-    if (playerAudioRef.current) {
-      playerAudioRef.current.pause();
-      playerAudioRef.current = null;
-      notifyAudioStop();
-    }
-    setPlayingAyah(null);
-    clearMediaSession();
-  }, []);
-
-  // `continuing` is true when this call is the auto-advance to the next ayah
-  // in the same listening session — it must NOT toggle the background-audio
-  // service off and back on, or the brief gap between disable() and the next
-  // enable() can let Android suspend the WebView (especially with the screen
-  // locked) right as the next ayah is about to start, cutting playback after
-  // a single verse instead of continuing through the surah.
-  const playAyah = (ayah, { continuing = false } = {}) => {
-    if (playerAudioRef.current) {
-      playerAudioRef.current.pause();
-    }
-    const audio = new Audio(reciterAudioUrl(reciter, ayah.number));
-    playerAudioRef.current = audio;
-    setPlayingAyah(ayah.n);
-    if (!continuing) notifyAudioStart();
-    const list = ayahsRef.current || [];
-    const idx = list.findIndex((x) => x.n === ayah.n);
-    const nextForSession = list[idx + 1];
-    updateMediaSession({
-      title: `${surahMeta ? surahMeta.translit : ""} — ${t("verse_label")} ${ayah.n}`,
-      artist: currentReciterMeta.name,
-      playing: true,
-      onPause: stopPlayback,
-      onNext: nextForSession ? () => playAyah(nextForSession, { continuing: true }) : null,
-    });
-    markQuranAyahRead(surahNumber, ayah.n).then(setProgress);
-    const node = ayahNodesRef.current.get(ayah.n);
+    if (!isThisPlayer || playingAyah == null) return;
+    const node = ayahNodesRef.current.get(playingAyah);
     if (node) node.scrollIntoView({ behavior: "smooth", block: "center" });
-    audio.addEventListener("ended", () => {
-      const list = ayahsRef.current || [];
-      const idx = list.findIndex((x) => x.n === ayah.n);
-      const next = list[idx + 1];
-      if (next) {
-        playAyah(next, { continuing: true });
-      } else {
-        stopPlayback();
+    (async () => {
+      try {
+        const res = await window.storage.get(QURAN_PROGRESS_KEY, false);
+        if (res && res.value) setProgress(JSON.parse(res.value));
+      } catch (e) {
+        // ignore
       }
-    });
-    audio.play().catch(() => {
-      notifyAudioStop();
-      clearMediaSession();
-      setPlayingAyah(null);
-    });
-  };
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isThisPlayer, playingAyah]);
 
-  // Stop playback whenever the surah or reciter changes
-  useEffect(() => {
-    return () => stopPlayback();
-  }, [surahNumber, reciter, stopPlayback]);
+  const playAyah = (ayah) => onPlayAyah(surahNumber, reciter, ayah.n);
 
   useEffect(() => {
     (async () => {
@@ -9338,7 +9915,7 @@ function QuranReaderScreen({ surahNumber, arabicSize, onBack, onChangeSurah, onO
   if (!surahMeta) return null;
 
   return (
-    <div className="min-h-screen flex flex-col px-5 pt-6 pb-10 fade-in">
+    <div className="min-h-screen flex flex-col px-5 pt-6 pb-32 fade-in">
       {showSurahList && (
         <div className="fixed inset-0" style={{ background: COLORS.bg, zIndex: 60 }}>
           <SurahListScreen
@@ -9397,21 +9974,17 @@ function QuranReaderScreen({ surahNumber, arabicSize, onBack, onChangeSurah, onO
       <div className="flex items-center gap-2 mb-4">
         <button
           onClick={() => {
-            if (playingAyah !== null) {
-              stopPlayback();
+            if (isThisPlayer) {
+              isPlaying ? onPause() : onResume();
             } else if (ayahs && ayahs.length) {
               playAyah(ayahs[0]);
             }
           }}
           className="flex items-center justify-center active:opacity-60 flex-shrink-0"
           style={{ width: 36, height: 36, borderRadius: 99, background: "rgba(0,0,0,0.05)" }}
-          aria-label={playingAyah !== null ? t("pause_recitation") : t("play_surah")}
+          aria-label={isPlaying ? t("pause_recitation") : t("play_surah")}
         >
-          {playingAyah !== null ? (
-            <PauseIcon color={COLORS.goldLight} size={16} />
-          ) : (
-            <PlayIcon color={COLORS.goldLight} size={16} />
-          )}
+          {isPlaying ? <PauseIcon color={COLORS.goldLight} size={16} /> : <PlayIcon color={COLORS.goldLight} size={16} />}
         </button>
         <button
           onClick={onOpenReciters}
@@ -9434,6 +10007,26 @@ function QuranReaderScreen({ surahNumber, arabicSize, onBack, onChangeSurah, onO
           </span>
         </button>
       </div>
+
+      {isThisPlayer && (
+        <QuranPlaybackCard
+          title={surahMeta.translit}
+          subtitle={`${currentReciterMeta.name} · ${t("verse_label")} ${playingAyah}`}
+          quranPlayerRef={quranPlayerRef}
+          player={player}
+          isPlaying={isPlaying}
+          onPlayPause={() => (isPlaying ? onPause() : onResume())}
+          onNext={onNext}
+          onPrev={onPrev}
+          canPrev={playingAyah > 1}
+          canNext={playingAyah < surahMeta.ayahCount}
+          onSkip={onSkip}
+          onSeek={onSeek}
+          onCycleSpeed={onCycleSpeed}
+          onToggleRepeat={onToggleRepeat}
+          repeatOne={repeatOne}
+        />
+      )}
 
       <p className="font-ui text-center mb-5" style={{ color: COLORS.inkSoft, fontSize: 11, letterSpacing: 0.3 }}>
         {t("recitation_mushaf_hint")}
@@ -9487,7 +10080,7 @@ function QuranReaderScreen({ surahNumber, arabicSize, onBack, onChangeSurah, onO
                       {a.n}
                     </span>
                     <button
-                      onClick={() => (isPlaying ? stopPlayback() : playAyah(a))}
+                      onClick={() => (isPlaying ? onPause() : playAyah(a))}
                       className="flex items-center justify-center active:opacity-60"
                       style={{ width: 22, height: 22, borderRadius: 99, background: "rgba(0,0,0,0.05)" }}
                       aria-label={isPlaying ? t("pause_label") : t("play_from_verse")}
