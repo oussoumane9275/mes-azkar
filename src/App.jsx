@@ -8,6 +8,7 @@ import WidgetBridge from "./widgetBridge.js";
 import { t, LANGUAGES, currentLanguage, setCurrentLanguage, isRTL, trField, detectSystemLanguage } from "./i18n.js";
 import { exportBackup, importBackup, downloadBackupFile } from "./backup.js";
 import { fetchMushafPage, loadMushafPageFont, fetchChapterStartPage, fetchVersePage } from "./quranFoundation.js";
+import { findFaqAnswer, getFaqEntries } from "./faqData.js";
 import {
   isNotificationPermissionGranted,
   requestNotificationPermission,
@@ -137,7 +138,10 @@ function setHapticsEnabledFlag(enabled) {
 // active theme — a no-op on web where the plugin has nothing to control.
 function syncStatusBar(theme) {
   const colors = theme === "dark" ? DARK_COLORS : LIGHT_COLORS;
-  StatusBar.setStyle({ style: theme === "dark" ? StatusBarStyle.Light : StatusBarStyle.Dark }).catch(() => {});
+  // Style.Dark = light (white) icons, for dark backgrounds. Style.Light =
+  // dark (black) icons, for light backgrounds — named after the background
+  // they're meant for, not the icon color itself.
+  StatusBar.setStyle({ style: theme === "dark" ? StatusBarStyle.Dark : StatusBarStyle.Light }).catch(() => {});
   StatusBar.setBackgroundColor({ color: colors.bg }).catch(() => {});
 }
 
@@ -3161,6 +3165,7 @@ function QuranPlaybackCard({
   onCycleSpeed,
   onToggleRepeat,
   repeatOne,
+  onClose,
 }) {
   const trackKey = player ? `${player.mode}-${player.surahNumber}-${player.ayahInSurah || 0}-${player.reciterId}` : "none";
   const { currentTime, duration } = useQuranAudioProgress(quranPlayerRef, trackKey);
@@ -3179,9 +3184,19 @@ function QuranPlaybackCard({
   return (
     <div
       className="flex flex-col items-center mb-4"
-      style={{ background: COLORS.parchment, borderRadius: 20, border: `1px solid ${COLORS.parchmentDark}`, padding: "18px 18px 14px" }}
+      style={{ background: COLORS.parchment, borderRadius: 20, border: `1px solid ${COLORS.parchmentDark}`, padding: "18px 18px 14px", position: "relative" }}
     >
-      <p className="font-display font-semibold text-center truncate" style={{ color: COLORS.ink, fontSize: 15, maxWidth: "100%" }}>
+      {onClose && (
+        <button
+          onClick={onClose}
+          className="absolute active:opacity-60"
+          style={{ top: 10, right: 10, padding: 6, borderRadius: 99, background: inkA(0.06) }}
+          aria-label={t("close_player")}
+        >
+          <CloseIcon color={COLORS.inkSoft} size={14} />
+        </button>
+      )}
+      <p className="font-display font-semibold text-center truncate" style={{ color: COLORS.ink, fontSize: 15, maxWidth: "calc(100% - 40px)" }}>
         {title}
       </p>
       <p className="font-ui text-center mt-0.5" style={{ color: COLORS.inkSoft, fontSize: 11.5 }}>
@@ -3289,6 +3304,38 @@ function QuranPlaybackCard({
   );
 }
 
+function CloseIcon({ color, size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M6 6l12 12M18 6L6 18" stroke={color} strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ChatIcon({ color, size = 20 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path
+        d="M4 5.5h16v10.5a1 1 0 0 1-1 1H9.5L5 21v-4H5a1 1 0 0 1-1-1V5.5Z"
+        stroke={color}
+        strokeWidth="1.7"
+        strokeLinejoin="round"
+      />
+      <circle cx="8.5" cy="10.5" r="1" fill={color} />
+      <circle cx="12" cy="10.5" r="1" fill={color} />
+      <circle cx="15.5" cy="10.5" r="1" fill={color} />
+    </svg>
+  );
+}
+
+function SendIcon({ color, size = 18 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M4 20 20.5 12 4 4l2 7 9 1-9 1-2 7Z" fill={color} />
+    </svg>
+  );
+}
+
 function SkipIcon({ color, size = 20, dir = "forward" }) {
   const flip = dir === "back" ? "scaleX(-1)" : undefined;
   return (
@@ -3311,7 +3358,7 @@ function SkipIcon({ color, size = 20, dir = "forward" }) {
 // A persistent bar so Quran recitation keeps playing (and stays controllable)
 // while the reader/full-surah screens are visible — see QuranReaderScreen and
 // FullSurahReciterScreen — while the listener browses the rest of the app.
-function QuranMiniPlayer({ player, onPause, onResume, onNext, onOpen, aboveNav }) {
+function QuranMiniPlayer({ player, onPause, onResume, onNext, onOpen, onClose, aboveNav }) {
   const surahMeta = QURAN_SURAHS.find((s) => s.number === player.surahNumber);
   const reciterList = player.mode === "ayah" ? RECITERS : FULL_SURAH_RECITERS;
   const reciterMeta = reciterList.find((r) => r.id === player.reciterId) || reciterList[0];
@@ -3365,7 +3412,188 @@ function QuranMiniPlayer({ player, onPause, onResume, onNext, onOpen, aboveNav }
       >
         <NextIcon color={COLORS.ink} size={14} />
       </span>
+      <span
+        onClick={(e) => {
+          e.stopPropagation();
+          onClose();
+        }}
+        className="flex items-center justify-center active:opacity-60 flex-shrink-0"
+        style={{ width: 32, height: 32, borderRadius: 99, background: "rgba(0,0,0,0.05)" }}
+        aria-label={t("close_player")}
+      >
+        <CloseIcon color={COLORS.ink} size={13} />
+      </span>
     </button>
+  );
+}
+
+// Floating shortcut to the offline FAQ assistant — sits above the bottom
+// nav (and, when it's showing, above the Quran mini-player bar too) so it
+// stays reachable from every main tab without ever blocking navigation.
+function AssistantFab({ onOpen, liftedByPlayer }) {
+  return (
+    <button
+      onClick={onOpen}
+      className="fixed flex items-center justify-center active:scale-95 transition"
+      style={{
+        right: 16,
+        bottom: liftedByPlayer
+          ? "calc(132px + env(safe-area-inset-bottom, 0px))"
+          : "calc(70px + env(safe-area-inset-bottom, 0px))",
+        width: 50,
+        height: 50,
+        borderRadius: 99,
+        background: `linear-gradient(155deg, ${COLORS.gold}, ${COLORS.goldLight})`,
+        boxShadow: "0 8px 20px rgba(0,0,0,0.25)",
+        zIndex: 24,
+      }}
+      aria-label={t("assistant_open")}
+    >
+      <ChatIcon color={COLORS.bg} size={22} />
+    </button>
+  );
+}
+
+// Small offline FAQ chatbot — matches user questions against a fixed list
+// of app-usage Q&A (see faqData.js) via keyword overlap, no network call.
+function AssistantOverlay({ onClose }) {
+  const entries = getFaqEntries(currentLanguage);
+  const suggestions = entries.slice(0, 4);
+  const [messages, setMessages] = useState([{ from: "bot", text: t("assistant_intro") }]);
+  const [input, setInput] = useState("");
+  const listRef = useRef(null);
+
+  useEffect(() => {
+    if (listRef.current) listRef.current.scrollTop = listRef.current.scrollHeight;
+  }, [messages]);
+
+  const ask = (question) => {
+    const trimmed = question.trim();
+    if (!trimmed) return;
+    const match = findFaqAnswer(trimmed, currentLanguage);
+    setMessages((prev) => [
+      ...prev,
+      { from: "user", text: trimmed },
+      { from: "bot", text: match ? match.answer : t("assistant_fallback") },
+    ]);
+    setInput("");
+  };
+
+  return (
+    <div className="fixed inset-0 flex items-end fade-in" style={{ zIndex: 80 }}>
+      <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)" }} onClick={onClose} />
+      <div
+        className="relative w-full flex flex-col"
+        style={{
+          background: COLORS.bg,
+          borderRadius: "22px 22px 0 0",
+          border: `1px solid ${COLORS.parchmentDark}`,
+          borderBottom: "none",
+          height: "80vh",
+          boxShadow: "0 -10px 34px rgba(0,0,0,0.25)",
+        }}
+      >
+        <div className="flex items-center justify-between px-5" style={{ paddingTop: 16, paddingBottom: 12, borderBottom: `1px solid ${COLORS.parchmentDark}` }}>
+          <div className="flex items-center gap-2.5">
+            <div className="flex items-center justify-center" style={{ width: 34, height: 34, borderRadius: 99, background: `${COLORS.goldLight}29` }}>
+              <ChatIcon color={COLORS.goldLight} size={17} />
+            </div>
+            <p className="font-display font-semibold" style={{ color: COLORS.ink, fontSize: 15 }}>
+              {t("assistant_title")}
+            </p>
+          </div>
+          <button onClick={onClose} className="p-1.5 active:opacity-60" style={{ borderRadius: 99, background: inkA(0.06) }} aria-label={t("close")}>
+            <CloseIcon color={COLORS.inkSoft} size={14} />
+          </button>
+        </div>
+
+        <div ref={listRef} className="flex-1 overflow-y-auto px-5" style={{ paddingTop: 14, paddingBottom: 10 }}>
+          <div className="flex flex-col gap-3">
+            {messages.map((m, i) => (
+              <div key={i} className={m.from === "user" ? "flex justify-end" : "flex justify-start"}>
+                <p
+                  className="font-ui"
+                  style={{
+                    maxWidth: "82%",
+                    fontSize: 13.5,
+                    lineHeight: 1.55,
+                    padding: "10px 13px",
+                    borderRadius: m.from === "user" ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
+                    background: m.from === "user" ? `${COLORS.goldLight}29` : COLORS.parchment,
+                    border: m.from === "user" ? "none" : `1px solid ${COLORS.parchmentDark}`,
+                    color: COLORS.ink,
+                  }}
+                >
+                  {m.text}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {messages.length <= 1 && (
+            <div className="flex flex-col gap-2" style={{ marginTop: 16 }}>
+              <p className="font-ui font-semibold" style={{ color: COLORS.inkFaint, fontSize: 10.5, letterSpacing: 1, textTransform: "uppercase" }}>
+                {t("assistant_suggestions")}
+              </p>
+              {suggestions.map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() => ask(s.question)}
+                  className="text-left active:opacity-70"
+                  style={{
+                    background: COLORS.parchment,
+                    border: `1px solid ${COLORS.parchmentDark}`,
+                    borderRadius: 12,
+                    padding: "10px 13px",
+                    color: COLORS.ink,
+                    fontSize: 12.5,
+                  }}
+                >
+                  {s.question}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div
+          className="flex items-center gap-2 px-4"
+          style={{ paddingTop: 10, paddingBottom: "calc(12px + env(safe-area-inset-bottom, 0px))", borderTop: `1px solid ${COLORS.parchmentDark}` }}
+        >
+          <input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && ask(input)}
+            placeholder={t("assistant_placeholder")}
+            className="flex-1 font-ui"
+            style={{
+              background: COLORS.parchment,
+              border: `1px solid ${COLORS.parchmentDark}`,
+              borderRadius: 99,
+              padding: "10px 16px",
+              fontSize: 13,
+              color: COLORS.ink,
+              outline: "none",
+            }}
+          />
+          <button
+            onClick={() => ask(input)}
+            disabled={!input.trim()}
+            className="flex items-center justify-center active:scale-95 transition flex-shrink-0"
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 99,
+              background: input.trim() ? `linear-gradient(155deg, ${COLORS.gold}, ${COLORS.goldLight})` : inkA(0.08),
+              opacity: input.trim() ? 1 : 0.6,
+            }}
+            aria-label={t("assistant_send")}
+          >
+            <SendIcon color={input.trim() ? COLORS.bg : COLORS.inkFaint} size={16} />
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -3380,6 +3608,7 @@ function AzkarApp() {
   const [activeSurahNumber, setActiveSurahNumber] = useState(null);
   const [activeReciterId, setActiveReciterId] = useState(null);
   const [activeFullReciterId, setActiveFullReciterId] = useState(null);
+  const [assistantOpen, setAssistantOpen] = useState(false);
 
   // Quran playback lives here (not inside QuranReaderScreen/FullSurahReciterScreen)
   // so it survives navigating to another screen — the reader screens become thin
@@ -4588,6 +4817,7 @@ function AzkarApp() {
           onSkip={skipQuranSeconds}
           onSeek={seekQuranTo}
           onCycleSpeed={cycleQuranSpeed}
+          onClose={stopQuranPlayback}
         />
       )}
 
@@ -4609,6 +4839,7 @@ function AzkarApp() {
           onSkip={skipQuranSeconds}
           onSeek={seekQuranTo}
           onCycleSpeed={cycleQuranSpeed}
+          onClose={stopQuranPlayback}
         />
       )}
 
@@ -4711,9 +4942,19 @@ function AzkarApp() {
               setScreen("quran-full-reciter");
             }
           }}
+          onClose={stopQuranPlayback}
           aboveNav={TAB_SCREENS.includes(screen)}
         />
       )}
+
+      {TAB_SCREENS.includes(screen) && !showOnboarding && (
+        <AssistantFab
+          onOpen={() => setAssistantOpen(true)}
+          liftedByPlayer={!!quranPlayerState && screen !== "quran-reader" && screen !== "quran-full-reciter"}
+        />
+      )}
+
+      {assistantOpen && <AssistantOverlay onClose={() => setAssistantOpen(false)} />}
 
       {showOnboarding && (
         <OnboardingOverlay
@@ -7486,8 +7727,21 @@ function SettingsScreen({
   const [expanded, setExpanded] = useState(null); // which accordion section is open, if any
   const [confirmingFactoryReset, setConfirmingFactoryReset] = useState(false);
   const [toast, setToast] = useState(null);
+  const [appVersion, setAppVersion] = useState(APP_VERSION);
   const toastTimerRef = useRef(null);
   const importInputRef = useRef(null);
+
+  // The About section used to show a hardcoded version string that quietly
+  // went stale with every native release — read the real installed
+  // versionName/versionCode instead (a no-op on web, where it just keeps
+  // the APP_VERSION fallback).
+  useEffect(() => {
+    CapacitorApp.getInfo()
+      .then((info) => {
+        if (info?.version) setAppVersion(`${info.version} (${info.build})`);
+      })
+      .catch(() => {});
+  }, []);
 
   const toggleSection = (id) => setExpanded((prev) => (prev === id ? null : id));
 
@@ -8222,7 +8476,7 @@ function SettingsScreen({
           Mes Azkar
         </p>
         <p className="font-ui" style={{ color: COLORS.inkSoft, fontSize: 12, marginTop: 2 }}>
-          {t("version_label")} {APP_VERSION}
+          {t("version_label")} {appVersion}
         </p>
 
         <p className="font-ui font-semibold mt-4 mb-2" style={{ color: COLORS.inkSoft, fontSize: 11, letterSpacing: 0.3, textTransform: "uppercase" }}>
@@ -9667,18 +9921,25 @@ function FullSurahReciterScreen({
   onSkip,
   onSeek,
   onCycleSpeed,
+  onClose,
 }) {
   const reciter = FULL_SURAH_RECITERS.find((r) => r.id === reciterId) || FULL_SURAH_RECITERS[0];
   const isThisReciter = player && player.mode === "surah" && player.reciterId === reciterId;
   const playingSurah = isThisReciter ? player.surahNumber : null;
   const isPlaying = isThisReciter && player.isPlaying;
   const repeatOne = isThisReciter && player.repeatOne;
+  // Once a surah starts, focus the screen on the player itself instead of
+  // showing it pinned above the full 114-surah list — with a long list the
+  // playing entry could be scrolled far below, out of sync with the card up
+  // top. The list is one tap away via "choose another surah" on the card.
+  const [showSurahList, setShowSurahList] = useState(false);
 
   const toggleSurah = (surahNumber) => {
     if (playingSurah === surahNumber) {
       isPlaying ? onPause() : onResume();
     } else {
       onPlaySurah(surahNumber);
+      setShowSurahList(false);
     }
   };
 
@@ -9724,10 +9985,23 @@ function FullSurahReciterScreen({
           onCycleSpeed={onCycleSpeed}
           onToggleRepeat={onToggleRepeat}
           repeatOne={repeatOne}
+          onClose={onClose}
         />
       )}
 
-      <div className="flex flex-col gap-2">
+      {isThisReciter && (
+        <button
+          onClick={() => setShowSurahList((v) => !v)}
+          className="flex items-center justify-center gap-1.5 active:opacity-70 mb-4"
+          style={{ padding: "9px 0", borderRadius: 12, background: inkA(0.05) }}
+        >
+          <span className="font-ui font-semibold" style={{ color: COLORS.ink, fontSize: 12.5 }}>
+            {showSurahList ? t("hide_surah_list") : t("choose_another_surah")}
+          </span>
+        </button>
+      )}
+
+      <div className="flex flex-col gap-2" style={{ display: !isThisReciter || showSurahList ? "flex" : "none" }}>
         {QURAN_SURAHS.map((s) => {
           const playing = playingSurah === s.number;
           return (
@@ -9793,6 +10067,7 @@ function QuranReaderScreen({
   onSkip,
   onSeek,
   onCycleSpeed,
+  onClose,
 }) {
   const [ayahs, setAyahs] = useState(null);
   const [status, setStatus] = useState("loading"); // 'loading' | 'ready' | 'error'
@@ -10048,6 +10323,7 @@ function QuranReaderScreen({
           onCycleSpeed={onCycleSpeed}
           onToggleRepeat={onToggleRepeat}
           repeatOne={repeatOne}
+          onClose={onClose}
         />
       )}
 
@@ -10341,6 +10617,189 @@ function MushafJumpOverlay({ onSelectSurah, onSelectJuz, onSelectBookmark, onDel
 // standalone Mushaf screen above and by the per-surah reader's "Mushaf (arabe
 // seul)" tab (started at that surah's first printed page, no header of its own
 // since it's embedded under the reader's existing header/tabs).
+// Small floating toolbar anchored right at the word the reader tapped in the
+// Mushaf — play just that verse, or open its translation. Mirrors the
+// tap-a-verse-for-a-toolbar pattern of other Quran readers, kept in the
+// app's own gold/parchment palette rather than copying a reference app's.
+function MushafVersePopup({ surahNumber, ayahNumber, anchorTop, anchorLeft, onTranslate, onClose }) {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const audioRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, [surahNumber, ayahNumber]);
+
+  const togglePlay = () => {
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause();
+        setIsPlaying(false);
+      } else {
+        audioRef.current.play().catch(() => setIsPlaying(false));
+        setIsPlaying(true);
+      }
+      return;
+    }
+    const globalNum = globalAyahNumber(surahNumber, ayahNumber);
+    const audio = new Audio(reciterAudioUrl(RECITERS[0].id, globalNum));
+    audio.addEventListener("ended", () => setIsPlaying(false));
+    audioRef.current = audio;
+    audio.play().catch(() => setIsPlaying(false));
+    setIsPlaying(true);
+  };
+
+  // Clamp so the toolbar never runs off the sides of the screen, and flip
+  // below the word instead of above it when there isn't room above.
+  const width = 116;
+  const left = Math.min(Math.max(anchorLeft - width / 2, 8), window.innerWidth - width - 8);
+  const showBelow = anchorTop < 90;
+  const top = showBelow ? anchorTop + 34 : anchorTop - 54;
+
+  return (
+    <>
+      <div className="fixed inset-0" style={{ zIndex: 69 }} onClick={onClose} />
+      <div
+        className="fixed flex items-center justify-between fade-in"
+        style={{
+          zIndex: 70,
+          top,
+          left,
+          width,
+          background: COLORS.parchment,
+          border: `1px solid ${COLORS.goldLight}`,
+          borderRadius: 14,
+          padding: "7px 8px",
+          boxShadow: "0 8px 22px rgba(0,0,0,0.22)",
+        }}
+      >
+        <button
+          onClick={togglePlay}
+          className="flex items-center justify-center active:scale-95 transition"
+          style={{ width: 34, height: 34, borderRadius: 99, background: `${COLORS.goldLight}29` }}
+          aria-label={isPlaying ? t("pause_label") : t("play_verse")}
+        >
+          {isPlaying ? <PauseIcon color={COLORS.goldLight} size={14} /> : <PlayIcon color={COLORS.goldLight} size={14} />}
+        </button>
+        <button
+          onClick={onTranslate}
+          className="flex items-center justify-center active:scale-95 transition"
+          style={{ width: 34, height: 34, borderRadius: 99, background: inkA(0.06) }}
+          aria-label={t("tap_verse_for_translation")}
+        >
+          <GlobeIcon color={COLORS.inkSoft} size={15} />
+        </button>
+      </div>
+    </>
+  );
+}
+
+// Bottom sheet showing the translation of a single verse tapped in the
+// Mushaf — reuses the same alquran.cloud editions as QuranReaderScreen, just
+// fetched for one surah+ayah instead of merged with the Arabic text.
+function MushafTranslationSheet({ surahNumber, ayahNumber, onClose }) {
+  const [status, setStatus] = useState("loading"); // 'loading' | 'ready' | 'error' | 'arabic-mode'
+  const [text, setText] = useState("");
+  const surahMeta = QURAN_SURAHS.find((s) => s.number === surahNumber);
+
+  useEffect(() => {
+    if (currentLanguage === "ar") {
+      setStatus("arabic-mode");
+      return;
+    }
+    let cancelled = false;
+    setStatus("loading");
+    (async () => {
+      try {
+        const edition = currentLanguage === "en" ? "en.sahih" : "fr.hamidullah";
+        const res = await fetch(`${QURAN_API_BASE}/${surahNumber}/${edition}`).then((r) => r.json());
+        if (cancelled) return;
+        const ayahs = res?.data?.ayahs || [];
+        const found = ayahs.find((a) => a.numberInSurah === ayahNumber);
+        if (!found) {
+          setStatus("error");
+          return;
+        }
+        setText(found.text);
+        setStatus("ready");
+      } catch (e) {
+        if (!cancelled) setStatus("error");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [surahNumber, ayahNumber]);
+
+  return (
+    <div className="fixed inset-0 flex items-end fade-in" style={{ zIndex: 70 }} onClick={onClose}>
+      <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)" }} />
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="relative w-full"
+        style={{
+          background: COLORS.parchment,
+          border: `1px solid ${COLORS.parchmentDark}`,
+          borderBottom: "none",
+          borderRadius: "22px 22px 0 0",
+          padding: "10px 20px calc(20px + env(safe-area-inset-bottom, 0px))",
+          maxHeight: "60vh",
+          overflowY: "auto",
+          boxShadow: "0 -10px 34px rgba(0,0,0,0.22)",
+        }}
+      >
+        <div className="flex justify-center" style={{ marginBottom: 10 }}>
+          <div style={{ width: 36, height: 4, borderRadius: 99, background: COLORS.parchmentDark }} />
+        </div>
+
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <p className="font-display font-semibold" style={{ color: COLORS.ink, fontSize: 14.5 }}>
+              {surahMeta ? surahMeta.translit : ""}
+            </p>
+            <p className="font-ui" style={{ color: COLORS.inkSoft, fontSize: 11.5 }}>
+              {t("verse_label")} {ayahNumber}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 active:opacity-60 flex-shrink-0"
+            style={{ borderRadius: 99, background: inkA(0.06) }}
+            aria-label={t("close")}
+          >
+            <CloseIcon color={COLORS.inkSoft} size={14} />
+          </button>
+        </div>
+
+        {status === "loading" && (
+          <p className="font-ui" style={{ color: COLORS.inkSoft, fontSize: 13 }}>
+            {t("loading_translation")}
+          </p>
+        )}
+        {status === "error" && (
+          <p className="font-ui" style={{ color: COLORS.inkSoft, fontSize: 13, lineHeight: 1.6 }}>
+            {t("error_load_translation")}
+          </p>
+        )}
+        {status === "arabic-mode" && (
+          <p className="font-ui" style={{ color: COLORS.inkSoft, fontSize: 13, lineHeight: 1.6 }}>
+            {t("translation_arabic_mode_hint")}
+          </p>
+        )}
+        {status === "ready" && (
+          <p className="font-ui" style={{ color: COLORS.ink, fontSize: 14.5, lineHeight: 1.7 }}>
+            {text}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function MushafPageView({ initialPage, persistKey, showHeader = false, onBack }) {
   const [pageNumber, setPageNumber] = useState(initialPage);
   const [pageData, setPageData] = useState(null);
@@ -10352,6 +10811,9 @@ function MushafPageView({ initialPage, persistKey, showHeader = false, onBack })
   const [pageMarked, setPageMarked] = useState(false);
   const [jumpOverlayOpen, setJumpOverlayOpen] = useState(false);
   const [bookmarks, setBookmarks] = useState([]);
+  const [translationVerse, setTranslationVerse] = useState(null); // { surah, ayah } | null
+  const [versePopup, setVersePopup] = useState(null); // { surah, ayah, top, left } | null — small toolbar anchored at the tapped word
+  const highlightedVerse = translationVerse || versePopup;
   const pageContainerRef = useRef(null);
   const pageContentRef = useRef(null);
   const touchStartXRef = useRef(null);
@@ -10595,14 +11057,13 @@ function MushafPageView({ initialPage, persistKey, showHeader = false, onBack })
     }
   }, [scale, pageData]);
 
-  // The standalone Mushaf screen reads full-screen and immersive — hide the
-  // system status bar for as long as it's open, restore it on the way out.
+  // The standalone Mushaf screen used to hide the system status bar for a
+  // fully immersive read — but that also hid the wifi/clock/battery icons
+  // entirely. Keep it visible instead, synced to the current theme so the
+  // icons stay legible (dark icons in the light theme, light icons in dark).
   useEffect(() => {
     if (!showHeader) return;
-    StatusBar.hide().catch(() => {});
-    return () => {
-      StatusBar.show().catch(() => {});
-    };
+    syncStatusBar(currentTheme);
   }, [showHeader]);
 
   const goToPage = (n) => {
@@ -10646,8 +11107,12 @@ function MushafPageView({ initialPage, persistKey, showHeader = false, onBack })
 
   return (
     <div
-      className={showHeader ? "relative flex flex-col px-4 pt-2 pb-3 fade-in" : "flex flex-col fade-in"}
-      style={{ height: showHeader ? "100vh" : "72vh", boxSizing: "border-box" }}
+      className={showHeader ? "relative flex flex-col px-4 pb-3 fade-in" : "flex flex-col fade-in"}
+      style={{
+        height: showHeader ? "100vh" : "72vh",
+        boxSizing: "border-box",
+        paddingTop: showHeader ? "calc(8px + env(safe-area-inset-top, 0px))" : undefined,
+      }}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
@@ -10665,11 +11130,33 @@ function MushafPageView({ initialPage, persistKey, showHeader = false, onBack })
         />
       )}
 
+      {versePopup && (
+        <MushafVersePopup
+          surahNumber={versePopup.surah}
+          ayahNumber={versePopup.ayah}
+          anchorTop={versePopup.top}
+          anchorLeft={versePopup.left}
+          onTranslate={() => {
+            setTranslationVerse({ surah: versePopup.surah, ayah: versePopup.ayah });
+            setVersePopup(null);
+          }}
+          onClose={() => setVersePopup(null)}
+        />
+      )}
+
+      {translationVerse && (
+        <MushafTranslationSheet
+          surahNumber={translationVerse.surah}
+          ayahNumber={translationVerse.ayah}
+          onClose={() => setTranslationVerse(null)}
+        />
+      )}
+
       {showHeader && (
         <button
           onClick={onBack}
           className="absolute active:opacity-60"
-          style={{ top: 8, left: 8, zIndex: 5, padding: 8, borderRadius: 99, background: inkA(0.06) }}
+          style={{ top: "calc(8px + env(safe-area-inset-top, 0px))", left: 8, zIndex: 5, padding: 8, borderRadius: 99, background: inkA(0.06) }}
           aria-label={t("back")}
         >
           <BackIcon color={COLORS.ink} />
@@ -10709,7 +11196,6 @@ function MushafPageView({ initialPage, persistKey, showHeader = false, onBack })
             <div className="flex-1 flex flex-col justify-center px-1" style={{ paddingTop: 14 * scale, paddingBottom: 14 * scale }}>
               {pageData.lines.map((line) => {
                 const surahMeta = line.surahStart ? QURAN_SURAHS.find((s) => s.number === line.surahStart) : null;
-                const lineText = line.words.map((w) => w.code).join(" ");
                 return (
                   <div key={line.lineNumber}>
                     {surahMeta && (
@@ -10746,13 +11232,43 @@ function MushafPageView({ initialPage, persistKey, showHeader = false, onBack })
                         textAlignLast: "justify",
                         fontFamily: fontFamily || undefined,
                       }}
+                      onClick={(e) => {
+                        const wordEl = e.target.closest("[data-ayah]");
+                        if (!wordEl) return;
+                        const rect = wordEl.getBoundingClientRect();
+                        setVersePopup({
+                          surah: Number(wordEl.dataset.surah),
+                          ayah: Number(wordEl.dataset.ayah),
+                          top: rect.top,
+                          left: rect.left + rect.width / 2,
+                        });
+                      }}
                     >
-                      {lineText}
+                      {line.words.map((w, i) => {
+                        const highlighted =
+                          highlightedVerse && highlightedVerse.surah === w.chapterNumber && highlightedVerse.ayah === w.verseNumber;
+                        return (
+                          <React.Fragment key={i}>
+                            <span
+                              data-surah={w.chapterNumber}
+                              data-ayah={w.verseNumber}
+                              style={{ background: highlighted ? `${COLORS.goldLight}33` : "transparent", borderRadius: 4 }}
+                            >
+                              {w.code}
+                            </span>
+                            {i < line.words.length - 1 ? " " : ""}
+                          </React.Fragment>
+                        );
+                      })}
                     </p>
                   </div>
                 );
               })}
             </div>
+
+            <p className="font-ui text-center" style={{ color: COLORS.inkFaint, fontSize: 10.5, marginBottom: 4 }}>
+              {t("tap_verse_for_translation")}
+            </p>
 
             <div className="flex items-center justify-center gap-2.5 mt-1">
               <span className="font-ui" style={{ color: COLORS.inkSoft, fontSize: 12 }}>
