@@ -2127,6 +2127,16 @@ const FULL_SURAH_RECITERS = [
   { id: "luhaidan", name: "Muhammad Al-Luhaidan", arabicName: "محمد اللحيدان", server: "https://server8.mp3quran.net/lhdan/" },
   { id: "dosari", name: "Yasser Al-Dosari", arabicName: "ياسر الدوسري", server: "https://server11.mp3quran.net/yasser/" },
   { id: "baleela", name: "Bandar Baleela", arabicName: "بندر بليلة", server: "https://server6.mp3quran.net/balilah/" },
+  { id: "afasy", name: "Mishary Alafasy", arabicName: "مشاري العفاسي", server: "https://server8.mp3quran.net/afs/" },
+  { id: "muaiqly-full", name: "Maher Al-Muaiqly", arabicName: "ماهر المعيقلي", server: "https://server12.mp3quran.net/maher/" },
+  { id: "ghamdi", name: "Saad Al-Ghamdi", arabicName: "سعد الغامدي", server: "https://server6.mp3quran.net/ghamdi/" },
+  { id: "ayyub-full", name: "Muhammad Ayyoub", arabicName: "محمد أيوب", server: "https://server8.mp3quran.net/ayyub/" },
+  { id: "qatami", name: "Nasser Al-Qatami", arabicName: "ناصر القطامي", server: "https://server10.mp3quran.net/qht/" },
+  { id: "abkar", name: "Idris Abkar", arabicName: "إدريس أبكر", server: "https://server6.mp3quran.net/abkr/" },
+  { id: "mohisni", name: "Muhammad Al-Mohisni", arabicName: "محمد المحيسني", server: "https://server11.mp3quran.net/mhsny/" },
+  { id: "akhdar-full", name: "Ibrahim Al-Akhdar", arabicName: "إبراهيم الأخضر", server: "https://server6.mp3quran.net/akdr/" },
+  { id: "alaqmi", name: "Akram Al-Alaqmi", arabicName: "أكرم العلاقمي", server: "https://server9.mp3quran.net/akrm/" },
+  { id: "othman-khan", name: "Muhammad Othman Khan", arabicName: "محمد عثمان خان", server: "https://server6.mp3quran.net/khan/" },
 ];
 function fullSurahAudioUrl(reciter, surahNumber) {
   return `${reciter.server}${String(surahNumber).padStart(3, "0")}.mp3`;
@@ -2136,6 +2146,14 @@ const QURAN_TOTAL_PAGES = 604;
 const JUZ_START_PAGES = [
   1, 22, 42, 62, 82, 102, 121, 142, 162, 182, 201, 222, 242, 262, 282, 302, 322, 342, 362, 382, 402, 422, 442, 462,
   482, 502, 522, 542, 562, 582,
+];
+
+// The surah each juz opens with, per the standard 30-part Uthmani division —
+// shown next to the juz number in the "Aller à…" picker so juz aren't just
+// bare numbers (a juz can run across several surahs, but its opening one is
+// what readers actually recognize it by).
+const JUZ_START_SURAHS = [
+  1, 2, 2, 3, 4, 4, 5, 6, 7, 8, 9, 11, 12, 15, 17, 18, 21, 23, 25, 27, 29, 33, 36, 39, 41, 46, 51, 58, 67, 78,
 ];
 
 /* ------------------------------------------------------------------ */
@@ -3301,6 +3319,16 @@ function QuranPlaybackCard({
         </button>
       </div>
     </div>
+  );
+}
+
+function HeadphonesIcon({ color, size = 24 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <path d="M4 13v-1a8 8 0 0 1 16 0v1" stroke={color} strokeWidth="1.7" strokeLinecap="round" />
+      <rect x="2.5" y="13" width="4.5" height="7" rx="2" stroke={color} strokeWidth="1.7" />
+      <rect x="17" y="13" width="4.5" height="7" rx="2" stroke={color} strokeWidth="1.7" />
+    </svg>
   );
 }
 
@@ -4690,7 +4718,7 @@ function AzkarApp() {
   }
 
   return (
-    <div style={{ background: COLORS.bg, minHeight: "100vh", maxWidth: 560, margin: "0 auto", position: "relative" }} className="font-ui" dir={isRTL(language) ? "rtl" : "ltr"}>
+    <div style={{ background: COLORS.bg, minHeight: "100vh", maxWidth: 1024, margin: "0 auto", position: "relative" }} className="font-ui" dir={isRTL(language) ? "rtl" : "ltr"}>
       <style>{FONT_STYLE}</style>
 
       {screen === "home" && (
@@ -9758,6 +9786,12 @@ function ReciterCard({ r, active, onOpen, previewSrc }) {
 }
 
 function RecitersScreen({ onBack, onOpenReciterSpace, onOpenFullSurahReciter }) {
+  // Two clearly separate destinations rather than one long scrolling list —
+  // verse-by-verse (stops after each ayah, for learning/following along) and
+  // continuous (plays a whole surah straight through, for listening). Picking
+  // one from a mixed list was easy to miss; a landing choice makes the
+  // difference obvious up front.
+  const [mode, setMode] = useState(null); // null | 'ayah' | 'continuous'
   const [currentReciter, setCurrentReciter] = useState(RECITERS[0].id);
 
   useEffect(() => {
@@ -9780,6 +9814,73 @@ function RecitersScreen({ onBack, onOpenReciterSpace, onOpenFullSurahReciter }) 
     onOpenReciterSpace(id);
   };
 
+  if (mode === "ayah") {
+    return (
+      <div className="min-h-screen flex flex-col px-5 pt-6 pb-10 fade-in">
+        <div className="flex items-center justify-between mb-1">
+          <button onClick={() => setMode(null)} className="p-2.5 -ml-2 active:opacity-60" aria-label={t("back")}>
+            <BackIcon color={COLORS.ink} />
+          </button>
+          <p className="font-display" style={{ color: COLORS.ink, fontSize: 15 }}>
+            {t("reciters_mode_ayah_title")}
+          </p>
+          <div className="w-9" />
+        </div>
+        <p className="font-ui text-center mb-5 px-2" style={{ color: COLORS.inkSoft, fontSize: 11.5, lineHeight: 1.5 }}>
+          {RECITERS.length} {t("reciters_available")}
+        </p>
+
+        <p className="font-ui font-semibold mb-2.5" style={{ color: COLORS.goldLight, fontSize: 11.5, letterSpacing: 0.4, textTransform: "uppercase" }}>
+          {t("most_followed")}
+        </p>
+        <div className="grid grid-cols-2 gap-2.5 mb-6">
+          {popular.map((r) => (
+            <ReciterCard key={r.id} r={r} active={r.id === currentReciter} onOpen={openSpace} previewSrc={reciterAudioUrl(r.id, 1)} />
+          ))}
+        </div>
+
+        <p className="font-ui font-semibold mb-2.5" style={{ color: COLORS.inkSoft, fontSize: 11.5, letterSpacing: 0.4, textTransform: "uppercase" }}>
+          {t("other_reciters")}
+        </p>
+        <div className="grid grid-cols-2 gap-2.5">
+          {others.map((r) => (
+            <ReciterCard key={r.id} r={r} active={r.id === currentReciter} onOpen={openSpace} previewSrc={reciterAudioUrl(r.id, 1)} />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (mode === "continuous") {
+    return (
+      <div className="min-h-screen flex flex-col px-5 pt-6 pb-10 fade-in">
+        <div className="flex items-center justify-between mb-1">
+          <button onClick={() => setMode(null)} className="p-2.5 -ml-2 active:opacity-60" aria-label={t("back")}>
+            <BackIcon color={COLORS.ink} />
+          </button>
+          <p className="font-display" style={{ color: COLORS.ink, fontSize: 15 }}>
+            {t("reciters_mode_continuous_title")}
+          </p>
+          <div className="w-9" />
+        </div>
+        <p className="font-ui text-center mb-5 px-2" style={{ color: COLORS.inkSoft, fontSize: 11.5, lineHeight: 1.5 }}>
+          {t("full_surah_reciters_hint")}
+        </p>
+        <div className="grid grid-cols-2 gap-2.5">
+          {FULL_SURAH_RECITERS.map((r) => (
+            <ReciterCard
+              key={r.id}
+              r={r}
+              active={false}
+              onOpen={() => onOpenFullSurahReciter(r.id)}
+              previewSrc={fullSurahAudioUrl(r, 1)}
+            />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col px-5 pt-6 pb-10 fade-in">
       <div className="flex items-center justify-between mb-1">
@@ -9791,45 +9892,47 @@ function RecitersScreen({ onBack, onOpenReciterSpace, onOpenFullSurahReciter }) 
         </p>
         <div className="w-9" />
       </div>
-      <p className="font-ui text-center mb-5 px-2" style={{ color: COLORS.inkSoft, fontSize: 11.5, lineHeight: 1.5 }}>
-        {RECITERS.length} {t("reciters_available")}
+      <p className="font-ui text-center mb-6 px-2" style={{ color: COLORS.inkSoft, fontSize: 11.5, lineHeight: 1.5 }}>
+        {t("reciters_mode_intro")}
       </p>
 
-      <p className="font-ui font-semibold mb-2.5" style={{ color: COLORS.goldLight, fontSize: 11.5, letterSpacing: 0.4, textTransform: "uppercase" }}>
-        {t("most_followed")}
-      </p>
-      <div className="grid grid-cols-2 gap-2.5 mb-6">
-        {popular.map((r) => (
-          <ReciterCard key={r.id} r={r} active={r.id === currentReciter} onOpen={openSpace} previewSrc={reciterAudioUrl(r.id, 1)} />
-        ))}
-      </div>
+      <button
+        onClick={() => setMode("ayah")}
+        className="flex items-center gap-4 text-left active:scale-[0.98] transition mb-3"
+        style={{ background: COLORS.parchment, border: `1px solid ${COLORS.parchmentDark}`, borderRadius: 18, padding: "18px 16px" }}
+      >
+        <div className="flex items-center justify-center flex-shrink-0" style={{ width: 48, height: 48, borderRadius: 14, background: `${COLORS.goldLight}29` }}>
+          <BookIcon color={COLORS.goldLight} size={24} />
+        </div>
+        <div className="flex-1">
+          <p className="font-display font-semibold" style={{ color: COLORS.ink, fontSize: 15 }}>
+            {t("reciters_mode_ayah_title")}
+          </p>
+          <p className="font-ui mt-0.5" style={{ color: COLORS.inkSoft, fontSize: 12, lineHeight: 1.4 }}>
+            {t("reciters_mode_ayah_hint")}
+          </p>
+        </div>
+        <ChevronIcon dir="right" color={COLORS.inkFaint} size={16} />
+      </button>
 
-      <p className="font-ui font-semibold mb-2.5" style={{ color: COLORS.inkSoft, fontSize: 11.5, letterSpacing: 0.4, textTransform: "uppercase" }}>
-        {t("other_reciters")}
-      </p>
-      <div className="grid grid-cols-2 gap-2.5 mb-6">
-        {others.map((r) => (
-          <ReciterCard key={r.id} r={r} active={r.id === currentReciter} onOpen={openSpace} previewSrc={reciterAudioUrl(r.id, 1)} />
-        ))}
-      </div>
-
-      <p className="font-ui font-semibold mb-1.5" style={{ color: COLORS.inkSoft, fontSize: 11.5, letterSpacing: 0.4, textTransform: "uppercase" }}>
-        {t("full_surah_reciters")}
-      </p>
-      <p className="font-ui mb-2.5" style={{ color: COLORS.inkFaint, fontSize: 10.5, lineHeight: 1.4 }}>
-        {t("full_surah_reciters_hint")}
-      </p>
-      <div className="grid grid-cols-2 gap-2.5">
-        {FULL_SURAH_RECITERS.map((r) => (
-          <ReciterCard
-            key={r.id}
-            r={r}
-            active={false}
-            onOpen={() => onOpenFullSurahReciter(r.id)}
-            previewSrc={fullSurahAudioUrl(r, 1)}
-          />
-        ))}
-      </div>
+      <button
+        onClick={() => setMode("continuous")}
+        className="flex items-center gap-4 text-left active:scale-[0.98] transition"
+        style={{ background: COLORS.parchment, border: `1px solid ${COLORS.parchmentDark}`, borderRadius: 18, padding: "18px 16px" }}
+      >
+        <div className="flex items-center justify-center flex-shrink-0" style={{ width: 48, height: 48, borderRadius: 14, background: `${COLORS.goldLight}29` }}>
+          <HeadphonesIcon color={COLORS.goldLight} size={24} />
+        </div>
+        <div className="flex-1">
+          <p className="font-display font-semibold" style={{ color: COLORS.ink, fontSize: 15 }}>
+            {t("reciters_mode_continuous_title")}
+          </p>
+          <p className="font-ui mt-0.5" style={{ color: COLORS.inkSoft, fontSize: 12, lineHeight: 1.4 }}>
+            {t("reciters_mode_continuous_hint")}
+          </p>
+        </div>
+        <ChevronIcon dir="right" color={COLORS.inkFaint} size={16} />
+      </button>
     </div>
   );
 }
@@ -10553,24 +10656,30 @@ function MushafJumpOverlay({ onSelectSurah, onSelectJuz, onSelectBookmark, onDel
         </div>
       ) : tab === "juz" ? (
         <div className="flex-1 overflow-y-auto px-5 pb-8">
-          <div className="grid grid-cols-4 gap-2.5">
-            {JUZ_START_PAGES.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => onSelectJuz(i + 1)}
-                className="flex items-center justify-center active:scale-[0.95] transition"
-                style={{
-                  aspectRatio: "1",
-                  borderRadius: 14,
-                  background: COLORS.parchment,
-                  border: `1px solid ${COLORS.parchmentDark}`,
-                }}
-              >
-                <span className="font-display font-semibold" style={{ color: COLORS.ink, fontSize: 16 }}>
-                  {i + 1}
-                </span>
-              </button>
-            ))}
+          <div className="grid grid-cols-3 gap-2.5">
+            {JUZ_START_PAGES.map((_, i) => {
+              const startSurah = QURAN_SURAHS.find((s) => s.number === JUZ_START_SURAHS[i]);
+              return (
+                <button
+                  key={i}
+                  onClick={() => onSelectJuz(i + 1)}
+                  className="flex flex-col items-center justify-center active:scale-[0.95] transition"
+                  style={{
+                    padding: "12px 6px",
+                    borderRadius: 14,
+                    background: COLORS.parchment,
+                    border: `1px solid ${COLORS.parchmentDark}`,
+                  }}
+                >
+                  <span className="font-ui font-semibold" style={{ color: COLORS.goldLight, fontSize: 10.5, letterSpacing: 0.3, textTransform: "uppercase" }}>
+                    {t("tab_juz")} {i + 1}
+                  </span>
+                  <span className="font-display font-semibold text-center" style={{ color: COLORS.ink, fontSize: 13.5, marginTop: 3 }}>
+                    {startSurah ? startSurah.translit : ""}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
       ) : (
@@ -11050,10 +11159,16 @@ function MushafPageView({ initialPage, persistKey, showHeader = false, onBack })
     if (!pageContentRef.current || !pageContainerRef.current) return;
     const contentH = pageContentRef.current.scrollHeight;
     const containerH = pageContainerRef.current.clientHeight;
+    // Landscape has far more width to fill than portrait ever does, so let
+    // the fit-to-height loop climb higher there — otherwise it plateaus at
+    // the same cap as portrait and the extra width just sits unused, wasted
+    // as generous justify-spacing instead of genuinely larger reading text.
+    const isLandscape = window.innerWidth > window.innerHeight;
+    const maxScale = isLandscape ? 3.2 : 2.2;
     if (contentH > containerH && scale > 0.55) {
       setScale((s) => Math.max(0.55, +(s - 0.04).toFixed(2)));
-    } else if (contentH < containerH * 0.94 && scale < 2.2) {
-      setScale((s) => Math.min(2.2, +(s + 0.04).toFixed(2)));
+    } else if (contentH < containerH * 0.94 && scale < maxScale) {
+      setScale((s) => Math.min(maxScale, +(s + 0.04).toFixed(2)));
     }
   }, [scale, pageData]);
 
