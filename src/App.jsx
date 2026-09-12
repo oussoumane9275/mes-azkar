@@ -641,11 +641,11 @@ const LA_ILAHA = {
   title: "Attestation d'unicité",
   title_en: "Testimony of Allah's oneness",
   arabic:
-    "لَا إِلَٰهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ، وَهُوَ عَلَىٰ كُلِّ شَيْءٍ قَدِيرٌ",
+    "لَا إِلَٰهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ، يُحْيِي وَيُمِيتُ، وَهُوَ عَلَىٰ كُلِّ شَيْءٍ قَدِيرٌ",
   translation:
-    "Il n'y a de divinité qu'Allah, Seul, sans associé. À Lui le règne, à Lui la louange, et Il est capable de toute chose.",
+    "Il n'y a de divinité qu'Allah, Seul, sans associé. À Lui le règne, à Lui la louange, Il fait vivre et Il fait mourir, et Il est capable de toute chose.",
   translation_en:
-    "None has the right to be worshipped except Allah, alone, without partner, to Him belongs all sovereignty and praise, and He is over all things omnipotent.",
+    "None has the right to be worshipped except Allah, alone, without partner, to Him belongs all sovereignty and praise, He gives life and causes death, and He is over all things omnipotent.",
 };
 const SUBHANALLAHI_BIHAMDIHI = {
   title: "Gloire et louange à Allah",
@@ -678,21 +678,21 @@ const AFWU_AFIYA = {
   title: "Pardon et protection",
   title_en: "Pardon and well-being",
   arabic:
-    "اللَّهُمَّ إِنِّي أَسْأَلُكَ الْعَفْوَ وَالْعَافِيَةَ فِي الدُّنْيَا وَالْآخِرَةِ، اللَّهُمَّ إِنِّي أَسْأَلُكَ الْعَفْوَ وَالْعَافِيَةَ فِي دِينِي وَدُنْيَايَ وَأَهْلِي وَمَالِي، اللَّهُمَّ احْفَظْنِي مِنْ بَيْنِ يَدَيَّ وَمِنْ خَلْفِي وَعَنْ يَمِينِي وَعَنْ شِمَالِي وَمِنْ فَوْقِي، وَأَعُوذُ بِعَظَمَتِكَ أَنْ أُغْتَالَ مِنْ تَحْتِي",
+    "اللَّهُمَّ إِنِّي أَسْأَلُكَ الْعَفْوَ وَالْعَافِيَةَ فِي الدُّنْيَا وَالْآخِرَةِ، اللَّهُمَّ إِنِّي أَسْأَلُكَ الْعَفْوَ وَالْعَافِيَةَ فِي دِينِي وَدُنْيَايَ وَأَهْلِي وَمَالِي، اللَّهُمَّ اسْتُرْ عَوْرَاتِي وَآمِنْ رَوْعَاتِي، اللَّهُمَّ احْفَظْنِي مِنْ بَيْنِ يَدَيَّ وَمِنْ خَلْفِي وَعَنْ يَمِينِي وَعَنْ شِمَالِي وَمِنْ فَوْقِي، وَأَعُوذُ بِعَظَمَتِكَ أَنْ أُغْتَالَ مِنْ تَحْتِي",
   translation:
-    "Ô Allah, je Te demande le pardon et la préservation en cette vie et dans l'au-delà, dans ma religion, mon existence, ma famille et mes biens. Ô Allah, protège-moi de devant moi, de derrière moi, de ma droite, de ma gauche et d'au-dessus de moi. Et je cherche protection en Ta grandeur contre le fait d'être surpris par le mal venant d'en dessous.",
+    "Ô Allah, je Te demande le pardon et la préservation en cette vie et dans l'au-delà, dans ma religion, mon existence, ma famille et mes biens. Ô Allah, couvre mes fautes et mes parties intimes, et apaise mes frayeurs. Ô Allah, protège-moi de devant moi, de derrière moi, de ma droite, de ma gauche et d'au-dessus de moi. Et je cherche protection en Ta grandeur contre le fait d'être surpris par le mal venant d'en dessous.",
   translation_en:
-    "O Allah, I ask You for pardon and well-being in this life and the next. O Allah, I ask You for pardon and well-being in my religious and worldly affairs, and my family and my wealth. O Allah, preserve me from the front and from behind and on my right and on my left and from above, and I take refuge with You lest I be swallowed up by the earth.",
+    "O Allah, I ask You for pardon and well-being in this life and the next. O Allah, I ask You for pardon and well-being in my religious and worldly affairs, and my family and my wealth. O Allah, conceal my faults and secure me from fear. O Allah, preserve me from the front and from behind and on my right and on my left and from above, and I take refuge with You lest I be swallowed up by the earth.",
 };
 const ALIM_GHAYB = {
   title: "Connaisseur de l'invisible",
   title_en: "Knower of the unseen",
   arabic:
-    "اللَّهُمَّ عَالِمَ الْغَيْبِ وَالشَّهَادَةِ، فَاطِرَ السَّمَاوَاتِ وَالْأَرْضِ، رَبَّ كُلِّ شَيْءٍ وَمَلِيكَهُ، أَشْهَدُ أَنْ لَا إِلَٰهَ إِلَّا أَنْتَ، أَعُوذُ بِكَ مِنْ شَرِّ نَفْسِي، وَمِنْ شَرِّ الشَّيْطَانِ وَشِرْكِهِ",
+    "اللَّهُمَّ عَالِمَ الْغَيْبِ وَالشَّهَادَةِ، فَاطِرَ السَّمَاوَاتِ وَالْأَرْضِ، رَبَّ كُلِّ شَيْءٍ وَمَلِيكَهُ، أَشْهَدُ أَنْ لَا إِلَٰهَ إِلَّا أَنْتَ، أَعُوذُ بِكَ مِنْ شَرِّ نَفْسِي، وَمِنْ شَرِّ الشَّيْطَانِ وَشِرْكِهِ، وَأَنْ أَقْتَرِفَ عَلَىٰ نَفْسِي سُوءًا أَوْ أَجُرَّهُ إِلَىٰ مُسْلِمٍ",
   translation:
-    "Ô Allah, Connaisseur de l'invisible et du visible, Créateur des cieux et de la terre, Seigneur et Souverain de toute chose, j'atteste qu'il n'y a de divinité que Toi. Je cherche protection auprès de Toi contre le mal de mon âme, et contre le mal du diable et de ses pièges.",
+    "Ô Allah, Connaisseur de l'invisible et du visible, Créateur des cieux et de la terre, Seigneur et Souverain de toute chose, j'atteste qu'il n'y a de divinité que Toi. Je cherche protection auprès de Toi contre le mal de mon âme, et contre le mal du diable et de ses pièges associateurs, et contre le fait de commettre un mal envers moi-même ou de l'entraîner vers un musulman.",
   translation_en:
-    "O Allah, Knower of the unseen and the seen, Creator of the heavens and the earth, Lord and Sovereign of all things, I bear witness that none has the right to be worshipped except You. I take refuge in You from the evil of my soul and from the evil and shirk of the devil.",
+    "O Allah, Knower of the unseen and the seen, Creator of the heavens and the earth, Lord and Sovereign of all things, I bear witness that none has the right to be worshipped except You. I take refuge in You from the evil of my soul and from the evil and shirk of the devil, and from bringing evil upon myself or dragging it towards a Muslim.",
 };
 const BISMILLAH_YADURRU = {
   title: "Rien ne peut nuire",
@@ -703,6 +703,20 @@ const BISMILLAH_YADURRU = {
     "Au nom d'Allah, avec le Nom duquel rien ne peut nuire ni sur terre ni dans le ciel, et Il est l'Audient, l'Omniscient.",
   translation_en:
     "In the name of Allah, with whose name nothing is harmed on earth nor in the heavens, and He is the All-Hearing, the All-Knowing.",
+};
+const KALIMAT_TAMMAT = {
+  title: "Paroles parfaites d'Allah",
+  title_en: "Allah's perfect words",
+  arabic: "أَعُوذُ بِكَلِمَاتِ اللَّهِ التَّامَّاتِ مِنْ شَرِّ مَا خَلَقَ",
+  translation: "Je cherche protection dans les paroles parfaites d'Allah contre le mal de ce qu'Il a créé.",
+  translation_en: "I take refuge in the perfect words of Allah from the evil of what He has created.",
+};
+const SUBHANALLAHI_ADHIM_BIHAMDIHI = {
+  title: "Gloire à Allah l'Immense",
+  title_en: "Glory be to Allah the Almighty",
+  arabic: "سُبْحَانَ اللَّهِ الْعَظِيمِ وَبِحَمْدِهِ",
+  translation: "Gloire à Allah l'Immense, et louange à Lui.",
+  translation_en: "How perfect Allah, the Almighty, is, and I praise Him.",
 };
 const RADITU = {
   title: "Satisfait d'Allah",
@@ -846,6 +860,7 @@ const MATIN_ITEMS = [
   { id: "m12", count: 1, ...AFWU_AFIYA, audio: "/audio/matin/m12-pardon-et-sante.ogg" },
   { id: "m13", count: 1, ...ALIM_GHAYB, audio: "/audio/matin/m13-connaisseur-de-linvisible.ogg" },
   { id: "m14", count: 3, ...BISMILLAH_YADURRU, audio: "/audio/matin/m14-bismillah-protection.ogg" },
+  { id: "m14b", count: 3, ...KALIMAT_TAMMAT },
   { id: "m15", count: 3, ...RADITU, audio: "/audio/matin/m15-je-suis-satisfait-dallah.ogg" },
   { id: "m16", count: 1, ...YA_HAYYU_QAYYUM, audio: "/audio/matin/m16-ya-hayyu-ya-qayyum.ogg" },
   {
@@ -862,6 +877,7 @@ const MATIN_ITEMS = [
     audio: "/audio/matin/m17-nature-originelle-de-lislam.ogg",
   },
   { id: "m18", count: 100, ...SUBHANALLAHI_BIHAMDIHI, audio: "/audio/matin/m18-subhanallahi-wa-bihamdihi.ogg" },
+  { id: "m18b", count: 100, ...SUBHANALLAHI_ADHIM_BIHAMDIHI },
   { id: "m19", count: 10, ...LA_ILAHA, audio: "/audio/matin/m19-la-ilaha-illallah.ogg" },
   {
     id: "m20",
@@ -938,6 +954,7 @@ const SOIR_ITEMS = [
   { id: "s12", count: 1, ...AFWU_AFIYA, audio: "/audio/matin/m12-pardon-et-sante.ogg" },
   { id: "s13", count: 1, ...ALIM_GHAYB, audio: "/audio/matin/m13-connaisseur-de-linvisible.ogg" },
   { id: "s14", count: 3, ...BISMILLAH_YADURRU, audio: "/audio/matin/m14-bismillah-protection.ogg" },
+  { id: "s14b", count: 3, ...KALIMAT_TAMMAT },
   { id: "s15", count: 3, ...RADITU, audio: "/audio/matin/m15-je-suis-satisfait-dallah.ogg" },
   { id: "s16", count: 1, ...YA_HAYYU_QAYYUM, audio: "/audio/matin/m16-ya-hayyu-ya-qayyum.ogg" },
   {
@@ -953,6 +970,7 @@ const SOIR_ITEMS = [
       "We have reached the evening upon the natural religion of Islam, the word of sincere devotion, the religion of our Prophet Muhammad ﷺ, and the faith of our father Abraham, who was upright in submission to Allah and was not amongst the polytheists.",
   },
   { id: "s18", count: 100, ...SUBHANALLAHI_BIHAMDIHI, audio: "/audio/matin/m18-subhanallahi-wa-bihamdihi.ogg" },
+  { id: "s18b", count: 100, ...SUBHANALLAHI_ADHIM_BIHAMDIHI },
   { id: "s19", count: 10, ...LA_ILAHA, audio: "/audio/matin/m19-la-ilaha-illallah.ogg" },
   {
     id: "s20",
