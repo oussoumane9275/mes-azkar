@@ -6,8 +6,15 @@
 const FAQ = {
   fr: [
     {
+      id: "home-widget",
+      keywords: ["widget"],
+      question: "Comment ajouter le widget sur l'écran d'accueil du téléphone ?",
+      answer:
+        "En dehors de l'appli : reste appuyé sur un espace vide de l'écran d'accueil de ton téléphone, choisis « Widgets », trouve « Mes Azkar » dans la liste, puis dépose-le. Il affiche les horaires de prière sans avoir à ouvrir l'appli.",
+    },
+    {
       id: "azkar-counter",
-      keywords: ["azkar", "compteur", "compter", "toucher", "cercle", "zikr", "dhikr", "rond", "repetition", "repetitions"],
+      keywords: ["compteur", "compter", "toucher", "cercle", "rond"],
       question: "Comment compter mes azkar ?",
       answer:
         "Touche le cercle doré au centre de l'écran à chaque récitation. Le compteur avance tout seul et passe automatiquement au zikr suivant une fois le nombre atteint.",
@@ -20,6 +27,13 @@ const FAQ = {
         "Azkar du matin et du soir sont à réciter à ces moments de la journée, Azkar après-prière juste après chacune des 5 prières, et Azkar du coucher avant de dormir. Elles se trouvent toutes sur l'écran d'accueil.",
     },
     {
+      id: "azkar-avant-dormir",
+      keywords: ["dormir", "sommeil", "nuit", "coucher"],
+      question: "Quelle invocation dire avant de dormir ?",
+      answer:
+        "Ouvre « Azkar du coucher » sur l'écran d'accueil : tu y trouveras toutes les invocations à réciter avant de dormir, dans l'ordre, avec le compteur.",
+    },
+    {
       id: "tasbih",
       keywords: ["tasbih", "chapelet", "sobha", "subha"],
       question: "Comment utiliser le Tasbih ?",
@@ -28,7 +42,7 @@ const FAQ = {
     },
     {
       id: "quran-sourates",
-      keywords: ["coran", "sourate", "sourates", "verset", "versets", "lire", "lecture", "traduction"],
+      keywords: ["lire sourate", "lecture coran", "verset par verset", "traduction verset"],
       question: "Comment lire une sourate verset par verset avec sa traduction ?",
       answer:
         "Coran → onglet Sourates → choisis une sourate. Chaque verset s'affiche avec sa traduction en dessous, et tu peux toucher un verset pour l'écouter avec un récitateur.",
@@ -46,6 +60,13 @@ const FAQ = {
       question: "Comment écouter le Coran en continu avec un récitateur ?",
       answer:
         "Coran → onglet Récitateurs → choisis une voix. Tu entres dans son espace où tu peux lancer n'importe quelle sourate en écoute continue.",
+    },
+    {
+      id: "reciter-favorites",
+      keywords: ["recitateur favori", "reciteur favori", "etoile recitateur", "favoris recitateur"],
+      question: "Comment mettre un récitateur en favoris ?",
+      answer:
+        "Coran → Récitateurs → touche l'étoile en haut de sa carte, dans l'un ou l'autre mode d'écoute. Tes récitateurs favoris apparaissent ensuite regroupés en haut de la liste.",
     },
     {
       id: "quran-offline",
@@ -74,6 +95,13 @@ const FAQ = {
       question: "Comment activer ou couper les rappels pour une prière ?",
       answer:
         "Sur l'écran d'accueil, chaque prière a une petite cloche en dessous de son heure : touche-la pour activer ou désactiver son rappel individuellement.",
+    },
+    {
+      id: "prayer-calibration",
+      keywords: ["regler heure", "caler", "calibrer", "calibration", "reglage horaire", "decalage", "avance", "retard", "personnalisee", "mosquee"],
+      question: "Comment régler les horaires de prière sur l'heure de ma mosquée ?",
+      answer:
+        "Réglages → Horaires de prière → méthode « Personnalisée ». Pour chaque prière, tape directement l'heure de ta mosquée dans le champ prévu : l'appli calcule et retient l'écart tout seul pour les jours suivants.",
     },
     {
       id: "bilan",
@@ -177,18 +205,32 @@ const FAQ = {
   ],
   en: [
     {
+      id: "home-widget",
+      keywords: ["widget"],
+      question: "How do I add the widget to my phone's home screen?",
+      answer:
+        "Outside the app: press and hold an empty spot on your phone's home screen, choose \"Widgets\", find \"Mes Azkar\" in the list, then drop it. It shows prayer times without opening the app.",
+    },
+    {
       id: "azkar-counter",
-      keywords: ["azkar", "counter", "count", "tap", "circle", "zikr", "dhikr", "repetition", "repetitions"],
+      keywords: ["counter", "count", "tap", "circle"],
       question: "How do I count my azkar?",
       answer:
         "Tap the golden circle in the middle of the screen for each recitation. The counter advances on its own and moves to the next zikr once the count is reached.",
     },
     {
       id: "azkar-categories",
-      keywords: ["morning", "evening", "night", "after prayer", "category", "categories", "4 azkar"],
+      keywords: ["morning", "evening", "after prayer", "category", "categories", "4 azkar"],
       question: "What's the difference between the 4 azkar categories?",
       answer:
         "Morning and Evening azkar are recited at those times of day, After-prayer azkar right after each of the 5 daily prayers, and Bedtime azkar before sleeping. All four are on the home screen.",
+    },
+    {
+      id: "azkar-avant-dormir",
+      keywords: ["sleep", "sleeping", "bedtime", "night"],
+      question: "What invocation should I say before sleeping?",
+      answer:
+        "Open \"Bedtime azkar\" on the home screen: you'll find all the invocations to recite before sleeping, in order, with the counter.",
     },
     {
       id: "tasbih",
@@ -199,7 +241,7 @@ const FAQ = {
     },
     {
       id: "quran-sourates",
-      keywords: ["quran", "surah", "surahs", "verse", "verses", "read", "translation"],
+      keywords: ["read surah", "verse by verse", "surah translation"],
       question: "How do I read a surah verse by verse with its translation?",
       answer:
         "Quran → Surahs tab → pick a surah. Each verse shows its translation underneath, and tapping a verse plays it with a reciter.",
@@ -217,6 +259,13 @@ const FAQ = {
       question: "How do I listen to the Quran continuously with a reciter?",
       answer:
         "Quran → Reciters tab → pick a voice. You enter their space where you can start any surah for continuous listening.",
+    },
+    {
+      id: "reciter-favorites",
+      keywords: ["favorite reciter", "star reciter", "reciter favorite"],
+      question: "How do I mark a reciter as favorite?",
+      answer:
+        "Quran → Reciters → tap the star on their card, in either listening mode. Your favorite reciters then show grouped at the top of the list.",
     },
     {
       id: "quran-offline",
@@ -241,6 +290,13 @@ const FAQ = {
       keywords: ["reminder", "reminders", "notification", "notifications", "bell", "alert", "prayer time"],
       question: "How do I turn a prayer reminder on or off?",
       answer: "On the home screen, each prayer has a small bell under its time — tap it to turn its reminder on or off individually.",
+    },
+    {
+      id: "prayer-calibration",
+      keywords: ["set time", "calibrate", "calibration", "custom", "mosque", "offset", "adjust prayer"],
+      question: "How do I match prayer times to my mosque's schedule?",
+      answer:
+        "Settings → Prayer times → \"Custom\" method. For each prayer, type your mosque's time directly into the field: the app works out and remembers the difference for the following days.",
     },
     {
       id: "bilan",
@@ -338,8 +394,15 @@ const FAQ = {
   ],
   ar: [
     {
+      id: "home-widget",
+      keywords: ["ودجت", "أداة"],
+      question: "كيف أضيف الودجت إلى الشاشة الرئيسية للهاتف؟",
+      answer:
+        "خارج التطبيق: اضغط مطولاً على مكان فارغ في الشاشة الرئيسية لهاتفك، اختر «الودجات»، ابحث عن «Mes Azkar» في القائمة، ثم ضعه هناك. يعرض أوقات الصلاة دون الحاجة لفتح التطبيق.",
+    },
+    {
       id: "azkar-counter",
-      keywords: ["اذكار", "عداد", "عد", "لمس", "دائرة", "ذكر", "تكرار"],
+      keywords: ["عداد", "عد", "لمس", "دائرة"],
       question: "كيف أعد أذكاري؟",
       answer: "المس الدائرة الذهبية في وسط الشاشة عند كل ذكر. يتقدم العداد تلقائيًا وينتقل إلى الذكر التالي عند بلوغ العدد.",
     },
@@ -358,7 +421,7 @@ const FAQ = {
     },
     {
       id: "quran-sourates",
-      keywords: ["قرآن", "سورة", "سور", "آية", "آيات", "قراءة", "ترجمة"],
+      keywords: ["قراءة سورة", "آية بآية", "ترجمة الآية"],
       question: "كيف أقرأ سورة آية بآية مع ترجمتها؟",
       answer: "القرآن ← علامة التبويب «السور» ← اختر سورة. تظهر ترجمة كل آية أسفلها، ويمكنك لمس آية للاستماع إليها بصوت أحد القراء.",
     },
@@ -373,6 +436,12 @@ const FAQ = {
       keywords: ["قارئ", "قراء", "استماع", "تلاوة", "صوت"],
       question: "كيف أستمع إلى القرآن باستمرار بصوت أحد القراء؟",
       answer: "القرآن ← علامة التبويب «القراء» ← اختر صوتًا. تدخل إلى مساحته حيث يمكنك تشغيل أي سورة للاستماع المتواصل.",
+    },
+    {
+      id: "reciter-favorites",
+      keywords: ["قارئ مفضل", "نجمة القارئ", "المفضلة"],
+      question: "كيف أضيف قارئًا إلى المفضلة؟",
+      answer: "القرآن ← القراء ← المس النجمة أعلى بطاقته، في أي من وضعي الاستماع. تظهر بعدها القراء المفضلون مجمّعين أعلى القائمة.",
     },
     {
       id: "quran-offline",
@@ -397,6 +466,12 @@ const FAQ = {
       keywords: ["تذكير", "إشعار", "جرس", "تنبيه", "وقت الصلاة"],
       question: "كيف أفعّل أو أوقف تذكير صلاة معينة؟",
       answer: "في الشاشة الرئيسية، لكل صلاة جرس صغير تحت وقتها: المسه لتفعيل أو إيقاف تذكيرها بشكل منفرد.",
+    },
+    {
+      id: "prayer-calibration",
+      keywords: ["ضبط الوقت", "معايرة", "مخصص", "المسجد"],
+      question: "كيف أضبط أوقات الصلاة على توقيت مسجدي؟",
+      answer: "الإعدادات ← أوقات الصلاة ← طريقة «مخصصة». لكل صلاة، اكتب وقت مسجدك مباشرة في الحقل: يحسب التطبيق الفرق ويتذكره تلقائيًا للأيام التالية.",
     },
     {
       id: "bilan",
@@ -505,23 +580,88 @@ function normalize(str) {
     .trim();
 }
 
+// Common function/question words, excluded only from the question-text
+// fallback layer below (never from curated `keywords`, which are already
+// deliberately specific) — this is what keeps that layer from repeating the
+// old bug where "quelle heure est-il au Japon" matched an azkar entry just
+// because "quelle"/"est" also happened to appear in its question text.
+const STOPWORDS = {
+  fr: new Set(
+    "le la les l un une des du de d a au aux et ou mais donc or ni car que qu qui quoi quel quelle quels quelles comment combien pourquoi ou quand est es suis sont etre avoir ai as avons avez ont ce cet cette ces se sa son ses leur leurs mon ma mes ton ta tes notre nos votre vos je tu il elle nous vous ils elles on y en pour par avec sans sur sous dans entre avant apres dire dis dit disent faire fais fait veux veut voudrais aimerais aime peut peux pouvez dois doit faut y'a ya existe si tres bien plus moins verset versets sourate sourates coran cherche cherches cherchent chercher recherche trouve trouver parle parlent parler sujet sujets concernant propos ait aie".split(
+      " "
+    )
+  ),
+  en: new Set(
+    "the a an of to in on at for with without and or but is are was were be been being do does did what which who whom how why where when can could should would will shall i you he she it we they my your his her its our their this that these those say said tell before after about very just really verse verses surah surahs chapter chapters quran looking find finding search searching talks talk about topic subject regarding".split(
+      " "
+    )
+  ),
+  ar: new Set(
+    "ما ماذا هل كيف اين متى من في على الى عن مع ان اذا هذا هذه ذلك تلك هو هي انا انت نحن هم اقول قل يقول قبل بعد الذي التي و او ثم لا نعم اية ايات سورة سورة القران ابحث ابحث عن موضوع".split(
+      " "
+    )
+  ),
+};
+
+// Words significant enough to score against — same stopword filter used by
+// the question-text layer above, exposed so App.jsx can run the identical
+// filtering over other local content (invocations, azkar) and over live
+// Quran verse text, keeping every search layer consistent.
+export function extractSignificantWords(query, lang) {
+  const stop = STOPWORDS[lang] || STOPWORDS.fr;
+  return normalize(query)
+    .split(" ")
+    .filter((w) => w && !stop.has(w));
+}
+
+// Generic local-content search: scores each doc by how many of its
+// significant words (title + text, stopword-filtered) overlap with the
+// query's significant words, and returns the best `limit` docs at or above
+// `minScore`. Used to search the app's own invocations/azkar text — real,
+// already-reviewed content, nothing invented.
+export function searchDocuments(query, lang, docs, { limit = 3, minScore = 1 } = {}) {
+  const stop = STOPWORDS[lang] || STOPWORDS.fr;
+  const querySignificant = new Set(extractSignificantWords(query, lang));
+  if (querySignificant.size === 0) return [];
+  const scored = [];
+  for (const doc of docs) {
+    const words = normalize(doc.text)
+      .split(" ")
+      .filter((w) => w && !stop.has(w));
+    let score = 0;
+    const seen = new Set();
+    for (const w of words) {
+      if (querySignificant.has(w) && !seen.has(w)) {
+        score += 1;
+        seen.add(w);
+      }
+    }
+    if (score >= minScore) scored.push({ doc, score });
+  }
+  scored.sort((a, b) => b.score - a.score);
+  return scored.slice(0, limit).map((s) => s.doc);
+}
+
 export function getFaqEntries(lang) {
   return FAQ[lang] || FAQ.fr;
 }
 
-// Scores every entry by how many of its keywords (or its own question
-// words) appear in the query, and returns the best match above a small
-// relevance floor — or null so the caller can show a fallback message.
-// Whole-word matching only (no substring `.includes()`) so short common
-// words inside a keyword can't accidentally match unrelated queries — the
-// earlier substring-based scoring once matched "quelle heure est-il au
-// Japon" to an azkar question just because "quelle" and "est" happened to
-// also appear in that FAQ entry's own question text.
+// Two layers, added together:
+// 1. Curated `keywords` (whole-word phrase match, weighted x2) — precise,
+//    hand-picked signals that always take priority when present.
+// 2. The entry's own `question` text (stopword-filtered, whole-word match,
+//    weighted x1) — so a new phrasing of an existing question can still find
+//    the right entry without needing a `keywords` edit for every variant.
+// Whole-word matching only (no substring `.includes()`), and the stopword
+// filter above, keep short common words from causing false matches.
 export function findFaqAnswer(query, lang) {
   const entries = getFaqEntries(lang);
+  const stop = STOPWORDS[lang] || STOPWORDS.fr;
   const normQuery = normalize(query);
   if (!normQuery) return null;
   const queryWords = new Set(normQuery.split(" ").filter(Boolean));
+  const querySignificant = new Set([...queryWords].filter((w) => !stop.has(w)));
+  if (querySignificant.size === 0) return null;
 
   let best = null;
   let bestScore = 0;
@@ -530,12 +670,23 @@ export function findFaqAnswer(query, lang) {
     for (const kw of entry.keywords) {
       const kwWords = normalize(kw).split(" ").filter(Boolean);
       if (kwWords.length === 0) continue;
-      if (kwWords.every((w) => queryWords.has(w))) score += kwWords.length;
+      if (kwWords.every((w) => queryWords.has(w))) score += kwWords.length * 2;
+    }
+    const questionWords = normalize(entry.question)
+      .split(" ")
+      .filter((w) => w && !stop.has(w));
+    for (const w of questionWords) {
+      if (querySignificant.has(w)) score += 1;
     }
     if (score > bestScore) {
       bestScore = score;
       best = entry;
     }
   }
-  return bestScore > 0 ? best : null;
+  // Require at least 2 points — a single curated keyword word (weight 2) or
+  // two overlapping question words both clear this bar, but one incidental
+  // shared word from the question-text layer alone (weight 1) does not —
+  // that lone-word case is exactly what let "quelle heure est-il au Japon"
+  // match an unrelated entry before.
+  return bestScore >= 2 ? best : null;
 }

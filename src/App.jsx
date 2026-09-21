@@ -8,7 +8,7 @@ import WidgetBridge from "./widgetBridge.js";
 import { t, LANGUAGES, currentLanguage, setCurrentLanguage, isRTL, trField, detectSystemLanguage } from "./i18n.js";
 import { exportBackup, importBackup, downloadBackupFile } from "./backup.js";
 import { fetchMushafPage, loadMushafPageFont, fetchChapterStartPage, fetchVersePage } from "./quranFoundation.js";
-import { findFaqAnswer, getFaqEntries } from "./faqData.js";
+import { findFaqAnswer, getFaqEntries, extractSignificantWords, searchDocuments } from "./faqData.js";
 import {
   isNotificationPermissionGranted,
   requestNotificationPermission,
@@ -3490,6 +3490,94 @@ function QuranMiniPlayer({ player, onPause, onResume, onNext, onOpen, onClose, a
   );
 }
 
+// Flattens the app's own invocation library and azkar sets into plain
+// {text, ...} docs searchDocuments can score against — real, already-
+// reviewed content (no invented answers), used as the assistant's second
+// search layer after the curated FAQ.
+function buildAppContentDocs(lang) {
+  const pick = (fr, en) => (lang === "en" && en ? en : fr);
+  const docs = [];
+  for (const topicId of Object.keys(INVOCATION_TOPICS)) {
+    const topic = INVOCATION_TOPICS[topicId];
+    const categoryLabel = pick(topic.label, topic.label_en);
+    for (const item of topic.items || []) {
+      const title = pick(item.title, item.title_en);
+      const translation = pick(item.translation, item.translation_en);
+      docs.push({
+        text: `${title || ""} ${translation || ""}`,
+        title,
+        translation,
+        arabic: item.arabic,
+        categoryLabel,
+      });
+    }
+  }
+  const azkarSets = [
+    [pick("Azkar du matin", "Morning azkar"), MATIN_ITEMS],
+    [pick("Azkar du soir", "Evening azkar"), SOIR_ITEMS],
+    [pick("Azkar avant de dormir", "Bedtime azkar"), SOMMEIL_ITEMS],
+    [pick("Après la prière", "After prayer"), buildApresItems(true)],
+  ];
+  for (const [categoryLabel, items] of azkarSets) {
+    for (const item of items) {
+      const title = pick(item.title, item.title_en);
+      const translation = pick(item.translation, item.translation_en);
+      if (!title && !translation) continue;
+      docs.push({ text: `${title || ""} ${translation || ""}`, title, translation, arabic: item.arabic, categoryLabel });
+    }
+  }
+  return docs;
+}
+
+function formatContentMatches(matches) {
+  return matches
+    .map((m) => `📿 ${m.categoryLabel} — ${m.title}\n${m.arabic}\n${m.translation}`)
+    .join("\n\n");
+}
+
+const QURAN_TRANSLATION_CACHE = { edition: null, surahs: null };
+
+// Live, on-demand full-text search over the real Quran translation already
+// used elsewhere in the app (same fr.hamidullah / en.sahih editions) — not
+// a curated topic list, so it works for any subject the user asks about,
+// not just ones anticipated in advance. Fetches once per edition and caches
+// for the rest of the session.
+async function searchQuranVerses(query, lang) {
+  const edition = lang === "en" ? "en.sahih" : "fr.hamidullah";
+  if (QURAN_TRANSLATION_CACHE.edition !== edition) {
+    const res = await fetch(`https://api.alquran.cloud/v1/quran/${edition}`);
+    if (!res.ok) throw new Error("quran fetch failed");
+    const data = await res.json();
+    QURAN_TRANSLATION_CACHE.edition = edition;
+    QURAN_TRANSLATION_CACHE.surahs = data.data.surahs;
+  }
+  const querySignificant = new Set(extractSignificantWords(query, lang));
+  if (querySignificant.size === 0) return [];
+  const results = [];
+  for (const surah of QURAN_TRANSLATION_CACHE.surahs) {
+    for (const ayah of surah.ayahs) {
+      const words = extractSignificantWords(ayah.text, lang);
+      let score = 0;
+      const seen = new Set();
+      for (const w of words) {
+        if (querySignificant.has(w) && !seen.has(w)) {
+          score += 1;
+          seen.add(w);
+        }
+      }
+      if (score > 0) {
+        results.push({ surahNumber: surah.number, surahName: surah.englishName, ayahNumber: ayah.numberInSurah, text: ayah.text, score });
+      }
+    }
+  }
+  results.sort((a, b) => b.score - a.score);
+  return results.slice(0, 4);
+}
+
+function formatVerseMatches(matches) {
+  return matches.map((v) => `📖 ${v.surahName} (${v.surahNumber}:${v.ayahNumber})\n${v.text}`).join("\n\n");
+}
+
 // Floating shortcut to the offline FAQ assistant — sits above the bottom
 // nav (and, when it's showing, above the Quran mini-player bar too) so it
 // stays reachable from every main tab without ever blocking navigation.
@@ -3517,8 +3605,11 @@ function AssistantFab({ onOpen, liftedByPlayer }) {
   );
 }
 
-// Small offline FAQ chatbot — matches user questions against a fixed list
-// of app-usage Q&A (see faqData.js) via keyword overlap, no network call.
+// Small offline-first assistant: first checks a curated list of app-usage
+// Q&A (see faqData.js), then the app's own invocations/azkar content, and
+// finally — only if neither has an answer — searches the real Quran
+// translation text live. Every answer traces back to real app or Quran
+// content; nothing is invented.
 function AssistantOverlay({ onClose }) {
   const entries = getFaqEntries(currentLanguage);
   const suggestions = entries.slice(0, 4);
@@ -3530,16 +3621,41 @@ function AssistantOverlay({ onClose }) {
     if (listRef.current) listRef.current.scrollTop = listRef.current.scrollHeight;
   }, [messages]);
 
-  const ask = (question) => {
+  const ask = async (question) => {
     const trimmed = question.trim();
     if (!trimmed) return;
-    const match = findFaqAnswer(trimmed, currentLanguage);
-    setMessages((prev) => [
-      ...prev,
-      { from: "user", text: trimmed },
-      { from: "bot", text: match ? match.answer : t("assistant_fallback") },
-    ]);
     setInput("");
+    setMessages((prev) => [...prev, { from: "user", text: trimmed }]);
+
+    const faqMatch = findFaqAnswer(trimmed, currentLanguage);
+    if (faqMatch) {
+      setMessages((prev) => [...prev, { from: "bot", text: faqMatch.answer }]);
+      return;
+    }
+
+    const contentDocs = buildAppContentDocs(currentLanguage);
+    const contentMatches = searchDocuments(trimmed, currentLanguage, contentDocs, { limit: 3, minScore: 1 });
+    if (contentMatches.length > 0) {
+      setMessages((prev) => [...prev, { from: "bot", text: formatContentMatches(contentMatches) }]);
+      return;
+    }
+
+    setMessages((prev) => [...prev, { from: "bot", text: t("assistant_searching"), pending: true }]);
+    try {
+      const verseMatches = await searchQuranVerses(trimmed, currentLanguage);
+      setMessages((prev) => {
+        const withoutPending = prev.filter((m) => !m.pending);
+        return [
+          ...withoutPending,
+          { from: "bot", text: verseMatches.length > 0 ? formatVerseMatches(verseMatches) : t("assistant_fallback") },
+        ];
+      });
+    } catch (e) {
+      setMessages((prev) => {
+        const withoutPending = prev.filter((m) => !m.pending);
+        return [...withoutPending, { from: "bot", text: t("assistant_fallback") }];
+      });
+    }
   };
 
   return (
@@ -3585,6 +3701,8 @@ function AssistantOverlay({ onClose }) {
                     background: m.from === "user" ? `${COLORS.goldLight}29` : COLORS.parchment,
                     border: m.from === "user" ? "none" : `1px solid ${COLORS.parchmentDark}`,
                     color: COLORS.ink,
+                    whiteSpace: "pre-line",
+                    opacity: m.pending ? 0.6 : 1,
                   }}
                 >
                   {m.text}
