@@ -3375,18 +3375,20 @@ function CloseIcon({ color, size = 16 }) {
   );
 }
 
-function ChatIcon({ color, size = 20 }) {
+// Friendly mascot for the assistant — a small robot face rather than a bare
+// speech-bubble icon, so the chat entry point feels like "someone" rather
+// than a generic UI affordance.
+function RobotIcon({ color, size = 20 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <path
-        d="M4 5.5h16v10.5a1 1 0 0 1-1 1H9.5L5 21v-4H5a1 1 0 0 1-1-1V5.5Z"
-        stroke={color}
-        strokeWidth="1.7"
-        strokeLinejoin="round"
-      />
-      <circle cx="8.5" cy="10.5" r="1" fill={color} />
-      <circle cx="12" cy="10.5" r="1" fill={color} />
-      <circle cx="15.5" cy="10.5" r="1" fill={color} />
+      <path d="M12 2.3v2.2" stroke={color} strokeWidth="1.7" strokeLinecap="round" />
+      <circle cx="12" cy="2" r="1.15" fill={color} />
+      <rect x="3.1" y="9.4" width="1.9" height="4.2" rx="0.95" fill={color} />
+      <rect x="19" y="9.4" width="1.9" height="4.2" rx="0.95" fill={color} />
+      <rect x="5.2" y="5" width="13.6" height="13.6" rx="4.4" stroke={color} strokeWidth="1.7" />
+      <circle cx="9.7" cy="11.4" r="1.35" fill={color} />
+      <circle cx="14.3" cy="11.4" r="1.35" fill={color} />
+      <path d="M9.3 15.1c.8.75 1.7 1.1 2.7 1.1s1.9-.35 2.7-1.1" stroke={color} strokeWidth="1.6" strokeLinecap="round" />
     </svg>
   );
 }
@@ -3488,6 +3490,186 @@ function QuranMiniPlayer({ player, onPause, onResume, onNext, onOpen, onClose, a
       </span>
     </button>
   );
+}
+
+function ordinalSuffix(n) {
+  const j = n % 10;
+  const k = n % 100;
+  if (j === 1 && k !== 11) return "st";
+  if (j === 2 && k !== 12) return "nd";
+  if (j === 3 && k !== 13) return "rd";
+  return "th";
+}
+
+function normalizeSurahName(s) {
+  return (s || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]/g, "");
+}
+
+function findSurahByName(normalizedQuery) {
+  for (const s of QURAN_SURAHS) {
+    const name = normalizeSurahName(s.translit);
+    if (name.length > 2 && normalizedQuery.includes(name)) return s;
+  }
+  return null;
+}
+
+// Structural facts about the Quran (longest/shortest surah, verse counts,
+// which surah a given number is) answered directly from QURAN_SURAHS —
+// already bundled in the app — since these aren't things a text search
+// over verse content can ever find (the word "longest" doesn't appear
+// inside the longest surah's own text). `impliedSurahTopic` lets a bare
+// follow-up like "et la plus courte ?" resolve without repeating "sourate",
+// as long as the previous answer was itself about a surah.
+function answerQuranFact(query, lang, { impliedSurahTopic = false } = {}) {
+  const norm = query
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "");
+  const pick = (fr, en) => (lang === "en" ? en : fr);
+  const meaningOf = (s) => pick(s.meaning, s.meaning_en);
+  const mentionsSurah = impliedSurahTopic || /sourate|surah/.test(norm);
+
+  if (mentionsSurah && /(plus longue|plus grande|longest|biggest)/.test(norm)) {
+    const s = QURAN_SURAHS.reduce((a, b) => (b.ayahCount > a.ayahCount ? b : a));
+    return pick(
+      `La sourate la plus longue est ${s.translit} (${meaningOf(s)}), la ${s.number}ᵉ du Coran, avec ${s.ayahCount} versets.`,
+      `The longest surah is ${s.translit} (${meaningOf(s)}), the ${s.number}${ordinalSuffix(s.number)} in the Quran, with ${s.ayahCount} verses.`
+    );
+  }
+  if (mentionsSurah && /(plus courte|plus petite|shortest|smallest)/.test(norm)) {
+    const s = QURAN_SURAHS.reduce((a, b) => (b.ayahCount < a.ayahCount ? b : a));
+    return pick(
+      `La sourate la plus courte est ${s.translit} (${meaningOf(s)}), la ${s.number}ᵉ du Coran, avec ${s.ayahCount} versets.`,
+      `The shortest surah is ${s.translit} (${meaningOf(s)}), the ${s.number}${ordinalSuffix(s.number)} in the Quran, with ${s.ayahCount} verses.`
+    );
+  }
+  if (/combien.*sourates|how many surahs/.test(norm)) {
+    return pick(`Le Coran compte 114 sourates.`, `The Quran has 114 surahs.`);
+  }
+  if (/combien.*versets?.*(coran|entier)|how many verses.*quran/.test(norm)) {
+    return pick(`Le Coran compte ${QURAN_TOTAL_AYAHS} versets au total.`, `The Quran has ${QURAN_TOTAL_AYAHS} verses in total.`);
+  }
+  if (/combien.*(versets?|ayahs?)/.test(norm)) {
+    const s = findSurahByName(norm.replace(/[^a-z0-9]/g, ""));
+    if (s) {
+      return pick(
+        `${s.translit} (${meaningOf(s)}) compte ${s.ayahCount} versets. C'est la ${s.number}ᵉ sourate du Coran.`,
+        `${s.translit} (${meaningOf(s)}) has ${s.ayahCount} verses. It's the ${s.number}${ordinalSuffix(s.number)} surah of the Quran.`
+      );
+    }
+  }
+  const numMatch = norm.match(/sourate\s*(?:numero|num|n)?\s*(\d{1,3})|surah\s*(?:number|num|no)?\s*(\d{1,3})/);
+  if (numMatch) {
+    const n = parseInt(numMatch[1] || numMatch[2], 10);
+    const s = QURAN_SURAHS.find((x) => x.number === n);
+    if (s) {
+      return pick(
+        `La sourate n°${s.number} est ${s.translit} (${meaningOf(s)}), elle compte ${s.ayahCount} versets.`,
+        `Surah #${s.number} is ${s.translit} (${meaningOf(s)}), with ${s.ayahCount} verses.`
+      );
+    }
+  }
+  return null;
+}
+
+// Greetings, thanks, "who are you", goodbyes — handled directly so a
+// friendly opener doesn't fall through to a pointless Quran-text search for
+// words like "bonjour" or "merci".
+function answerSmallTalk(query, lang) {
+  const norm = query
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .trim();
+  const pick = (fr, en) => (lang === "en" ? en : fr);
+
+  if (/^(salam|salamou alaykoum|salamu alaykum|assalam|bonjour|bonsoir|salut|coucou|hello|hi|hey)\b/.test(norm)) {
+    return pick(
+      "Wa alaykoum salam ! Pose-moi une question sur l'appli, une invocation, ou un sujet du Coran.",
+      "Wa alaykum salam! Ask me about the app, an invocation, or a Quran topic."
+    );
+  }
+  if (/merci|thank/.test(norm)) {
+    return pick("Avec plaisir ! N'hésite pas si tu as d'autres questions.", "You're welcome! Feel free to ask anything else.");
+  }
+  if (/(qui es tu|c'est quoi ton nom|comment tu t'appelles|tu es qui|who are you|what's your name|what is your name)/.test(norm)) {
+    return pick(
+      "Je suis l'assistant de Mes Azkar : je réponds aux questions sur l'appli, je cherche dans les invocations déjà présentes, et dans le vrai texte du Coran. Rien n'est inventé.",
+      "I'm the Mes Azkar assistant: I answer questions about the app, search the invocations already in it, and the real Quran text. Nothing is invented."
+    );
+  }
+  if (/^(au revoir|a\s*\+|bye|see you|goodbye)\b/.test(norm)) {
+    return pick("À bientôt, qu'Allah te facilite !", "See you soon, may Allah make things easy for you!");
+  }
+  if (/(comment (ca|tu) va|comment allez vous|how are you)/.test(norm)) {
+    return pick("Bien, al-hamdoulillah ! Et toi, en quoi puis-je t'aider ?", "Well, alhamdulillah! How can I help you?");
+  }
+  return null;
+}
+
+// Parses "sourate 2 verset 5", "2:5", "verset 5 de al-fatiha", etc. into a
+// {surahNumber, ayahNumber} pair, bounds-checked against the surah's real
+// verse count.
+function parseVerseReference(query) {
+  const norm = query
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "");
+  let surahNumber = null;
+  let ayahNumber = null;
+
+  let m = norm.match(/\b(\d{1,3})\s*[:\/]\s*(\d{1,3})\b/);
+  if (m) {
+    surahNumber = parseInt(m[1], 10);
+    ayahNumber = parseInt(m[2], 10);
+  }
+  if (!surahNumber) {
+    m = norm.match(/sourate\s*(?:numero|num|n)?\s*(\d{1,3})[^\d]*verset\s*(?:numero|num|n)?\s*(\d{1,3})/);
+    if (m) {
+      surahNumber = parseInt(m[1], 10);
+      ayahNumber = parseInt(m[2], 10);
+    }
+  }
+  if (!surahNumber) {
+    m = norm.match(/verset\s*(?:numero|num|n)?\s*(\d{1,3})[^\d]*sourate\s*(?:numero|num|n)?\s*(\d{1,3})/);
+    if (m) {
+      surahNumber = parseInt(m[2], 10);
+      ayahNumber = parseInt(m[1], 10);
+    }
+  }
+  if (!surahNumber) {
+    const verseNumMatch = norm.match(/verset\s*(?:numero|num|n)?\s*(\d{1,3})/);
+    if (verseNumMatch) {
+      const s = findSurahByName(norm.replace(/[^a-z0-9]/g, ""));
+      if (s) {
+        surahNumber = s.number;
+        ayahNumber = parseInt(verseNumMatch[1], 10);
+      }
+    }
+  }
+  if (!surahNumber || !ayahNumber) return null;
+  const surah = QURAN_SURAHS.find((s) => s.number === surahNumber);
+  if (!surah || ayahNumber < 1 || ayahNumber > surah.ayahCount) return null;
+  return { surah, ayahNumber };
+}
+
+// Fetches one specific, real verse (Arabic + translation) by surah:ayah
+// reference — same editions/CDN the rest of the app already uses.
+async function fetchVerseByReference(surah, ayahNumber, lang) {
+  const globalAyah = globalAyahNumber(surah.number, ayahNumber);
+  const editions = lang === "ar" ? "quran-uthmani" : `quran-uthmani,${lang === "en" ? "en.sahih" : "fr.hamidullah"}`;
+  const res = await fetch(`https://api.alquran.cloud/v1/ayah/${globalAyah}/editions/${editions}`);
+  if (!res.ok) throw new Error("ayah fetch failed");
+  const json = await res.json();
+  const data = json?.data;
+  if (!Array.isArray(data) || (lang !== "ar" && data.length < 2)) throw new Error("bad response");
+  const arabic = data[0].text;
+  const translation = lang === "ar" ? "" : data[1].text;
+  return `📖 ${surah.translit} (${surah.number}:${ayahNumber})\n${arabic}${translation ? `\n${translation}` : ""}`;
 }
 
 // Flattens the app's own invocation library and azkar sets into plain
@@ -3600,7 +3782,7 @@ function AssistantFab({ onOpen, liftedByPlayer }) {
       }}
       aria-label={t("assistant_open")}
     >
-      <ChatIcon color={COLORS.bg} size={22} />
+      <RobotIcon color={COLORS.bg} size={24} />
     </button>
   );
 }
@@ -3616,6 +3798,7 @@ function AssistantOverlay({ onClose }) {
   const [messages, setMessages] = useState([{ from: "bot", text: t("assistant_intro") }]);
   const [input, setInput] = useState("");
   const listRef = useRef(null);
+  const lastTopicRef = useRef(null); // "surah" after a surah-fact answer, so a bare follow-up ("et la plus courte ?") still resolves
 
   useEffect(() => {
     if (listRef.current) listRef.current.scrollTop = listRef.current.scrollHeight;
@@ -3626,10 +3809,37 @@ function AssistantOverlay({ onClose }) {
     if (!trimmed) return;
     setInput("");
     setMessages((prev) => [...prev, { from: "user", text: trimmed }]);
+    const wasSurahTopic = lastTopicRef.current === "surah";
+    lastTopicRef.current = null;
+
+    const smallTalk = answerSmallTalk(trimmed, currentLanguage);
+    if (smallTalk) {
+      setMessages((prev) => [...prev, { from: "bot", text: smallTalk }]);
+      return;
+    }
 
     const faqMatch = findFaqAnswer(trimmed, currentLanguage);
     if (faqMatch) {
       setMessages((prev) => [...prev, { from: "bot", text: faqMatch.answer }]);
+      return;
+    }
+
+    const verseRef = parseVerseReference(trimmed);
+    if (verseRef) {
+      setMessages((prev) => [...prev, { from: "bot", text: t("assistant_searching"), pending: true }]);
+      try {
+        const verseText = await fetchVerseByReference(verseRef.surah, verseRef.ayahNumber, currentLanguage);
+        setMessages((prev) => [...prev.filter((m) => !m.pending), { from: "bot", text: verseText }]);
+      } catch (e) {
+        setMessages((prev) => [...prev.filter((m) => !m.pending), { from: "bot", text: t("assistant_fallback") }]);
+      }
+      return;
+    }
+
+    const factAnswer = answerQuranFact(trimmed, currentLanguage, { impliedSurahTopic: wasSurahTopic });
+    if (factAnswer) {
+      lastTopicRef.current = "surah";
+      setMessages((prev) => [...prev, { from: "bot", text: factAnswer }]);
       return;
     }
 
@@ -3674,8 +3884,11 @@ function AssistantOverlay({ onClose }) {
       >
         <div className="flex items-center justify-between px-5" style={{ paddingTop: 16, paddingBottom: 12, borderBottom: `1px solid ${COLORS.parchmentDark}` }}>
           <div className="flex items-center gap-2.5">
-            <div className="flex items-center justify-center" style={{ width: 34, height: 34, borderRadius: 99, background: `${COLORS.goldLight}29` }}>
-              <ChatIcon color={COLORS.goldLight} size={17} />
+            <div
+              className="flex items-center justify-center"
+              style={{ width: 36, height: 36, borderRadius: 99, background: `linear-gradient(155deg, ${COLORS.gold}, ${COLORS.goldLight})` }}
+            >
+              <RobotIcon color={COLORS.bg} size={19} />
             </div>
             <p className="font-display font-semibold" style={{ color: COLORS.ink, fontSize: 15 }}>
               {t("assistant_title")}
@@ -3687,9 +3900,25 @@ function AssistantOverlay({ onClose }) {
         </div>
 
         <div ref={listRef} className="flex-1 overflow-y-auto px-5" style={{ paddingTop: 14, paddingBottom: 10 }}>
+          {messages.length <= 1 && (
+            <img
+              src="/assistant/mascot.jpg"
+              alt=""
+              className="w-full"
+              style={{ borderRadius: 16, marginBottom: 14, display: "block" }}
+            />
+          )}
           <div className="flex flex-col gap-3">
             {messages.map((m, i) => (
-              <div key={i} className={m.from === "user" ? "flex justify-end" : "flex justify-start"}>
+              <div key={i} className={m.from === "user" ? "flex justify-end" : "flex items-end gap-1.5 justify-start"}>
+                {m.from === "bot" && (
+                  <div
+                    className="flex items-center justify-center flex-shrink-0"
+                    style={{ width: 22, height: 22, borderRadius: 99, background: `linear-gradient(155deg, ${COLORS.gold}, ${COLORS.goldLight})` }}
+                  >
+                    <RobotIcon color={COLORS.bg} size={13} />
+                  </div>
+                )}
                 <p
                   className="font-ui"
                   style={{
