@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Politique de confidentialité — Mes Azkar</title>
+<style>
+  :root {
+    --ink: #2b2420;
+    --ink-soft: #6b5f52;
+    --ink-faint: #a89a89;
+    --gold: #b3813a;
+    --gold-light: #c99a52;
+    --bg: #fffdf7;
+    --parchment: #fbf3e3;
+    --parchment-dark: #e7dabb;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ink: #f1e9dc;
+      --ink-soft: #c9bba7;
+      --ink-faint: #8a7c6a;
+      --gold: #d6a45c;
+      --gold-light: #e2b672;
+      --bg: #1c1712;
+      --parchment: #262019;
+      --parchment-dark: #3a3125;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+    padding: 0 20px;
+  }
+  .wrap { max-width: 680px; margin: 0 auto; padding: 48px 0 64px; }
+  header { margin-bottom: 44px; }
+  .eyebrow {
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin: 0 0 10px;
+  }
+  h1 {
+    font-family: Georgia, serif;
+    font-size: clamp(30px, 6vw, 40px);
+    line-height: 1.15;
+    margin: 0 0 12px;
+  }
+  .lede { font-size: 15px; line-height: 1.65; color: var(--ink-soft); max-width: 60ch; margin: 0; }
+  .meta { margin-top: 18px; font-size: 12.5px; color: var(--ink-faint); }
+  section {
+    border-top: 1px solid var(--parchment-dark);
+    padding: 26px 0;
+    display: grid;
+    grid-template-columns: 40px 1fr;
+    gap: 16px;
+  }
+  section:last-of-type { border-bottom: 1px solid var(--parchment-dark); }
+  .icon {
+    width: 40px; height: 40px; border-radius: 12px;
+    background: var(--parchment); border: 1px solid var(--parchment-dark);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+  }
+  h2 { font-family: Georgia, serif; font-size: 18.5px; font-weight: 700; margin: 6px 0 8px; line-height: 1.3; }
+  p.body { font-size: 14.5px; line-height: 1.68; color: var(--ink-soft); margin: 0; max-width: 62ch; }
+  a { color: var(--gold); }
+  footer { margin-top: 40px; font-size: 12.5px; color: var(--ink-faint); text-align: center; line-height: 1.7; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Mes Azkar</p>
+    <h1>Politique de confidentialité</h1>
+    <p class="lede">Ce que l'application fait de tes données — et surtout, ce qu'elle ne fait pas.</p>
+    <p class="meta">Dernière mise à jour : septembre 2026</p>
+  </header>
+
+  <section>
+    <div class="icon">🔒</div>
+    <div>
+      <h2>Aucune inscription, aucun compte</h2>
+      <p class="body">Mes Azkar ne demande ni compte ni inscription. Aucune information permettant de t'identifier (nom, e-mail, numéro de téléphone) n'est jamais collectée par l'application.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="icon">📱</div>
+    <div>
+      <h2>Tes données restent sur ton téléphone</h2>
+      <p class="body">Ta progression dans les azkar, ton tasbih, tes invocations personnelles, ta progression de lecture du Coran, ta langue choisie et tes réglages (y compris la personnalisation pour ta mosquée) sont stockés uniquement sur ton appareil, dans la mémoire locale de l'application. Rien n'est envoyé vers un serveur : l'application n'a pas de serveur ni de base de données à elle.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="icon">🧭</div>
+    <div>
+      <h2>Localisation</h2>
+      <p class="body">Si tu autorises l'accès à ta position, elle sert uniquement à calculer les horaires de prière et la direction de la Qibla directement sur ton téléphone. Cette position n'est transmise à aucun service extérieur et n'est pas conservée au-delà du calcul.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="icon">🔔</div>
+    <div>
+      <h2>Notifications et rappels de prière</h2>
+      <p class="body">Les rappels de prière (et le choix du muezzin pour chacun) sont programmés localement sur ton téléphone, à partir des horaires calculés sur l'appareil. Aucune notification ne transite par un serveur externe.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="icon">🏠</div>
+    <div>
+      <h2>Widget d'écran d'accueil</h2>
+      <p class="body">Le widget affiche les horaires de prière directement sur ton écran d'accueil. Il réutilise les mêmes réglages (position, méthode de calcul, personnalisation) stockés localement sur ton appareil, et ne communique avec aucun serveur.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="icon">🎧</div>
+    <div>
+      <h2>Lecture audio en arrière-plan</h2>
+      <p class="body">Lorsque tu écoutes une récitation du Coran ou un adhan, la lecture peut continuer même après avoir quitté l'application, via un service audio du système. Aucune donnée n'est collectée à cette occasion.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="icon">📖</div>
+    <div>
+      <h2>Contenus chargés depuis Internet</h2>
+      <p class="body">Le texte du Coran, ses traductions et les récitations audio sont récupérés directement depuis des services publics (Quran.com / Quran Foundation, alquran.cloud). Comme pour toute requête Internet, ces services voient l'adresse IP de ton appareil au moment du chargement — l'application elle-même ne leur transmet aucune information sur toi.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="icon">🚫</div>
+    <div>
+      <h2>Aucune publicité, aucun traqueur</h2>
+      <p class="body">L'application ne contient ni publicité ni outil d'analyse ou de suivi (analytics, statistiques d'usage envoyées à un tiers).</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="icon">📤</div>
+    <div>
+      <h2>Export et suppression de tes données</h2>
+      <p class="body">Tu peux à tout moment exporter une copie de tes données dans un fichier que tu contrôles entièrement, ou tout supprimer depuis Réglages &gt; Données. Comme rien n'est stocké sur un serveur, cette suppression locale efface l'intégralité de tes données.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="icon">✉️</div>
+    <div>
+      <h2>Contact</h2>
+      <p class="body">Pour toute question sur cette politique de confidentialité, écris à <a href="mailto:oussoumanedoucoure12@gmail.com">oussoumanedoucoure12@gmail.com</a>.</p>
+    </div>
+  </section>
+
+  <footer>
+    Cette politique est aussi consultable dans l'application, depuis Réglages → À propos.<br>
+    This policy is also available in English and Arabic inside the app, from Settings → About.
+  </footer>
+</div>
+</body>
+</html>
