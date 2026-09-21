@@ -35,7 +35,7 @@ const TRANSLATIONS = {
     nav_quran: "Coran",
     nav_tasbih: "Tasbih",
     nav_invocations: "Invocations",
-    nav_dashboard: "Bilan",
+    nav_dashboard: "Jardin",
     nav_settings: "Réglages",
 
     // Common actions
@@ -56,8 +56,8 @@ const TRANSLATIONS = {
     title_tasbih: "Tasbih libre",
     title_quran: "Le Coran",
     title_invocations: "Invocations",
-    title_dashboard: "Bilan du jour",
-    title_dashboard_short: "Bilan",
+    title_dashboard: "Ton jardin pour le Paradis",
+    title_dashboard_short: "Jardin",
     title_history: "Historique",
     title_calendar: "Calendrier",
     hijri_footnote: "Petit chiffre sous chaque date : le jour correspondant du mois hégirien (calendrier Umm al-Qura).",

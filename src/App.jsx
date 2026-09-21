@@ -5476,11 +5476,11 @@ const TOUR_SLIDES = [
   {
     screen: "dashboard",
     accent: "gold",
-    icon: "📊",
-    title: "Bilan",
+    icon: "🌱",
+    title: "Jardin",
     title_en: "Summary",
     title_ar: "الملخص",
-    body: "Le résumé de ta journée — et tu peux remonter jour par jour dans l'historique pour voir ce qui a été fait la veille.",
+    body: "Ton jardin pour le Paradis — le résumé de ta journée, et tu peux remonter jour par jour dans l'historique pour voir ce qui a été fait la veille.",
     body_en: "Your day's summary — and you can go back day by day through the history to see what was done the day before.",
     body_ar: "ملخص يومك — ويمكنك التنقل يومًا بيوم في السجل لمعرفة ما تم إنجازه في الأيام السابقة.",
   },
@@ -7199,7 +7199,7 @@ function DashboardScreen({ history, streak }) {
       <div className="text-center mb-4">
         <div className="flex items-center justify-center gap-2">
           <span className="font-arabic" style={{ color: COLORS.goldLight, fontSize: 22, letterSpacing: 0.5 }}>
-            بِلَان الْيَوْم
+            جَنَّتُكَ
           </span>
           <span className="font-display" style={{ color: COLORS.ink, fontSize: 17 }}>
             {isToday ? t("title_dashboard") : t("title_dashboard_short")}
