@@ -286,8 +286,11 @@ const MUEZZIN_BY_PRAYER_DEFAULT = {
   isha: DEFAULT_MUEZZIN,
 };
 const CUSTOM_OFFSET_DEFAULTS = { fajr: 22, sunrise: -1, dhuhr: 5, asr: -1, maghrib: 1, isha: -12 };
-const CUSTOM_OFFSET_MIN = -30;
-const CUSTOM_OFFSET_MAX = 30;
+// Wide enough to cover typing a mosque's actual time directly (some
+// calculation-method/location combos land over 30 min from a chosen mosque
+// time) without ever silently clamping the result short of what was typed.
+const CUSTOM_OFFSET_MIN = -90;
+const CUSTOM_OFFSET_MAX = 90;
 // Minutes between adhan and iqama (start of the congregational prayer) —
 // purely informational, shown as "+N" next to the adhan time, independent of
 // the calculation method. Defaults match la mosquée L'Olivier.
@@ -813,9 +816,9 @@ const SOMMEIL_ITEMS = [
   { id: "d4", count: 3, ...AL_IKHLAS },
   { id: "d5", count: 3, ...AL_FALAQ },
   { id: "d6", count: 3, ...AN_NAS },
-  { id: "d7", count: 33, title: "Gloire à Allah", title_en: "Glory be to Allah", arabic: "سُبْحَانَ اللَّهِ", translation: "Gloire à Allah.", translation_en: "How perfect Allah is." },
-  { id: "d8", count: 33, title: "Louange à Allah", title_en: "Praise be to Allah", arabic: "الْحَمْدُ لِلَّهِ", translation: "La louange est à Allah.", translation_en: "All praise is due to Allah." },
-  { id: "d9", count: 34, title: "Allah est le plus Grand", title_en: "Allah is the Greatest", arabic: "اللَّهُ أَكْبَرُ", translation: "Allah est le plus Grand.", translation_en: "Allah is the greatest." },
+  { id: "d7", count: 33, title: "Gloire à Allah", title_en: "Glory be to Allah", arabic: "سُبْحَانَ اللَّهِ", translation: "Gloire à Allah.", translation_en: "How perfect Allah is.", audio: "/audio/commun/tasbih-subhanallah-سبحان-الله.ogg" },
+  { id: "d8", count: 33, title: "Louange à Allah", title_en: "Praise be to Allah", arabic: "الْحَمْدُ لِلَّهِ", translation: "La louange est à Allah.", translation_en: "All praise is due to Allah.", audio: "/audio/commun/tahmid-alhamdulillah-الحمد-لله.ogg" },
+  { id: "d9", count: 34, title: "Allah est le plus Grand", title_en: "Allah is the Greatest", arabic: "اللَّهُ أَكْبَرُ", translation: "Allah est le plus Grand.", translation_en: "Allah is the greatest.", audio: "/audio/commun/takbir-allahu-akbar-الله-أكبر.ogg" },
   { id: "d10", count: 1, ...WADATU_JANBI },
   { id: "d11", count: 1, ...RABBAS_SAMAWAT },
   { id: "d12", count: 3, ...QINI_ADHABAKA },
@@ -878,6 +881,10 @@ const MATIN_ITEMS = [
   },
   { id: "m18", count: 100, ...SUBHANALLAHI_BIHAMDIHI, audio: "/audio/matin/m18-subhanallahi-wa-bihamdihi.ogg" },
   { id: "m18b", count: 100, ...SUBHANALLAHI_ADHIM_BIHAMDIHI },
+  { id: "m18c", count: 100, title: "Gloire à Allah", title_en: "Glory be to Allah", arabic: "سُبْحَانَ اللَّهِ", translation: "Gloire à Allah.", translation_en: "How perfect Allah is.", audio: "/audio/commun/tasbih-subhanallah-سبحان-الله.ogg" },
+  { id: "m18d", count: 100, title: "Louange à Allah", title_en: "Praise be to Allah", arabic: "الْحَمْدُ لِلَّهِ", translation: "La louange est à Allah.", translation_en: "All praise is due to Allah.", audio: "/audio/commun/tahmid-alhamdulillah-الحمد-لله.ogg" },
+  { id: "m18e", count: 100, title: "Allah est le plus Grand", title_en: "Allah is the Greatest", arabic: "اللَّهُ أَكْبَرُ", translation: "Allah est le plus Grand.", translation_en: "Allah is the greatest.", audio: "/audio/commun/takbir-allahu-akbar-الله-أكبر.ogg" },
+  { id: "m18f", count: 100, title: "Il n'y a de divinité qu'Allah", title_en: "There is no god but Allah", arabic: "لَا إِلَٰهَ إِلَّا اللَّهُ", translation: "Il n'y a de divinité qu'Allah.", translation_en: "There is no deity except Allah.", audio: "/audio/commun/tahlil-la-ilaha-illa-allah-لا-إله-إلا-الله.ogg" },
   { id: "m19", count: 10, ...LA_ILAHA, audio: "/audio/matin/m19-la-ilaha-illallah.ogg" },
   {
     id: "m20",
@@ -923,6 +930,7 @@ const SOIR_ITEMS = [
       "Nous voici au soir, et avec nous le règne appartient à Allah. Louange à Allah, il n'y a de divinité qu'Allah, Seul, sans associé. À Lui le règne, à Lui la louange, et Il est capable de toute chose. Seigneur, je Te demande le bien de cette nuit et le bien de ce qui la suit, et je cherche protection contre le mal de cette nuit et le mal de ce qui la suit. Seigneur, je cherche protection contre la paresse et la mauvaise vieillesse, et contre un châtiment dans le Feu et dans la tombe.",
     translation_en:
       "We have reached the evening and at this very time unto Allah belongs all sovereignty, and all praise is for Allah. None has the right to be worshipped except Allah, alone, without partner, to Him belongs all sovereignty and praise and He is over all things omnipotent. My Lord, I ask You for the good of this night and the good of what follows it and I take refuge in You from the evil of this night and the evil of what follows it. My Lord, I take refuge in You from laziness and senility. My Lord, I take refuge in You from torment in the Fire and punishment in the grave.",
+    audio: "/audio/soir/s5-formule-du-soir-أمسينا-وأمسى-الملك-لله.ogg",
   },
   {
     id: "s6",
@@ -934,9 +942,10 @@ const SOIR_ITEMS = [
       "Ô Allah, c'est par Toi que nous entrons dans le soir, par Toi que nous entrons dans le matin, par Toi que nous vivons, par Toi que nous mourrons, et vers Toi est le retour.",
     translation_en:
       "O Allah, by You we enter the evening and by You we enter the morning, by You we live and by You we die, and unto You is our return.",
+    audio: "/audio/soir/s6-par-toi-nous-entrons-dans-le-soir-اللهم-بك-أمسينا.ogg",
   },
-  { id: "s7", count: 1, ...SAYYID_ISTIGHFAR, audio: "/audio/matin/m7-sayyid-al-istighfar.ogg" },
-  { id: "s8", count: 4, ...USHHIDUKA, audio: "/audio/matin/m8-je-te-prends-a-temoin.ogg" },
+  { id: "s7", count: 1, ...SAYYID_ISTIGHFAR, audio: "/audio/soir/s7-sayyid-al-istighfar-اللهم-أنت-ربي-لا-إله-إلا-أنت.ogg" },
+  { id: "s8", count: 4, ...USHHIDUKA, audio: "/audio/soir/s8-je-te-prends-a-temoin-اللهم-إني-أمسيت-أشهدك.ogg" },
   {
     id: "s9",
     count: 1,
@@ -948,15 +957,16 @@ const SOIR_ITEMS = [
       "Ô Allah, tout bienfait dont je jouis ce soir, ou dont jouit l'une de Tes créatures, vient de Toi Seul, sans associé. À Toi la louange et à Toi la gratitude.",
     translation_en:
       "O Allah, what blessing I or any of Your creation have reached this evening, is from You alone, without partner, so for You is all praise and unto You all thanks.",
+    audio: "/audio/soir/s9-reconnaissance-des-bienfaits-اللهم-ما-أمسى-بي-من-نعمة.ogg",
   },
-  { id: "s10", count: 3, ...AFINI, audio: "/audio/matin/m10-accorde-moi-la-sante.ogg" },
-  { id: "s11", count: 7, ...HASBIYALLAH, audio: "/audio/matin/m11-hasbiyallah.ogg" },
-  { id: "s12", count: 1, ...AFWU_AFIYA, audio: "/audio/matin/m12-pardon-et-sante.ogg" },
-  { id: "s13", count: 1, ...ALIM_GHAYB, audio: "/audio/matin/m13-connaisseur-de-linvisible.ogg" },
-  { id: "s14", count: 3, ...BISMILLAH_YADURRU, audio: "/audio/matin/m14-bismillah-protection.ogg" },
-  { id: "s14b", count: 3, ...KALIMAT_TAMMAT },
-  { id: "s15", count: 3, ...RADITU, audio: "/audio/matin/m15-je-suis-satisfait-dallah.ogg" },
-  { id: "s16", count: 1, ...YA_HAYYU_QAYYUM, audio: "/audio/matin/m16-ya-hayyu-ya-qayyum.ogg" },
+  { id: "s10", count: 3, ...AFINI, audio: "/audio/soir/s10-accorde-moi-la-sante-اللهم-عافني-في-بدني.ogg" },
+  { id: "s11", count: 7, ...HASBIYALLAH, audio: "/audio/soir/s11-hasbiyallah-حسبي-الله-لا-إله-إلا-هو.ogg" },
+  { id: "s12", count: 1, ...AFWU_AFIYA, audio: "/audio/soir/s12-pardon-et-sante-اللهم-إني-أسألك-العفو-والعافية.ogg" },
+  { id: "s13", count: 1, ...ALIM_GHAYB, audio: "/audio/soir/s13-connaisseur-de-linvisible-اللهم-عالم-الغيب-والشهادة.ogg" },
+  { id: "s14", count: 3, ...BISMILLAH_YADURRU, audio: "/audio/soir/s14-bismillah-protection-بسم-الله-الذي-لا-يضر-مع-اسمه-شيء.ogg" },
+  { id: "s14b", count: 3, ...KALIMAT_TAMMAT, audio: "/audio/soir/s14b-kalimat-tammat-أعوذ-بكلمات-الله-التامات-من-شر-ما-خلق.ogg" },
+  { id: "s15", count: 3, ...RADITU, audio: "/audio/soir/s15-je-suis-satisfait-dallah-رضيت-بالله-ربا.ogg" },
+  { id: "s16", count: 1, ...YA_HAYYU_QAYYUM, audio: "/audio/soir/s16-ya-hayyu-ya-qayyum-يا-حي-يا-قيوم-برحمتك-أستغيث.ogg" },
   {
     id: "s17",
     count: 1,
@@ -968,10 +978,15 @@ const SOIR_ITEMS = [
       "Nous voici au soir sur la nature originelle de l'Islam, sur la parole du monothéisme pur, sur la religion de notre Prophète Muhammad ﷺ, et sur la voie de notre père Abraham, exclusivement voué à Allah, et qui n'était pas du nombre des polythéistes.",
     translation_en:
       "We have reached the evening upon the natural religion of Islam, the word of sincere devotion, the religion of our Prophet Muhammad ﷺ, and the faith of our father Abraham, who was upright in submission to Allah and was not amongst the polytheists.",
+    audio: "/audio/soir/s17-nature-originelle-de-lislam-أمسينا-على-فطرة-الإسلام.ogg",
   },
-  { id: "s18", count: 100, ...SUBHANALLAHI_BIHAMDIHI, audio: "/audio/matin/m18-subhanallahi-wa-bihamdihi.ogg" },
-  { id: "s18b", count: 100, ...SUBHANALLAHI_ADHIM_BIHAMDIHI },
-  { id: "s19", count: 10, ...LA_ILAHA, audio: "/audio/matin/m19-la-ilaha-illallah.ogg" },
+  { id: "s18", count: 100, ...SUBHANALLAHI_BIHAMDIHI, audio: "/audio/soir/s18-subhanallahi-wa-bihamdihi-سبحان-الله-وبحمده.ogg" },
+  { id: "s18b", count: 100, ...SUBHANALLAHI_ADHIM_BIHAMDIHI, audio: "/audio/soir/s18b-subhanallahi-adhim-bihamdihi-سبحان-الله-العظيم-وبحمده.ogg" },
+  { id: "s18c", count: 100, title: "Gloire à Allah", title_en: "Glory be to Allah", arabic: "سُبْحَانَ اللَّهِ", translation: "Gloire à Allah.", translation_en: "How perfect Allah is.", audio: "/audio/commun/tasbih-subhanallah-سبحان-الله.ogg" },
+  { id: "s18d", count: 100, title: "Louange à Allah", title_en: "Praise be to Allah", arabic: "الْحَمْدُ لِلَّهِ", translation: "La louange est à Allah.", translation_en: "All praise is due to Allah.", audio: "/audio/commun/tahmid-alhamdulillah-الحمد-لله.ogg" },
+  { id: "s18e", count: 100, title: "Allah est le plus Grand", title_en: "Allah is the Greatest", arabic: "اللَّهُ أَكْبَرُ", translation: "Allah est le plus Grand.", translation_en: "Allah is the greatest.", audio: "/audio/commun/takbir-allahu-akbar-الله-أكبر.ogg" },
+  { id: "s18f", count: 100, title: "Il n'y a de divinité qu'Allah", title_en: "There is no god but Allah", arabic: "لَا إِلَٰهَ إِلَّا اللَّهُ", translation: "Il n'y a de divinité qu'Allah.", translation_en: "There is no deity except Allah.", audio: "/audio/commun/tahlil-la-ilaha-illa-allah-لا-إله-إلا-الله.ogg" },
+  { id: "s19", count: 10, ...LA_ILAHA, audio: "/audio/soir/s19-la-ilaha-illallah-لا-إله-إلا-الله-وحده-لا-شريك-له.ogg" },
   {
     id: "s20",
     count: 3,
@@ -982,10 +997,10 @@ const SOIR_ITEMS = [
       "Gloire et louange à Allah, autant que le nombre de Ses créatures, autant que Son agrément, autant que le poids de Son Trône, et autant que l'encre de Ses paroles.",
     translation_en:
       "How perfect Allah is and I praise Him, by the multitude of His creation, by His pleasure, by the weight of His throne, and by the extent of His words.",
-    audio: "/audio/matin/m20-gloire-a-allah-autant-que.ogg",
+    audio: "/audio/soir/s20-gloire-a-allah-autant-que-سبحان-الله-وبحمده-عدد-خلقه.ogg",
   },
-  { id: "s21", count: 100, ...ISTIGHFAR100, audio: "/audio/matin/m22-istighfar.ogg" },
-  { id: "s22", count: 10, ...SALAWAT, audio: "/audio/matin/m23-salawat.ogg" },
+  { id: "s21", count: 100, ...ISTIGHFAR100, audio: "/audio/soir/s21-istighfar-أستغفر-الله-وأتوب-إليه.ogg" },
+  { id: "s22", count: 10, ...SALAWAT, audio: "/audio/soir/s22-salawat-اللهم-صل-وسلم-على-نبينا-محمد.ogg" },
 ];
 
 function buildApresItems(enhanced) {
@@ -1016,9 +1031,9 @@ function buildApresItems(enhanced) {
     { id: "a4", count: qulCount, ...AL_IKHLAS },
     { id: "a5", count: qulCount, ...AL_FALAQ },
     { id: "a6", count: qulCount, ...AN_NAS },
-    { id: "a7", count: 33, title: "Gloire à Allah", title_en: "Glory be to Allah", arabic: "سُبْحَانَ اللَّهِ", translation: "Gloire à Allah.", translation_en: "How perfect Allah is." },
-    { id: "a8", count: 33, title: "Louange à Allah", title_en: "Praise be to Allah", arabic: "الْحَمْدُ لِلَّهِ", translation: "La louange est à Allah.", translation_en: "All praise is due to Allah." },
-    { id: "a9", count: 33, title: "Allah est le plus Grand", title_en: "Allah is the Greatest", arabic: "اللَّهُ أَكْبَرُ", translation: "Allah est le plus Grand.", translation_en: "Allah is the greatest." },
+    { id: "a7", count: 33, title: "Gloire à Allah", title_en: "Glory be to Allah", arabic: "سُبْحَانَ اللَّهِ", translation: "Gloire à Allah.", translation_en: "How perfect Allah is.", audio: "/audio/commun/tasbih-subhanallah-سبحان-الله.ogg" },
+    { id: "a8", count: 33, title: "Louange à Allah", title_en: "Praise be to Allah", arabic: "الْحَمْدُ لِلَّهِ", translation: "La louange est à Allah.", translation_en: "All praise is due to Allah.", audio: "/audio/commun/tahmid-alhamdulillah-الحمد-لله.ogg" },
+    { id: "a9", count: 33, title: "Allah est le plus Grand", title_en: "Allah is the Greatest", arabic: "اللَّهُ أَكْبَرُ", translation: "Allah est le plus Grand.", translation_en: "Allah is the greatest.", audio: "/audio/commun/takbir-allahu-akbar-الله-أكبر.ogg" },
     { id: "a10", count: tahlilCount, ...LA_ILAHA },
   ];
 }
@@ -2093,6 +2108,7 @@ async function saveBookmarks(list) {
   }
 }
 const QURAN_RECITER_KEY = "azkar-quran-reciter-v1";
+const FAVORITE_RECITERS_KEY = "azkar-favorite-reciters-v1";
 const QURAN_AYAH_AUDIO_ROOT = "https://cdn.islamic.network/quran/audio";
 // Every reciter below was individually verified against the per-ayah CDN —
 // each only serves audio at one specific bitrate, so it's recorded per entry.
@@ -2155,6 +2171,7 @@ const FULL_SURAH_RECITERS = [
   { id: "akhdar-full", name: "Ibrahim Al-Akhdar", arabicName: "إبراهيم الأخضر", server: "https://server6.mp3quran.net/akdr/" },
   { id: "alaqmi", name: "Akram Al-Alaqmi", arabicName: "أكرم العلاقمي", server: "https://server9.mp3quran.net/akrm/" },
   { id: "othman-khan", name: "Muhammad Othman Khan", arabicName: "محمد عثمان خان", server: "https://server6.mp3quran.net/khan/" },
+  { id: "qasim", name: "Abdulmohsen Al-Qasim", arabicName: "عبد المحسن القاسم", server: "https://server8.mp3quran.net/qasm/" },
 ];
 function fullSurahAudioUrl(reciter, surahNumber) {
   return `${reciter.server}${String(surahNumber).padStart(3, "0")}.mp3`;
@@ -5039,9 +5056,9 @@ const TOUR_SLIDES = [
     title: "Horaires calés sur ta mosquée",
     title_en: "Prayer times matched to your mosque",
     title_ar: "أوقات مضبوطة على مسجدك",
-    body: "Ajuste chaque prière minute par minute pour coller aux horaires réels, règle l'iqama et la voix du muezzin, et active un rappel prière par prière d'un tap sur la cloche. Ajoute même un widget sur ton écran d'accueil.",
-    body_en: "Adjust each prayer minute by minute to match the real times, set the iqama and the muezzin's voice, and turn on a reminder prayer by prayer with a tap on the bell. You can even add a widget to your home screen.",
-    body_ar: "اضبط كل صلاة دقيقة بدقيقة لتطابق الأوقات الحقيقية، اضبط الإقامة وصوت المؤذن، وفعّل تذكيرًا لكل صلاة بلمسة على الجرس. يمكنك حتى إضافة أداة على شاشتك الرئيسية.",
+    body: "Entre simplement l'heure de chaque prière à ta mosquée, l'appli fait le calcul automatiquement. Règle aussi l'iqama et la voix du muezzin, et active un rappel prière par prière d'un tap sur la cloche. Ajoute même un widget sur ton écran d'accueil.",
+    body_en: "Just enter your mosque's time for each prayer, and the app calculates the rest automatically. Also set the iqama and the muezzin's voice, and turn on a reminder prayer by prayer with a tap on the bell. You can even add a widget to your home screen.",
+    body_ar: "أدخل ببساطة وقت كل صلاة في مسجدك، ويقوم التطبيق بالحساب تلقائيًا. اضبط أيضًا الإقامة وصوت المؤذن، وفعّل تذكيرًا لكل صلاة بلمسة على الجرس. يمكنك حتى إضافة أداة على شاشتك الرئيسية.",
   },
   {
     screen: "home",
@@ -8261,8 +8278,6 @@ function SettingsScreen({
             <br />
             {t("calibrate_step2")}
             <br />
-            {t("calibrate_step3")}
-            <br />
             {t("calibrate_step4")}
           </p>
         </div>
@@ -8328,17 +8343,25 @@ function SettingsScreen({
               {t("per_prayer_adjustment")}
             </p>
             <div className="flex flex-col gap-2">
-              {PRAYER_LABELS.map((p) => (
-                <OffsetStepper
-                  key={p.key}
-                  label={prayerLabel(p)}
-                  value={(prayerSettings.customOffsets && prayerSettings.customOffsets[p.key]) ?? 0}
-                  onChange={(v) => {
-                    onSetCustomOffset(p.key, v);
-                    flashToast("✓");
-                  }}
-                />
-              ))}
+              {(() => {
+                const calc = resolveCalcConfig(prayerSettings);
+                const rawTimes = computePrayerTimesDecimal(new Date(), prayerSettings.location || DEFAULT_LOCATION, {
+                  ...calc,
+                  offsetMin: {},
+                });
+                return PRAYER_LABELS.map((p) => (
+                  <MosqueTimeRow
+                    key={p.key}
+                    label={prayerLabel(p)}
+                    rawDecimal={rawTimes[p.key]}
+                    currentOffset={(prayerSettings.customOffsets && prayerSettings.customOffsets[p.key]) ?? 0}
+                    onSetOffset={(v) => {
+                      onSetCustomOffset(p.key, v);
+                      flashToast("✓");
+                    }}
+                  />
+                ));
+              })()}
             </div>
             <p className="font-ui text-center mt-2.5" style={{ color: COLORS.inkSoft, fontSize: 10.5, lineHeight: 1.5 }}>
               {t("calibrate_footnote")}
@@ -8774,6 +8797,51 @@ function MuezzinPicker({ label, voiceId, onChange }) {
           <ChevronIcon dir="right" color={COLORS.ink} size={13} />
         </button>
       </div>
+    </div>
+  );
+}
+
+// Lets the reader type their mosque's actual prayer time directly (a native
+// time picker on phones) instead of hunting for the right +/- nudge by
+// comparing minute-by-minute — the offset is derived automatically from the
+// gap between what's typed and the raw astronomical time for that prayer.
+function MosqueTimeRow({ label, rawDecimal, currentOffset, onSetOffset }) {
+  const currentDecimal = rawDecimal + currentOffset / 60;
+  const value = _fmtHour(currentDecimal);
+
+  const handleChange = (typed) => {
+    if (!/^\d{2}:\d{2}$/.test(typed)) return;
+    const [h, m] = typed.split(":").map(Number);
+    const targetDecimal = h + m / 60;
+    // Pick whichever wrap-around (same day vs ±24h) keeps the offset small —
+    // typing 00:05 for a raw time of 23:58 should mean +7 min, not -23h53.
+    let diffMinutes = (targetDecimal - rawDecimal) * 60;
+    if (diffMinutes > 720) diffMinutes -= 1440;
+    if (diffMinutes < -720) diffMinutes += 1440;
+    onSetOffset(Math.round(diffMinutes));
+  };
+
+  return (
+    <div className="flex items-center justify-between" style={{ background: inkA(0.04), borderRadius: 12, padding: "8px 10px" }}>
+      <span className="font-ui font-semibold" style={{ color: COLORS.ink, fontSize: 12.5 }}>
+        {label}
+      </span>
+      <input
+        type="time"
+        value={value}
+        onChange={(e) => handleChange(e.target.value)}
+        className="font-ui font-semibold"
+        style={{
+          background: inkA(0.06),
+          border: `1px solid ${inkA(0.14)}`,
+          borderRadius: 8,
+          padding: "5px 8px",
+          fontSize: 13,
+          color: COLORS.ink,
+          colorScheme: currentTheme === "dark" ? "dark" : "light",
+        }}
+        aria-label={label}
+      />
     </div>
   );
 }
@@ -9766,12 +9834,13 @@ function ReciterAvatar({ reciter, size = 52, fontSize = 16 }) {
   );
 }
 
-function ReciterCard({ r, active, onOpen, previewSrc }) {
+function ReciterCard({ r, active, onOpen, previewSrc, favorite, onToggleFavorite }) {
   return (
     <button
       onClick={() => onOpen(r.id)}
-      className="flex flex-col items-start active:scale-[0.97] transition relative"
+      className="flex flex-col items-start active:scale-[0.97] transition"
       style={{
+        position: "relative",
         background: COLORS.parchment,
         border: `1px solid ${active ? COLORS.goldLight : COLORS.parchmentDark}`,
         borderRadius: 18,
@@ -9779,8 +9848,21 @@ function ReciterCard({ r, active, onOpen, previewSrc }) {
         textAlign: "left",
       }}
     >
+      {onToggleFavorite && (
+        <div
+          className="active:opacity-60"
+          style={{ position: "absolute", top: 6, right: 6, padding: 6 }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleFavorite(r.id);
+          }}
+          aria-label={t("toggle_favorite_reciter")}
+        >
+          <StarIcon color={COLORS.goldLight} filled={favorite} size={17} />
+        </div>
+      )}
       {active && (
-        <div className="absolute" style={{ top: 10, right: 10 }}>
+        <div style={{ position: "absolute", top: 10, left: 10 }}>
           <CheckIcon color={COLORS.goldLight} size={16} />
         </div>
       )}
@@ -9811,6 +9893,7 @@ function RecitersScreen({ onBack, onOpenReciterSpace, onOpenFullSurahReciter }) 
   // difference obvious up front.
   const [mode, setMode] = useState(null); // null | 'ayah' | 'continuous'
   const [currentReciter, setCurrentReciter] = useState(RECITERS[0].id);
+  const [favorites, setFavorites] = useState([]);
 
   useEffect(() => {
     (async () => {
@@ -9820,11 +9903,30 @@ function RecitersScreen({ onBack, onOpenReciterSpace, onOpenFullSurahReciter }) 
       } catch (e) {
         // no preference saved yet
       }
+      try {
+        const res = await window.storage.get(FAVORITE_RECITERS_KEY, false);
+        if (res && res.value) {
+          const parsed = JSON.parse(res.value);
+          if (Array.isArray(parsed)) setFavorites(parsed);
+        }
+      } catch (e) {
+        // no favorites saved yet
+      }
     })();
   }, []);
 
+  const toggleFavorite = (id) => {
+    setFavorites((prev) => {
+      const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
+      window.storage.set(FAVORITE_RECITERS_KEY, JSON.stringify(next), false).catch(() => {});
+      return next;
+    });
+  };
+
   const popular = RECITERS.filter((r) => POPULAR_RECITER_IDS.includes(r.id));
   const others = RECITERS.filter((r) => !POPULAR_RECITER_IDS.includes(r.id));
+  const favoriteAyahReciters = RECITERS.filter((r) => favorites.includes(r.id));
+  const favoriteFullSurahReciters = FULL_SURAH_RECITERS.filter((r) => favorites.includes(r.id));
 
   const openSpace = (id) => {
     setCurrentReciter(id);
@@ -9848,12 +9950,41 @@ function RecitersScreen({ onBack, onOpenReciterSpace, onOpenFullSurahReciter }) 
           {RECITERS.length} {t("reciters_available")}
         </p>
 
+        {favoriteAyahReciters.length > 0 && (
+          <>
+            <p className="font-ui font-semibold mb-2.5" style={{ color: COLORS.goldLight, fontSize: 11.5, letterSpacing: 0.4, textTransform: "uppercase" }}>
+              {t("favorite_reciters")}
+            </p>
+            <div className="grid grid-cols-2 gap-2.5 mb-6">
+              {favoriteAyahReciters.map((r) => (
+                <ReciterCard
+                  key={r.id}
+                  r={r}
+                  active={r.id === currentReciter}
+                  onOpen={openSpace}
+                  previewSrc={reciterAudioUrl(r.id, 1)}
+                  favorite={favorites.includes(r.id)}
+                  onToggleFavorite={toggleFavorite}
+                />
+              ))}
+            </div>
+          </>
+        )}
+
         <p className="font-ui font-semibold mb-2.5" style={{ color: COLORS.goldLight, fontSize: 11.5, letterSpacing: 0.4, textTransform: "uppercase" }}>
           {t("most_followed")}
         </p>
         <div className="grid grid-cols-2 gap-2.5 mb-6">
           {popular.map((r) => (
-            <ReciterCard key={r.id} r={r} active={r.id === currentReciter} onOpen={openSpace} previewSrc={reciterAudioUrl(r.id, 1)} />
+            <ReciterCard
+              key={r.id}
+              r={r}
+              active={r.id === currentReciter}
+              onOpen={openSpace}
+              previewSrc={reciterAudioUrl(r.id, 1)}
+              favorite={favorites.includes(r.id)}
+              onToggleFavorite={toggleFavorite}
+            />
           ))}
         </div>
 
@@ -9862,7 +9993,15 @@ function RecitersScreen({ onBack, onOpenReciterSpace, onOpenFullSurahReciter }) 
         </p>
         <div className="grid grid-cols-2 gap-2.5">
           {others.map((r) => (
-            <ReciterCard key={r.id} r={r} active={r.id === currentReciter} onOpen={openSpace} previewSrc={reciterAudioUrl(r.id, 1)} />
+            <ReciterCard
+              key={r.id}
+              r={r}
+              active={r.id === currentReciter}
+              onOpen={openSpace}
+              previewSrc={reciterAudioUrl(r.id, 1)}
+              favorite={favorites.includes(r.id)}
+              onToggleFavorite={toggleFavorite}
+            />
           ))}
         </div>
       </div>
@@ -9884,6 +10023,28 @@ function RecitersScreen({ onBack, onOpenReciterSpace, onOpenFullSurahReciter }) 
         <p className="font-ui text-center mb-5 px-2" style={{ color: COLORS.inkSoft, fontSize: 11.5, lineHeight: 1.5 }}>
           {t("full_surah_reciters_hint")}
         </p>
+
+        {favoriteFullSurahReciters.length > 0 && (
+          <>
+            <p className="font-ui font-semibold mb-2.5" style={{ color: COLORS.goldLight, fontSize: 11.5, letterSpacing: 0.4, textTransform: "uppercase" }}>
+              {t("favorite_reciters")}
+            </p>
+            <div className="grid grid-cols-2 gap-2.5 mb-6">
+              {favoriteFullSurahReciters.map((r) => (
+                <ReciterCard
+                  key={r.id}
+                  r={r}
+                  active={false}
+                  onOpen={() => onOpenFullSurahReciter(r.id)}
+                  previewSrc={fullSurahAudioUrl(r, 1)}
+                  favorite={favorites.includes(r.id)}
+                  onToggleFavorite={toggleFavorite}
+                />
+              ))}
+            </div>
+          </>
+        )}
+
         <div className="grid grid-cols-2 gap-2.5">
           {FULL_SURAH_RECITERS.map((r) => (
             <ReciterCard
@@ -9892,6 +10053,8 @@ function RecitersScreen({ onBack, onOpenReciterSpace, onOpenFullSurahReciter }) 
               active={false}
               onOpen={() => onOpenFullSurahReciter(r.id)}
               previewSrc={fullSurahAudioUrl(r, 1)}
+              favorite={favorites.includes(r.id)}
+              onToggleFavorite={toggleFavorite}
             />
           ))}
         </div>
