@@ -1113,11 +1113,11 @@ const CATEGORIES = [
 // dhikr, and shouldn't silently change what "a complete day" means for the
 // existing azkar streak.
 const NAWAFIL_ITEMS = [
-  { id: "sunnah_fajr", label: "Sunnah avant le Fajr (2 rakât)", label_en: "Sunnah before Fajr (2 rak'ahs)", label_ar: "ركعتا سنة الفجر" },
-  { id: "sunnah_dhuhr_before", label: "Sunnah avant le Dohr (4 rakât)", label_en: "Sunnah before Dhuhr (4 rak'ahs)", label_ar: "أربع ركعات قبل الظهر" },
-  { id: "sunnah_dhuhr_after", label: "Sunnah après le Dohr (2 rakât)", label_en: "Sunnah after Dhuhr (2 rak'ahs)", label_ar: "ركعتان بعد الظهر" },
-  { id: "sunnah_maghrib", label: "Sunnah après le Maghrib (2 rakât)", label_en: "Sunnah after Maghrib (2 rak'ahs)", label_ar: "ركعتان بعد المغرب" },
-  { id: "sunnah_isha", label: "Sunnah après l'Isha (2 rakât)", label_en: "Sunnah after Isha (2 rak'ahs)", label_ar: "ركعتان بعد العشاء" },
+  { id: "sunnah_fajr", label: "Sunnah avant le Fajr", label_en: "Sunnah before Fajr", label_ar: "سنة الفجر", rakats: 2 },
+  { id: "sunnah_dhuhr_before", label: "Sunnah avant le Dohr", label_en: "Sunnah before Dhuhr", label_ar: "سنة الظهر القبلية", rakats: 4 },
+  { id: "sunnah_dhuhr_after", label: "Sunnah après le Dohr", label_en: "Sunnah after Dhuhr", label_ar: "سنة الظهر البعدية", rakats: 2 },
+  { id: "sunnah_maghrib", label: "Sunnah après le Maghrib", label_en: "Sunnah after Maghrib", label_ar: "سنة المغرب", rakats: 2 },
+  { id: "sunnah_isha", label: "Sunnah après l'Isha", label_en: "Sunnah after Isha", label_ar: "سنة العشاء", rakats: 2 },
   { id: "witr", label: "Witr", label_en: "Witr", label_ar: "الوتر" },
   { id: "duha", label: "Doha (prière de la matinée)", label_en: "Duha (forenoon prayer)", label_ar: "صلاة الضحى" },
   { id: "qiyam", label: "Qiyam al-layl (prière de nuit)", label_en: "Qiyam al-layl (night prayer)", label_ar: "قيام الليل" },
@@ -6564,10 +6564,28 @@ function NawafilScreen({ onBack }) {
   }, []);
 
   const todayFlags = log[today] || {};
-  const doneCount = NAWAFIL_ITEMS.filter((item) => todayFlags[item.id]).length;
+
+  // Rak'ah count for graduated items (e.g. sunnah before Dhuhr = 4 rak'ahs) —
+  // a raw `true` is legacy data from before per-rak'ah tracking existed, and
+  // reads as "fully done" rather than being lost.
+  const rakatCount = (item) => {
+    const raw = todayFlags[item.id];
+    if (typeof raw === "number") return raw;
+    return raw === true ? item.rakats : 0;
+  };
+  const isDone = (item) => (item.rakats ? rakatCount(item) >= item.rakats : !!todayFlags[item.id]);
+  const doneCount = NAWAFIL_ITEMS.filter(isDone).length;
 
   const toggle = (id) => {
     const nextFlags = { ...todayFlags, [id]: !todayFlags[id] };
+    const next = { ...log, [today]: nextFlags };
+    setLog(next);
+    window.storage.set(NAWAFIL_DAILY_KEY, JSON.stringify(next), false).catch(() => {});
+  };
+
+  const setRakats = (item, value) => {
+    const clamped = Math.max(0, Math.min(item.rakats, value));
+    const nextFlags = { ...todayFlags, [item.id]: clamped };
     const next = { ...log, [today]: nextFlags };
     setLog(next);
     window.storage.set(NAWAFIL_DAILY_KEY, JSON.stringify(next), false).catch(() => {});
@@ -6600,7 +6618,68 @@ function NawafilScreen({ onBack }) {
 
       <div className="flex flex-col gap-2">
         {NAWAFIL_ITEMS.map((item) => {
-          const done = !!todayFlags[item.id];
+          const done = isDone(item);
+
+          if (item.rakats) {
+            const count = rakatCount(item);
+            return (
+              <div
+                key={item.id}
+                className="flex items-center gap-3"
+                style={{
+                  width: "100%",
+                  background: COLORS.parchment,
+                  borderRadius: 16,
+                  padding: "12px 14px",
+                  border: `1px solid ${done ? COLORS.clay : COLORS.parchmentDark}`,
+                }}
+              >
+                <div
+                  className="flex items-center justify-center flex-shrink-0"
+                  style={{
+                    width: 26,
+                    height: 26,
+                    borderRadius: 99,
+                    background: done ? COLORS.clay : "transparent",
+                    border: `1.5px solid ${done ? COLORS.clay : inkA(0.25)}`,
+                  }}
+                >
+                  {done && <CheckIcon color="#FFFFFF" size={14} />}
+                </div>
+                <p className="font-display font-semibold" style={{ color: COLORS.ink, fontSize: 14, flex: 1 }}>
+                  {localLabel(item)}
+                </p>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <button
+                    onClick={() => setRakats(item, count - 1)}
+                    disabled={count <= 0}
+                    className="flex items-center justify-center active:opacity-60"
+                    style={{ width: 26, height: 26, borderRadius: 8, background: inkA(0.08), opacity: count <= 0 ? 0.4 : 1 }}
+                    aria-label={t("decrease_rakat")}
+                  >
+                    <span className="font-ui font-semibold" style={{ color: COLORS.ink, fontSize: 15, lineHeight: 1 }}>
+                      −
+                    </span>
+                  </button>
+                  <span className="font-ui font-semibold text-center" style={{ color: COLORS.goldLight, fontSize: 12.5, minWidth: 38 }}>
+                    {count}/{item.rakats}
+                  </span>
+                  <button
+                    onClick={() => setRakats(item, count + 1)}
+                    disabled={count >= item.rakats}
+                    className="flex items-center justify-center active:opacity-60"
+                    style={{ width: 26, height: 26, borderRadius: 8, background: inkA(0.08), opacity: count >= item.rakats ? 0.4 : 1 }}
+                    aria-label={t("increase_rakat")}
+                  >
+                    <span className="font-ui font-semibold" style={{ color: COLORS.ink, fontSize: 15, lineHeight: 1 }}>
+                      +
+                    </span>
+                  </button>
+                </div>
+              </div>
+            );
+          }
+
           return (
             <button
               key={item.id}
@@ -7079,7 +7158,12 @@ function DashboardScreen({ history, streak }) {
   const tasbihToday = tasbihLog[viewedKey] || 0;
   const pagesToday = quranLog[viewedKey] || 0;
   const nawafilFlagsToday = nawafilLog[viewedKey] || {};
-  const nawafilToday = NAWAFIL_ITEMS.filter((item) => nawafilFlagsToday[item.id]).length;
+  const nawafilToday = NAWAFIL_ITEMS.filter((item) => {
+    const raw = nawafilFlagsToday[item.id];
+    if (!item.rakats) return !!raw;
+    const count = typeof raw === "number" ? raw : raw === true ? item.rakats : 0;
+    return count >= item.rakats;
+  }).length;
   const azkarDone = CATEGORIES.filter((cat) => flagsToday[cat.id]).length;
   const activityCount = azkarDone + (tasbihToday > 0 ? 1 : 0) + (pagesToday > 0 ? 1 : 0) + (nawafilToday > 0 ? 1 : 0);
   const maxActivity = CATEGORIES.length + 3;

@@ -306,6 +306,8 @@ const TRANSLATIONS = {
     last_updated_date: "août 2026",
     decrease_minute: "diminuer d'une minute",
     increase_minute: "augmenter d'une minute",
+    decrease_rakat: "une rakât de moins",
+    increase_rakat: "une rakât de plus",
     go_to_step: "Aller à l'étape",
   },
   en: {
@@ -579,6 +581,8 @@ const TRANSLATIONS = {
     last_updated_date: "August 2026",
     decrease_minute: "decrease by one minute",
     increase_minute: "increase by one minute",
+    decrease_rakat: "one rak'ah less",
+    increase_rakat: "one rak'ah more",
     go_to_step: "Go to step",
   },
   ar: {
@@ -852,6 +856,8 @@ const TRANSLATIONS = {
     last_updated_date: "أغسطس 2026",
     decrease_minute: "إنقاص دقيقة واحدة",
     increase_minute: "زيادة دقيقة واحدة",
+    decrease_rakat: "إنقاص ركعة",
+    increase_rakat: "زيادة ركعة",
     go_to_step: "الانتقال إلى الخطوة",
   },
 };
