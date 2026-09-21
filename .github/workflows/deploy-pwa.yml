@@ -26,6 +26,9 @@ jobs:
       # Built with a /mes-azkar/ base path since GitHub Pages serves this
       # repo at https://<user>.github.io/mes-azkar/, not at the domain root.
       - run: npx vite build --base=/mes-azkar/
+      # Carry static pages (privacy policy, etc.) that aren't part of the
+      # Vite app itself into the same Pages deployment.
+      - run: cp -r docs/. www/
       - uses: actions/upload-pages-artifact@v3
         with:
           path: www
