@@ -5495,6 +5495,17 @@ const TOUR_SLIDES = [
     body_en: "Color themes, calculation method, iqama, muezzin, backing up your data — everything is customized here.",
     body_ar: "الألوان، طريقة الحساب، الإقامة، المؤذن، نسخ بياناتك احتياطيًا — كل شيء قابل للتخصيص من هنا.",
   },
+  {
+    screen: "home",
+    accent: "gold",
+    icon: "🤖",
+    title: "Ton assistant, en un tap",
+    title_en: "Your assistant, one tap away",
+    title_ar: "مساعدك، بلمسة واحدة",
+    body: "Le bouton rond en bas de l'écran ouvre l'assistant : pose-lui une question sur l'appli, une invocation, ou un sujet du Coran — il répond à partir du vrai contenu de l'appli et du Coran, sans jamais rien inventer.",
+    body_en: "The round button at the bottom of the screen opens the assistant: ask it about the app, an invocation, or a Quran topic — it answers from the app's real content and the Quran, never inventing anything.",
+    body_ar: "الزر المستدير أسفل الشاشة يفتح المساعد: اسأله عن التطبيق، عن دعاء، أو عن موضوع في القرآن — يجيب من محتوى التطبيق الحقيقي ومن القرآن، دون أن يخترع شيئًا أبدًا.",
+  },
 ];
 
 function OnboardingOverlay({ onNavigate, onEnableNotifications, onDismiss }) {
