@@ -3,14 +3,14 @@ import { chromium } from "playwright";
 import fs from "node:fs";
 import path from "node:path";
 
-const OUT = path.resolve("store-assets/ios");
-const RAW = path.resolve("store-assets/.raw");
+const OUT = path.resolve(process.env.OUT_DIR ?? "store-assets/ios");
+const RAW = path.resolve(process.env.RAW_DIR ?? "store-assets/.raw");
 
 const DEVICES = [
   { dir: "iphone-6.9", kind: "iphone", vw: 440, vh: 956, dsf: 3, W: 1320, H: 2868, phoneW: 1000, top: 470, head: 84 },
   { dir: "ipad-13", kind: "ipad", vw: 1032, vh: 1376, dsf: 2, W: 2064, H: 2752, phoneW: 1560, top: 430, head: 90 },
   { dir: "iphone-6.3", kind: "iphone", vw: 402, vh: 874, dsf: 3, W: 1206, H: 2622, phoneW: 913, top: 430, head: 77 },
-  { dir: "iphone-duo-outer", kind: "ipad", vw: 466, vh: 678, dsf: 3, W: 1398, H: 2034, phoneW: 1062, top: 300, head: 66, sb: 0.09, fsr: 0.04 },
+  { dir: "iphone-duo-outer", kind: "ipad", side: true, vw: 466, vh: 678, dsf: 3, W: 1398, H: 2034, phoneW: 1062, top: 300, head: 66 },
   { dir: "iphone-duo-inner", kind: "ipad", vw: 669, vh: 951, dsf: 3, W: 2007, H: 2853, phoneW: 1606, top: 400, head: 92 },
 ];
 
@@ -41,6 +41,30 @@ async function capture(browser, d) {
   await page.waitForTimeout(1500);
   if (d.kind === "iphone") {
     await page.addStyleTag({ content: ".fixed.bottom-0.left-0.right-0{padding-bottom:30px !important;padding-left:18px !important;padding-right:18px !important}button[aria-label=\"Assistant\"]{bottom:100px !important}" });
+  }
+  if (d.side) {
+    // iPhone Duo, closed: Dynamic Island, status bar and tab bar stack on the trailing edge (Apple HIG, "Vertical controls").
+    const bg = await page.evaluate(() => getComputedStyle(document.querySelector(".fixed.bottom-0.left-0.right-0") ?? document.body).backgroundColor);
+    await page.addStyleTag({
+      content: `
+body{padding-right:84px !important}
+.fixed.bottom-0.left-0.right-0{top:0 !important;left:auto !important;width:84px !important;flex-direction:column !important;justify-content:flex-end !important;border-top:none !important;border-left:1px solid rgba(140,99,41,.18) !important;padding:0 0 22px !important}
+.fixed.bottom-0.left-0.right-0 > button{flex:0 0 auto !important;padding:12px 2px 10px !important}
+button[aria-label="Assistant"]{right:98px !important;bottom:26px !important}
+#duo-top{position:fixed;top:0;right:0;width:84px;height:200px;background:${bg};z-index:21;display:flex;flex-direction:column;align-items:center;gap:14px;padding-top:14px;box-sizing:border-box;font:600 15px/1 -apple-system,'SF Pro Text','Helvetica Neue',Arial,sans-serif;color:#111;border-left:1px solid rgba(140,99,41,.18)}
+#duo-top .pill{width:28px;height:64px;background:#000;border-radius:99px}
+#duo-top .bat{transform:rotate(90deg);margin-top:8px}`,
+    });
+    await page.evaluate(() => {
+      const el = document.createElement("div");
+      el.id = "duo-top";
+      el.innerHTML =
+        '<div class="pill"></div><span>9:41</span>' +
+        '<svg width="24" height="17" viewBox="0 0 17 12"><path d="M8.5 2.4c2.3 0 4.4.9 6 2.4l1.1-1.2A10.3 10.3 0 0 0 8.5.7 10.3 10.3 0 0 0 1.4 3.6l1.1 1.2a8.6 8.6 0 0 1 6-2.4Z" fill="#111"/><path d="M8.5 6c1.3 0 2.5.5 3.4 1.3l1.1-1.2a7 7 0 0 0-9 0l1.1 1.2c.9-.8 2.1-1.3 3.4-1.3Z" fill="#111"/><path d="M8.5 9.5c.6 0 1.1.2 1.5.6L8.5 11.7 7 10.1c.4-.4.9-.6 1.5-.6Z" fill="#111"/></svg>' +
+        '<svg width="22" height="16" viewBox="0 0 19 12"><rect x="0" y="8" width="3" height="4" rx="1" fill="#111"/><rect x="5" y="5.5" width="3" height="6.5" rx="1" fill="#111"/><rect x="10" y="3" width="3" height="9" rx="1" fill="#111"/><rect x="15" y="0" width="3" height="12" rx="1" fill="#111"/></svg>' +
+        '<svg class="bat" width="30" height="14" viewBox="0 0 27 13"><rect x="0.5" y="0.5" width="22" height="12" rx="3.5" fill="none" stroke="#111" opacity=".4"/><rect x="2" y="2" width="19" height="9" rx="2.2" fill="#111"/><path d="M24 4.5v4c.9-.3 1.6-1.2 1.6-2s-.7-1.7-1.6-2Z" fill="#111" opacity=".5"/></svg>';
+      document.body.appendChild(el);
+    });
   }
   try { await clickText(page, "Passer"); await page.waitForTimeout(500); } catch {}
 
@@ -114,7 +138,7 @@ background:radial-gradient(${d.W * 0.65}px ${d.W * 0.46}px at 88% 8%,rgba(233,19
 .s{position:relative;width:${innerW}px;border-radius:${screenR}px;overflow:hidden;background:#FBF7EC}
 .s img{width:100%;display:block}
 </style></head><body><div class="c"><div class="h">${headline}</div>
-<div class="p">${buttons}<div class="b"><div class="s">${island}${status}<img src="data:image/png;base64,${b64}">${iphone ? "" : `<div style="height:${Math.round(innerW * 0.026)}px;background:#FBF7EC"></div>`}${homeBar}</div></div></div></div></body></html>`;
+<div class="p">${buttons}<div class="b"><div class="s">${d.side ? "" : island}${d.side ? "" : status}<img src="data:image/png;base64,${b64}">${iphone || d.side ? "" : `<div style="height:${Math.round(innerW * 0.026)}px;background:#FBF7EC"></div>`}${homeBar}</div></div></div></div></body></html>`;
 }
 
 const browser = await chromium.launch();
