@@ -29,3 +29,6 @@ ios/.build/
 android/keystore.properties
 android/app/*.keystore
 android/app/*.jks
+
+# generated App Store screenshots
+store-assets/
