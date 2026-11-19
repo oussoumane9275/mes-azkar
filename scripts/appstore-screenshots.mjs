@@ -39,6 +39,9 @@ async function capture(browser, d) {
   const page = await ctx.newPage();
   await page.goto("http://localhost:4173", { waitUntil: "networkidle" });
   await page.waitForTimeout(1500);
+  if (d.kind === "iphone") {
+    await page.addStyleTag({ content: ".fixed.bottom-0.left-0.right-0{padding-bottom:30px !important;padding-left:18px !important;padding-right:18px !important}button[aria-label=\"Assistant\"]{bottom:100px !important}" });
+  }
   try { await clickText(page, "Passer"); await page.waitForTimeout(500); } catch {}
 
   const raws = {};
